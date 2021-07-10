@@ -1,4 +1,4 @@
-package fluent
+package protocol
 
 import (
 	"bytes"

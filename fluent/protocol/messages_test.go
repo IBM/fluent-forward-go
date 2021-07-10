@@ -1,4 +1,4 @@
-package fluent_test
+package protocol_test
 
 import (
 	"crypto/sha512"
@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.ibm.com/Observability/fluent-forward-go/fluent"
+	. "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
