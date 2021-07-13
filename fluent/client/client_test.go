@@ -1,11 +1,11 @@
 package client_test
 
 import (
-	"fmt"
+	// "fmt"
 	"io"
 	"math/rand"
 	"net"
-	"os"
+	// "os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -25,95 +25,95 @@ var _ = Describe("Client", func() {
 		client = &Client{Timeout: 2 * time.Second}
 	})
 
-	XDescribe("Network Management", func() {
-		var (
-			server     net.Listener
-			serverErr  error
-			hostname   string
-			port       int
-			handleConn func(net.Conn)
-		)
-
-		BeforeEach(func() {
-			server, serverErr = net.Listen("tcp", ":0")
-			Expect(serverErr).NotTo(HaveOccurred())
-
-			port = server.Addr().(*net.TCPAddr).Port
-
-			handleConn = func(net.Conn) {
-				fmt.Fprintln(os.Stderr, "HANDLING CONNECTION")
-				return
-			}
-		})
-
-		JustBeforeEach(func() {
-			go func() {
-				defer GinkgoRecover()
-				for {
-					conn, err := server.Accept()
-					if err != nil {
-						Fail("Failure accepting connection")
-						return
-					}
-					defer conn.Close()
-					handleConn(conn)
-					return
-				}
-			}()
-		})
-
-		AfterEach(func() {
-			client.Disconnect()
-			err := server.Close()
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		Describe("Connect", func() {
-			BeforeEach(func() {
-				handleConn = func(net.Conn) {
-					return
-				}
-			})
-
-			It("Connects without erroring", func() {
-				Expect(client.Connect(hostname, port, AuthInfo{})).NotTo(HaveOccurred())
-			})
-
-			Context("When connecting fails", func() {
-				BeforeEach(func() {
-					hostname = "notavalidhost"
-				})
-
-				It("Returns an error", func() {
-					Expect(client.Connect(hostname, port, AuthInfo{})).To(HaveOccurred())
-				})
-			})
-		})
-
-		XDescribe("Reconnect", func() {
-			var (
-				connCountChan chan bool
-			)
-
-			BeforeEach(func() {
-				connCountChan = make(chan bool, 2)
-				// handleConn = func(net.Conn) {
-				// 	// connCountChan <- true
-				// 	return
-				// }
-			})
-
-			It("Reconnects to the same endpoint", func() {
-				client.Connect(hostname, port, AuthInfo{})
-				client.Reconnect()
-				i := 0
-				for _ = range connCountChan {
-					i++
-				}
-				Expect(i).To(Equal(2))
-			})
-		})
-	})
+	// XDescribe("Network Management", func() {
+	// 	var (
+	// 		server     net.Listener
+	// 		serverErr  error
+	// 		hostname   string
+	// 		port       int
+	// 		handleConn func(net.Conn)
+	// 	)
+	//
+	// 	BeforeEach(func() {
+	// 		server, serverErr = net.Listen("tcp", ":0")
+	// 		Expect(serverErr).NotTo(HaveOccurred())
+	//
+	// 		port = server.Addr().(*net.TCPAddr).Port
+	//
+	// 		handleConn = func(net.Conn) {
+	// 			fmt.Fprintln(os.Stderr, "HANDLING CONNECTION")
+	// 			return
+	// 		}
+	// 	})
+	//
+	// 	JustBeforeEach(func() {
+	// 		go func() {
+	// 			defer GinkgoRecover()
+	// 			for {
+	// 				conn, err := server.Accept()
+	// 				if err != nil {
+	// 					Fail("Failure accepting connection")
+	// 					return
+	// 				}
+	// 				defer conn.Close()
+	// 				handleConn(conn)
+	// 				return
+	// 			}
+	// 		}()
+	// 	})
+	//
+	// 	AfterEach(func() {
+	// 		client.Disconnect()
+	// 		err := server.Close()
+	// 		Expect(err).NotTo(HaveOccurred())
+	// 	})
+	//
+	// 	Describe("Connect", func() {
+	// 		BeforeEach(func() {
+	// 			handleConn = func(net.Conn) {
+	// 				return
+	// 			}
+	// 		})
+	//
+	// 		It("Connects without erroring", func() {
+	// 			Expect(client.Connect(hostname, port, AuthInfo{})).NotTo(HaveOccurred())
+	// 		})
+	//
+	// 		Context("When connecting fails", func() {
+	// 			BeforeEach(func() {
+	// 				hostname = "notavalidhost"
+	// 			})
+	//
+	// 			It("Returns an error", func() {
+	// 				Expect(client.Connect(hostname, port, AuthInfo{})).To(HaveOccurred())
+	// 			})
+	// 		})
+	// 	})
+	//
+	// 	XDescribe("Reconnect", func() {
+	// 		var (
+	// 			connCountChan chan bool
+	// 		)
+	//
+	// 		BeforeEach(func() {
+	// 			connCountChan = make(chan bool, 2)
+	// 			// handleConn = func(net.Conn) {
+	// 			// 	// connCountChan <- true
+	// 			// 	return
+	// 			// }
+	// 		})
+	//
+	// 		It("Reconnects to the same endpoint", func() {
+	// 			client.Connect(hostname, port, AuthInfo{})
+	// 			client.Reconnect()
+	// 			i := 0
+	// 			for _ = range connCountChan {
+	// 				i++
+	// 			}
+	// 			Expect(i).To(Equal(2))
+	// 		})
+	// 	})
+	// })
 
 	Describe("Handshake", func() {
 		var (

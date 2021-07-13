@@ -10,6 +10,10 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
+// =========
+// HANDSHAKE
+// =========
+
 const (
 	MSGTYPE_HELO = "HELO"
 	MSGTYPE_PING = "PING"
