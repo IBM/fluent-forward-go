@@ -5,61 +5,76 @@ import (
 	"errors"
 	"time"
 
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/tinylib/msgp/msgp"
 )
+
+//go:generate msgp
 
 // =========
 // TRANSPORT
 // =========
-
-func init() {
-	msgpack.RegisterExt(0, (*EntryTime)(nil))
-}
 
 const (
 	OPT_SIZE       string = "size"
 	OPT_CHUNK      string = "chunk"
 	OPT_COMPRESSED string = "compressed"
 	OPT_VAL_GZIP   string = "gzip"
+
+	extensionType int8 = 0
+	eventTimeLen  int  = 10
 )
 
-var (
-	_ msgpack.Marshaler   = (*EntryTime)(nil)
-	_ msgpack.Unmarshaler = (*EntryTime)(nil)
-)
+func init() {
+	msgp.RegisterExtension(extensionType, func() msgp.Extension {
+		return new(EventTime)
+	})
+}
 
-type EntryTime struct {
+// EventTime is the fluent-forward representation of a timestamp
+type EventTime struct {
 	time.Time
 }
 
-func (et *EntryTime) MarshalMsgpack() ([]byte, error) {
-	timeBytes := make([]byte, 8)
-
-	binary.BigEndian.PutUint32(timeBytes, uint32(et.Unix()))
-	binary.BigEndian.PutUint32(timeBytes[4:], uint32(et.Nanosecond()))
-
-	return timeBytes, nil
+func (et *EventTime) ExtensionType() int8 {
+	return extensionType
 }
 
-func (et *EntryTime) UnmarshalMsgpack(timeBytes []byte) error {
-	if len(timeBytes) != 8 {
+func (et *EventTime) Len() int {
+	return eventTimeLen
+}
+
+// MarshalBinaryTo implements the Extension interface for marshaling an
+// EventTime into a byte slice.
+func (et *EventTime) MarshalBinaryTo(b []byte) error {
+	utc := et.UTC()
+
+	b[0] = 0xD7
+	b[1] = 0x00
+	binary.BigEndian.PutUint32(b[2:], uint32(utc.Unix()))
+	binary.BigEndian.PutUint32(b[6:], uint32(utc.Nanosecond()))
+
+	return nil
+}
+
+// UnmarshalBinary implements the Extension interface for unmarshaling
+// into an EventTime object.
+func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
+	if len(timeBytes) != eventTimeLen {
 		return errors.New("Invalid length")
 	}
 
-	seconds := binary.BigEndian.Uint32(timeBytes)
-	nanoseconds := binary.BigEndian.Uint32(timeBytes[4:])
+	seconds := binary.BigEndian.Uint32(timeBytes[2:])
+	nanoseconds := binary.BigEndian.Uint32(timeBytes[6:])
 
 	et.Time = time.Unix(int64(seconds), int64(nanoseconds))
 	return nil
 }
 
-//
-
 // Entry is the basic representation of an individual event.
+//msgp:tuple Entry
 type Entry struct {
-	_msgpack struct{} `msgpack:",as_array"`
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
-	TimeStamp int64
+	Timestamp EventTime `msg:"eventTime,extension"`
 	// Record is the actual event record - key-value pairs, keys are strings.
 	// At this point, we're using strings for the values as well, but we may
 	// want to make those interface{} or something more generic at some point.
@@ -67,8 +82,8 @@ type Entry struct {
 }
 
 // Message is used to send a single event at a time
+//msgp:tuple Message
 type Message struct {
-	_msgpack struct{} `msgpack:",as_array"`
 	// Tag is a dot-delimited string used to categorize events
 	Tag string
 	Entry
@@ -79,8 +94,8 @@ type Message struct {
 
 // ForwardMessage is used in Forward mode to send multiple events in a single
 // msgpack array within a single request.
+//msgp:tuple ForwardMessage
 type ForwardMessage struct {
-	_msgpack struct{} `msgpack:",as_array"`
 	// Tag is a dot-delimted string used to categorize events
 	Tag string
 	// Entries is the set of event objects to be carried in this message
@@ -92,8 +107,8 @@ type ForwardMessage struct {
 
 // PackedForwardMessage is just like ForwardMessage, except that the events
 // are carried as a msgpack binary stream
+//msgp:tuple PackedForwardMessage
 type PackedForwardMessage struct {
-	_msgpack struct{} `msgpack:",as_array"`
 	// Tag is a dot-delimited string used to categorize events
 	Tag string
 	// EventStream is the set of events (entries in Fluent-speak) serialized
@@ -110,6 +125,7 @@ type PackedForwardMessage struct {
 // concatenating multiple gzipped binary strings, but we do not claim to
 // support that yet.
 // Users of this type MUST set the option "compressed" => "gzip"
+//msgp:tuple CompressedPackedForwardMessage
 type CompressedPackedForwardMessage struct {
 	PackedForwardMessage
 }

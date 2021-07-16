@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-
-	"github.com/vmihailenco/msgpack/v5"
 )
+
+//go:generate msgp
 
 // =========
 // HANDSHAKE
@@ -25,36 +25,36 @@ const (
 // 2. Client -> PING -> Server
 // 3. Server -> PONG -> Client
 
-// PackedHelo returns a msgpack-encoded Helo message with the specified options.
+// NewHelo returns a Helo message with the specified options.
 // if opts is nil, then a nonce is generated, auth is left empty, and
 // keepalive is true.
-func PackedHelo(opts *HeloOpts) ([]byte, error) {
+func NewHelo(opts *HeloOpts) *Helo {
 	h := Helo{MessageType: MSGTYPE_HELO}
 	if opts == nil {
 		h.Options = &HeloOpts{
 			Keepalive: true,
 		}
 	}
-	return msgpack.Marshal(h)
+	return &h
 }
 
 // Helo is the initial handshake message, sent by the server and received
 // by the client.  Client will respond with a Ping.
+//msgp:tuple Helo
 type Helo struct {
-	_msgpack    struct{} `msgpack:",as_array"`
 	MessageType string
 	Options     *HeloOpts
 }
 
 type HeloOpts struct {
-	Nonce     []byte `msgpack:"nonce"`
-	Auth      []byte `msgpack:"auth"`
-	Keepalive bool   `msgpack:"keepalive"`
+	Nonce     []byte `msg:"nonce"`
+	Auth      []byte `msg:"auth"`
+	Keepalive bool   `msg:"keepalive"`
 }
 
-// PackedPing returns a msgpack-encoded PING message.  The digest is computed
+// NewPing returns a PING message.  The digest is computed
 // from the hostname, key, salt, and nonce using SHA512.
-func PackedPing(hostname string, sharedKey, salt, nonce []byte, username, password string) ([]byte, error) {
+func NewPing(hostname string, sharedKey, salt, nonce []byte, username, password string) *Ping {
 	p := Ping{
 		MessageType:        MSGTYPE_PING,
 		ClientHostname:     hostname,
@@ -63,13 +63,13 @@ func PackedPing(hostname string, sharedKey, salt, nonce []byte, username, passwo
 		Username:           username,
 		Password:           password,
 	}
-	return msgpack.Marshal(p)
+	return &p
 }
 
 // Ping is the response message sent by the client after receiving a
 // Helo from the server.  Server will respond with a Pong.
+//msgp:tuple Ping
 type Ping struct {
-	_msgpack           struct{} `msgpack:",as_array"`
 	MessageType        string
 	ClientHostname     string
 	SharedKeySalt      []byte
@@ -78,7 +78,7 @@ type Ping struct {
 	Password           string
 }
 
-// PackedPong returns a msgpack-encoded PONG message.  AuthResult indicates
+// NewPong returns a PONG message.  AuthResult indicates
 // whether the credentials presented by the client were accepted and therefore
 // whether the client can continue using the connection, switching from
 // handshake mode to sending events.
@@ -86,21 +86,30 @@ type Ping struct {
 // from the hostname, key, salt, and nonce using SHA512.
 // Server implementations must use the nonce created for the initial Helo and
 // the salt sent by the client in the Ping.
-func PackedPong(authResult bool, reason string, hostname string, sharedKey, salt, nonce []byte) ([]byte, error) {
+func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
+	helo *Helo, ping *Ping) (*Pong, error) {
+	if helo == nil || ping == nil {
+		return nil, errors.New("Either helo or ping is nil")
+	}
+
+	if helo.Options == nil {
+		return nil, errors.New("Helo has a nil options field")
+	}
+
 	p := Pong{
 		MessageType:        MSGTYPE_PONG,
 		AuthResult:         authResult,
 		Reason:             reason,
 		ServerHostname:     hostname,
-		SharedKeyHexDigest: computeHexDigest(salt, hostname, nonce, sharedKey),
+		SharedKeyHexDigest: computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey),
 	}
-	return msgpack.Marshal(p)
+	return &p, nil
 }
 
 // Pong is the response message sent by the server after receiving a
 // Ping from the client.  A Pong concludes the handshake.
+//msgp:tuple Pong
 type Pong struct {
-	_msgpack           struct{} `msgpack:",as_array"`
 	MessageType        string
 	AuthResult         bool
 	Reason             string

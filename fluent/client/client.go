@@ -85,7 +85,7 @@ func (c *Client) Disconnect() {
 	}
 }
 
-func (c *Client) Handshake() error {
-
-	return nil
-}
+// func (c *Client) Handshake() error {
+//
+// 	return nil
+// }

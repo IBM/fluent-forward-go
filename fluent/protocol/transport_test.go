@@ -1,91 +1,51 @@
 package protocol_test
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	. "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
-
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 var _ = Describe("Transport", func() {
-	Describe("EntryTime", func() {
-		Describe("MarshalMsgpack", func() {
-			var (
-				seconds, nanoseconds int64
-				et                   *EntryTime
-			)
+	Describe("EventTime", func() {
+		var (
+			ent Entry
+		)
 
-			BeforeEach(func() {
-				// If you change this, you *must* change the byte elements of the
-				// returned slice from msgpack.Marshal() to match
-				seconds = 1257894000
-			})
-
-			JustBeforeEach(func() {
-				et = &EntryTime{
-					Time: time.Unix(seconds, nanoseconds),
-				}
-			})
-
-			It("Returns a properly marshaled byte sequence", func() {
-				b, _ := msgpack.Marshal(et)
-				Expect(b).To(Equal([]byte{0xD7, 0x00,
-					0x4A, 0xF9, 0xF0, 0x70,
-					0x00, 0x00, 0x00, 0x00}))
-			})
-
-			Context("When the timestamp includes nanoseconds", func() {
-				BeforeEach(func() {
-					nanoseconds = 500
-				})
-
-				It("Marshals the nanoseconds value correctly", func() {
-					b, _ := msgpack.Marshal(et)
-					Expect(b).To(Equal([]byte{0xD7, 0x00,
-						0x4A, 0xF9, 0xF0, 0x70,
-						0x00, 0x00, 0x01, 0xF4}))
-				})
-			})
+		BeforeEach(func() {
+			ent = Entry{
+				Timestamp: EventTime{
+					Time: time.Unix(int64(1257894000), int64(12340000)),
+				},
+			}
 		})
 
-		Describe("UnmarshalMsgpack", func() {
-			var (
-				timeBytes []byte
-			)
+		// This covers both MarshalBinaryTo() and UnmarshalBinary()
+		It("Marshals and unmarshals correctly", func() {
+			b, err := ent.MarshalMsg(nil)
 
-			BeforeEach(func() {
-				timeBytes = []byte{0xD7, 0x00,
-					0x00, 0x00, 0x01, 0xFF,
-					0x00, 0x00, 0x10, 0xFF,
-				}
-			})
+			Expect(err).NotTo(HaveOccurred())
 
-			It("Unmarshals to the correct timestamp", func() {
-				dest := &EntryTime{}
+			// This is the msgpack fixext8 encoding for the timestamp
+			// per the fluent-forward spec:
+			// D7 == fixext8
+			// 00 == type 0
+			// 4AF9F070 == 1257894000
+			// 00BC4B20 == 12340000
+			Expect(
+				strings.Contains(fmt.Sprintf("%X", b), "D7004AF9F07000BC4B20"),
+			).To(BeTrue())
 
-				err := msgpack.Unmarshal(timeBytes, dest)
-				Expect(err).NotTo(HaveOccurred())
+			var unment Entry
+			_, err = unment.UnmarshalMsg(b)
+			Expect(err).NotTo(HaveOccurred())
 
-				Expect(dest.Unix()).To(Equal(int64(511)))
-				Expect(dest.Nanosecond()).To(Equal(4351))
-			})
-
-			Context("When the slice is the wrong length", func() {
-				BeforeEach(func() {
-					timeBytes = []byte{0xD7, 0x00}
-				})
-
-				It("Returns an error", func() {
-					dest := &EntryTime{}
-
-					err := msgpack.Unmarshal(timeBytes, dest)
-					Expect(err).To(HaveOccurred())
-				})
-			})
+			Expect(unment.Timestamp.Time.Equal(ent.Timestamp.Time)).To(BeTrue())
 		})
 	})
 })
