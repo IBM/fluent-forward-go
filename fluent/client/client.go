@@ -1,16 +1,19 @@
 package client
 
 import (
-	"fmt"
+	// "fmt"
 	"net"
 	"time"
 )
+
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 const (
 	DEFAULT_CONNECTION_TIMEOUT time.Duration = 60 * time.Second
 )
 
 type Client struct {
+	ConnectionFactory
 	Timeout time.Duration
 	Session *Session
 }
@@ -33,26 +36,13 @@ type Session struct {
 	AuthInfo   AuthInfo
 }
 
-func (c *Client) Connect(hostname string, port int, auth AuthInfo) error {
-	var t time.Duration
-	if c.Timeout != 0 {
-		t = c.Timeout
-	} else {
-		t = DEFAULT_CONNECTION_TIMEOUT
-	}
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", hostname, port), t)
-	if err != nil {
-		return err
-	}
+// ConnectionFactory implementations create new connections
+//counterfeiter:generate . ConnectionFactory
+type ConnectionFactory interface {
+	New() (net.Conn, error)
+}
 
-	// Store the session information for (re)use
-	c.Session = &Session{
-		ServerAddress: ServerAddress{
-			Hostname: hostname,
-			Port:     port,
-		},
-		Connection: conn,
-	}
+func (c *Client) Connect() error {
 
 	return nil
 }

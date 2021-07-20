@@ -48,4 +48,38 @@ var _ = Describe("Transport", func() {
 			Expect(unment.Timestamp.Time.Equal(ent.Timestamp.Time)).To(BeTrue())
 		})
 	})
+
+	Describe("NewCompressedPackedForwardMessage", func() {
+		var (
+			tag     string
+			entries []Entry
+			opts    MessageOptions
+		)
+
+		BeforeEach(func() {
+			tag = "foo.bar"
+			entries = []Entry{
+				{
+					Timestamp: EventTime{time.Now()},
+					Record: map[string]string{
+						"foo":    "bar",
+						"george": "jungle",
+					},
+				},
+				{
+					Timestamp: EventTime{time.Now()},
+					Record: map[string]string{
+						"foo":    "kablooie",
+						"george": "frank",
+					},
+				},
+			}
+			opts = MessageOptions{}
+		})
+
+		It("Returns a message with a gzip-compressed event stream", func() {
+			msg := NewCompressedPackedForwardMessage(tag, entries, opts)
+			Expect(msg).NotTo(BeNil())
+		})
+	})
 })

@@ -2,27 +2,46 @@ package client_test
 
 import (
 	// "fmt"
-	"io"
-	"math/rand"
+	// "io"
+	// "math/rand"
 	"net"
-	// "os"
+	// // "os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/vmihailenco/msgpack/v5"
-
 	. "github.ibm.com/Observability/fluent-forward-go/fluent/client"
-	"github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
+	"github.ibm.com/Observability/fluent-forward-go/fluent/client/clientfakes"
+	// "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Client", func() {
 	var (
-		client *Client
+		factory *clientfakes.FakeConnectionFactory
+		client  *Client
 	)
 
 	BeforeEach(func() {
-		client = &Client{Timeout: 2 * time.Second}
+		factory = &clientfakes.FakeConnectionFactory{}
+		client = &Client{
+			ConnectionFactory: factory,
+			Timeout:           2 * time.Second,
+		}
+	})
+
+	Describe("Connect", func() {
+		var (
+			clientSide net.Conn
+		)
+
+		BeforeEach(func() {
+			clientSide, _ = net.Pipe()
+			factory.NewReturns(clientSide, nil)
+		})
+
+		It("Does not return an error", func() {
+			Expect(client.Connect()).NotTo(HaveOccurred())
+		})
 	})
 
 	// XDescribe("Network Management", func() {
@@ -89,82 +108,82 @@ var _ = Describe("Client", func() {
 	// 			})
 	// 		})
 	// 	})
+
+	// XDescribe("Reconnect", func() {
+	// 	var (
+	// 		connCountChan chan bool
+	// 	)
 	//
-	// 	XDescribe("Reconnect", func() {
+	// 	BeforeEach(func() {
+	// 		connCountChan = make(chan bool, 2)
+	// 		// handleConn = func(net.Conn) {
+	// 		// 	// connCountChan <- true
+	// 		// 	return
+	// 		// }
+	// 	})
+	//
+	// 	It("Reconnects to the same endpoint", func() {
+	// 		client.Connect(hostname, port, AuthInfo{})
+	// 		client.Reconnect()
+	// 		i := 0
+	// 		for _ = range connCountChan {
+	// 			i++
+	// 		}
+	// 		Expect(i).To(Equal(2))
+	// 	})
+	// })
+	// })
+
+	// XDescribe("Handshake", func() {
+	// 	var (
+	// 		clientConn, serverConn net.Conn
+	// 	)
+	//
+	// 	BeforeEach(func() {
+	// 		clientConn, serverConn = net.Pipe()
+	//
+	// 		client.Session = &Session{
+	// 			Connection: clientConn,
+	// 		}
+	// 	})
+	//
+	// 	Context("When a HELO is received", func() {
 	// 		var (
-	// 			connCountChan chan bool
+	// 			nonce []byte
 	// 		)
 	//
 	// 		BeforeEach(func() {
-	// 			connCountChan = make(chan bool, 2)
-	// 			// handleConn = func(net.Conn) {
-	// 			// 	// connCountChan <- true
-	// 			// 	return
-	// 			// }
+	// 			nonce = make([]byte, 16)
+	// 			rand.Read(nonce)
+	//
+	// 			h, err := protocol.PackedHelo(&protocol.HeloOpts{Nonce: nonce})
+	// 			Expect(err).NotTo(HaveOccurred())
+	//
+	// 			_, err = serverConn.Write(h)
+	// 			Expect(err).NotTo(HaveOccurred())
 	// 		})
 	//
-	// 		It("Reconnects to the same endpoint", func() {
-	// 			client.Connect(hostname, port, AuthInfo{})
-	// 			client.Reconnect()
-	// 			i := 0
-	// 			for _ = range connCountChan {
-	// 				i++
+	// 		It("Sends a PING back", func() {
+	// 			// client.Handshake()
+	// 			buf := make([]byte, 1024)
+	// 			for {
+	// 				serverConn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	// 				_, err := serverConn.Read(buf)
+	// 				if err == io.EOF {
+	// 					break
+	// 				}
+	//
+	// 				if err != nil {
+	// 					Fail("Error reading from server connection")
+	// 				}
 	// 			}
-	// 			Expect(i).To(Equal(2))
+	//
+	// 			var p protocol.Ping
+	// 			err := msgpack.Unmarshal(buf, &p)
+	// 			Expect(err).NotTo(HaveOccurred())
+	//
+	// 			Expect(p.MessageType).To(Equal(protocol.MSGTYPE_PING))
 	// 		})
 	// 	})
 	// })
-
-	XDescribe("Handshake", func() {
-		var (
-			clientConn, serverConn net.Conn
-		)
-
-		BeforeEach(func() {
-			clientConn, serverConn = net.Pipe()
-
-			client.Session = &Session{
-				Connection: clientConn,
-			}
-		})
-
-		Context("When a HELO is received", func() {
-			var (
-				nonce []byte
-			)
-
-			BeforeEach(func() {
-				nonce = make([]byte, 16)
-				rand.Read(nonce)
-
-				h, err := protocol.PackedHelo(&protocol.HeloOpts{Nonce: nonce})
-				Expect(err).NotTo(HaveOccurred())
-
-				_, err = serverConn.Write(h)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("Sends a PING back", func() {
-				// client.Handshake()
-				buf := make([]byte, 1024)
-				for {
-					serverConn.SetReadDeadline(time.Now().Add(2 * time.Second))
-					_, err := serverConn.Read(buf)
-					if err == io.EOF {
-						break
-					}
-
-					if err != nil {
-						Fail("Error reading from server connection")
-					}
-				}
-
-				var p protocol.Ping
-				err := msgpack.Unmarshal(buf, &p)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(p.MessageType).To(Equal(protocol.MSGTYPE_PING))
-			})
-		})
-	})
 })

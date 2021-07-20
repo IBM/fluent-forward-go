@@ -3,6 +3,7 @@ module github.ibm.com/Observability/fluent-forward-go
 go 1.15
 
 require (
+	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1 // indirect
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
 	github.com/tinylib/msgp v1.1.6

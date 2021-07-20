@@ -81,6 +81,8 @@ type Entry struct {
 	Record map[string]string
 }
 
+type MessageOptions map[string]string
+
 // Message is used to send a single event at a time
 //msgp:tuple Message
 type Message struct {
@@ -89,7 +91,7 @@ type Message struct {
 	Entry
 	// Options - used to control server behavior.  Same as above, may need to
 	// switch to interface{} or similar at some point.
-	Options map[string]string
+	Options MessageOptions
 }
 
 // ForwardMessage is used in Forward mode to send multiple events in a single
@@ -102,7 +104,7 @@ type ForwardMessage struct {
 	Entries []Entry
 	// Options - used to control server behavior.  Same as above, may need to
 	// switch to interface{} or similar at some point.
-	Options map[string]string
+	Options MessageOptions
 }
 
 // PackedForwardMessage is just like ForwardMessage, except that the events
@@ -116,7 +118,7 @@ type PackedForwardMessage struct {
 	EventStream []byte
 	// Options - used to control server behavior.  Same as above, may need to
 	// switch to interface{} or similar at some point.
-	Options map[string]string
+	Options MessageOptions
 }
 
 // CompressedPackedForwardMode is just like PackedForwardMessage, except that
@@ -131,7 +133,8 @@ type CompressedPackedForwardMessage struct {
 }
 
 func NewCompressedPackedForwardMessage(
-	tag string, entries []Entry, opts map[string]string,
+	tag string, entries []Entry, opts MessageOptions,
 ) *CompressedPackedForwardMessage {
-	return nil
+	// TODO: Do something real here.
+	return &CompressedPackedForwardMessage{}
 }
