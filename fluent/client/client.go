@@ -44,6 +44,8 @@ type ConnectionFactory interface {
 	New() (net.Conn, error)
 }
 
+// Connect initializes the Session and Connection objects by opening
+// a client connect to the target configured in the ConnectionFactory
 func (c *Client) Connect() error {
 	conn, err := c.New()
 	if err != nil {
@@ -76,6 +78,7 @@ func (c *Client) Reconnect() error {
 	return nil
 }
 
+// Disconnect terminates a client connection
 func (c *Client) Disconnect() {
 	if c.Session != nil {
 		if c.Session.Connection != nil {
