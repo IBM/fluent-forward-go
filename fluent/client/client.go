@@ -4,6 +4,8 @@ import (
 	// "fmt"
 	"net"
 	"time"
+
+	"github.com/tinylib/msgp/msgp"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -43,7 +45,14 @@ type ConnectionFactory interface {
 }
 
 func (c *Client) Connect() error {
+	conn, err := c.New()
+	if err != nil {
+		return err
+	}
 
+	c.Session = &Session{
+		Connection: conn,
+	}
 	return nil
 }
 
@@ -73,6 +82,14 @@ func (c *Client) Disconnect() {
 			c.Session.Connection.Close()
 		}
 	}
+}
+
+// SendMessage sends a single msgp.Encodable across the wire
+func (c *Client) SendMessage(e msgp.Encodable) error {
+	w := msgp.NewWriter(c.Session.Connection)
+	e.EncodeMsg(w)
+	w.Flush()
+	return nil
 }
 
 // func (c *Client) Handshake() error {

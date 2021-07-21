@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"errors"
 	// "fmt"
 	// "io"
 	// "math/rand"
@@ -10,15 +11,17 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/tinylib/msgp/msgp"
 	. "github.ibm.com/Observability/fluent-forward-go/fluent/client"
 	"github.ibm.com/Observability/fluent-forward-go/fluent/client/clientfakes"
-	// "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
+	"github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Client", func() {
 	var (
-		factory *clientfakes.FakeConnectionFactory
-		client  *Client
+		factory    *clientfakes.FakeConnectionFactory
+		client     *Client
+		clientSide net.Conn
 	)
 
 	BeforeEach(func() {
@@ -27,20 +30,89 @@ var _ = Describe("Client", func() {
 			ConnectionFactory: factory,
 			Timeout:           2 * time.Second,
 		}
+
+		clientSide, _ = net.Pipe()
+
+		Expect(factory.NewCallCount()).To(Equal(0))
+		Expect(client.Session).To(BeNil())
+	})
+
+	JustBeforeEach(func() {
+		factory.NewReturns(clientSide, nil)
 	})
 
 	Describe("Connect", func() {
+		It("Does not return an error", func() {
+			Expect(client.Connect()).NotTo(HaveOccurred())
+		})
+
+		It("Gets the connection from the ConnectionFactory", func() {
+			client.Connect()
+			Expect(factory.NewCallCount()).To(Equal(1))
+		})
+
+		It("Stores the connection in the Session", func() {
+			client.Connect()
+			Expect(client.Session).NotTo(BeNil())
+			Expect(client.Session.Connection).To(Equal(clientSide))
+		})
+
+		Context("When the factory returns an error", func() {
+			var (
+				connectionError error
+			)
+
+			JustBeforeEach(func() {
+				connectionError = errors.New("Nope")
+				factory.NewReturns(nil, connectionError)
+			})
+
+			It("Returns an error", func() {
+				err := client.Connect()
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(BeIdenticalTo(connectionError))
+			})
+		})
+	})
+
+	Describe("SendMessage", func() {
 		var (
-			clientSide net.Conn
+			serverSide net.Conn
+			msg        protocol.Message
 		)
 
 		BeforeEach(func() {
-			clientSide, _ = net.Pipe()
-			factory.NewReturns(clientSide, nil)
+			clientSide, serverSide = net.Pipe()
+			msg = protocol.Message{
+				Tag: "foo.bar",
+				Entry: protocol.Entry{
+					Timestamp: protocol.EventTime{time.Now()},
+					Record: map[string]string{
+						"first": "Eddie",
+						"last":  "Van Halen",
+					},
+				},
+				Options: protocol.MessageOptions{},
+			}
 		})
 
-		It("Does not return an error", func() {
-			Expect(client.Connect()).NotTo(HaveOccurred())
+		JustBeforeEach(func() {
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Sends the message", func() {
+			go func() {
+				client.SendMessage(&msg)
+			}()
+			var recvd protocol.Message
+			recvd.DecodeMsg(msgp.NewReader(serverSide))
+
+			Expect(recvd.Tag).To(Equal(msg.Tag))
+			Expect(recvd.Options).To(Equal(msg.Options))
+			Expect(recvd.Entry.Timestamp.Equal(msg.Entry.Timestamp.Time)).To(BeTrue())
+			Expect(recvd.Entry.Record["first"]).To(Equal(msg.Entry.Record["first"]))
+			Expect(recvd.Entry.Record["last"]).To(Equal(msg.Entry.Record["last"]))
 		})
 	})
 
