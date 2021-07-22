@@ -240,12 +240,14 @@ func NewCompressedPackedForwardMessage(
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
 	zw.Write(eventStream(entries))
+	zw.Close()
 	// TODO: Do something real here.
 	return &CompressedPackedForwardMessage{
 		Tag:                   tag,
 		CompressedEventStream: buf.Bytes(),
 		Options: MessageOptions{
-			OPT_SIZE: strconv.Itoa(len(entries)),
+			OPT_SIZE:       strconv.Itoa(len(entries)),
+			OPT_COMPRESSED: OPT_VAL_GZIP,
 		},
 	}
 }
