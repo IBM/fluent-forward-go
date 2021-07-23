@@ -21,6 +21,18 @@ type FakeConnectionFactory struct {
 		result1 net.Conn
 		result2 error
 	}
+	SessionStub        func() (*client.Session, error)
+	sessionMutex       sync.RWMutex
+	sessionArgsForCall []struct {
+	}
+	sessionReturns struct {
+		result1 *client.Session
+		result2 error
+	}
+	sessionReturnsOnCall map[int]struct {
+		result1 *client.Session
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -81,11 +93,69 @@ func (fake *FakeConnectionFactory) NewReturnsOnCall(i int, result1 net.Conn, res
 	}{result1, result2}
 }
 
+func (fake *FakeConnectionFactory) Session() (*client.Session, error) {
+	fake.sessionMutex.Lock()
+	ret, specificReturn := fake.sessionReturnsOnCall[len(fake.sessionArgsForCall)]
+	fake.sessionArgsForCall = append(fake.sessionArgsForCall, struct {
+	}{})
+	stub := fake.SessionStub
+	fakeReturns := fake.sessionReturns
+	fake.recordInvocation("Session", []interface{}{})
+	fake.sessionMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeConnectionFactory) SessionCallCount() int {
+	fake.sessionMutex.RLock()
+	defer fake.sessionMutex.RUnlock()
+	return len(fake.sessionArgsForCall)
+}
+
+func (fake *FakeConnectionFactory) SessionCalls(stub func() (*client.Session, error)) {
+	fake.sessionMutex.Lock()
+	defer fake.sessionMutex.Unlock()
+	fake.SessionStub = stub
+}
+
+func (fake *FakeConnectionFactory) SessionReturns(result1 *client.Session, result2 error) {
+	fake.sessionMutex.Lock()
+	defer fake.sessionMutex.Unlock()
+	fake.SessionStub = nil
+	fake.sessionReturns = struct {
+		result1 *client.Session
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeConnectionFactory) SessionReturnsOnCall(i int, result1 *client.Session, result2 error) {
+	fake.sessionMutex.Lock()
+	defer fake.sessionMutex.Unlock()
+	fake.SessionStub = nil
+	if fake.sessionReturnsOnCall == nil {
+		fake.sessionReturnsOnCall = make(map[int]struct {
+			result1 *client.Session
+			result2 error
+		})
+	}
+	fake.sessionReturnsOnCall[i] = struct {
+		result1 *client.Session
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeConnectionFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newMutex.RLock()
 	defer fake.newMutex.RUnlock()
+	fake.sessionMutex.RLock()
+	defer fake.sessionMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

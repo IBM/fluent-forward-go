@@ -1,9 +1,13 @@
 package client
 
 import (
+	"errors"
 	// "fmt"
+	"math/rand"
 	"net"
 	"time"
+
+	"github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -16,8 +20,10 @@ const (
 
 type Client struct {
 	ConnectionFactory
-	Timeout time.Duration
-	Session *Session
+	Timeout  time.Duration
+	Session  *Session
+	AuthInfo AuthInfo
+	Hostname string
 }
 
 type ServerAddress struct {
@@ -33,15 +39,15 @@ type AuthInfo struct {
 
 type Session struct {
 	ServerAddress
-	SharedKey  []byte
-	Connection net.Conn
-	AuthInfo   AuthInfo
+	Connection     net.Conn
+	TransportPhase bool
 }
 
 // ConnectionFactory implementations create new connections
 //counterfeiter:generate . ConnectionFactory
 type ConnectionFactory interface {
 	New() (net.Conn, error)
+	Session() (*Session, error)
 }
 
 // Connect initializes the Session and Connection objects by opening
@@ -54,6 +60,11 @@ func (c *Client) Connect() error {
 
 	c.Session = &Session{
 		Connection: conn,
+	}
+
+	// If no shared key, handshake mode is not required
+	if c.AuthInfo.SharedKey == nil {
+		c.Session.TransportPhase = true
 	}
 	return nil
 }
@@ -85,17 +96,54 @@ func (c *Client) Disconnect() {
 			c.Session.Connection.Close()
 		}
 	}
+
+	c.Session = nil
 }
 
-// SendMessage sends a single msgp.Encodable across the wire
+// SendMessage sends a single msgp.Encodable across the wire.  If the session
+// is not yet in transport phase, an error is returned, and no message is sent.
 func (c *Client) SendMessage(e msgp.Encodable) error {
+	if !c.Session.TransportPhase {
+		return errors.New("Session handshake not completed")
+	}
+
+	return c.sendMessage(e)
+}
+
+// Private sender, bypasses transport phase checks.
+func (c *Client) sendMessage(e msgp.Encodable) error {
 	w := msgp.NewWriter(c.Session.Connection)
 	e.EncodeMsg(w)
 	w.Flush()
 	return nil
 }
 
-// func (c *Client) Handshake() error {
-//
-// 	return nil
-// }
+// Handshake initiates handshake mode.  Users must call this before attempting
+// to send any messages when the server is configured with a shared key, otherwise
+// the server will reject any message events.  Successful completion of the
+// handshake puts the connection into message (or forward) mode, at which time
+// the client is free to send event messages.
+func (c *Client) Handshake() error {
+	if c.Session == nil || c.Session.Connection == nil {
+		return errors.New("Not connected")
+	}
+
+	var helo protocol.Helo
+	r := msgp.NewReader(c.Session.Connection)
+	helo.DecodeMsg(r)
+
+	salt := make([]byte, 16)
+	rand.Read(salt)
+
+	c.sendMessage(protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce))
+	var pong protocol.Pong
+	pong.DecodeMsg(r)
+
+	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
+		helo.Options.Nonce, salt); err != nil {
+		return err
+	}
+
+	c.Session.TransportPhase = true
+	return nil
+}

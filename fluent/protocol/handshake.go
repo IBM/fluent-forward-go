@@ -34,6 +34,8 @@ func NewHelo(opts *HeloOpts) *Helo {
 		h.Options = &HeloOpts{
 			Keepalive: true,
 		}
+	} else {
+		h.Options = opts
 	}
 	return &h
 }
@@ -54,14 +56,28 @@ type HeloOpts struct {
 
 // NewPing returns a PING message.  The digest is computed
 // from the hostname, key, salt, and nonce using SHA512.
-func NewPing(hostname string, sharedKey, salt, nonce []byte, username, password string) *Ping {
+func NewPing(hostname string, sharedKey, salt, nonce []byte) *Ping {
+	return makePing(hostname, sharedKey, salt, nonce)
+}
+
+// NewPingWithAuth returns a PING message containing the username and password
+// to be used for authentication.  The digest is computed
+// from the hostname, key, salt, and nonce using SHA512.
+func NewPingWithAuth(hostname string, sharedKey, salt, nonce []byte, username, password string) *Ping {
+	return makePing(hostname, sharedKey, salt, nonce, username, password)
+}
+
+func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) *Ping {
 	p := Ping{
 		MessageType:        MSGTYPE_PING,
 		ClientHostname:     hostname,
 		SharedKeySalt:      salt,
 		SharedKeyHexDigest: computeHexDigest(salt, hostname, nonce, sharedKey),
-		Username:           username,
-		Password:           password,
+	}
+
+	if len(creds) >= 2 {
+		p.Username = creds[0]
+		p.Password = creds[1]
 	}
 	return &p
 }

@@ -10,7 +10,7 @@ import (
 )
 
 var _ = Describe("Tcp", func() {
-	Describe("TCPConnectionFactory", func() {
+	XDescribe("TCPConnectionFactory", func() {
 		var (
 			server     net.Listener
 			serverErr  error
@@ -51,6 +51,22 @@ var _ = Describe("Tcp", func() {
 					clientConn, err := factory.New()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(clientConn).NotTo(BeNil())
+				}()
+
+				conn, err := server.Accept()
+				Expect(conn).NotTo(BeNil())
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Describe("Session", func() {
+			It("Returns a Session object wrapping the established connection", func() {
+				go func() {
+					defer GinkgoRecover()
+					sess, err := factory.Session()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(sess).NotTo(BeNil())
+					Expect(sess.Connection).NotTo(BeNil())
 				}()
 
 				conn, err := server.Accept()
