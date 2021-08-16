@@ -1,0 +1,13 @@
+language: go
+go:
+  - "1.16"
+cache:
+  directories:
+    - $HOME/.cache/go-build
+    - $HOME/gopath/pkg/mod
+jobs:
+  include:
+    - stage: unit tests
+      script:
+        - test/run-tests.sh ; [[ "$?" == "0" ]] || (travis_terminate 1)
+      if: type = pull_request or type = push
