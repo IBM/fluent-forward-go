@@ -4,6 +4,19 @@ Golang client-side implementation of the fluent Forward protocol
 This library implements the [fluent Forward protocol v1](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1) in golang.  It provides only a
 client-side implementation.
 
+# Installation instructions
+Before running the generate tool, you must have msgp installed.  To install run:
+
+```
+go get github.com/tinylib/msgp
+```
+
+Afterwards you will be able to generate the msgp packets with:
+```
+go generate ./...
+```
+
+# Testing
 To test against fluent-bit, start up fluent-bit in a docker container with:
 ```
 $ docker pull fluent/fluent-bit:1.8.2
