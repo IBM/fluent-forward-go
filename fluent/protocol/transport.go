@@ -201,6 +201,8 @@ func NewPackedForwardMessage(
 	entries EntryList,
 	opts MessageOptions,
 ) *PackedForwardMessage {
+	// set the options size to be the number of entries
+	opts.Size = len(entries)
 
 	msg := &PackedForwardMessage{
 		Tag:         tag,
