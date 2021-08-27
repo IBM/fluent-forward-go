@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
@@ -98,7 +97,11 @@ type Entry struct {
 	Record map[string]string
 }
 
-type MessageOptions map[string]string
+type MessageOptions struct {
+	Size int `msg:"size"`
+	Chunk string `msg:"chunk"`
+	Compressed string `msg:"compressed"`
+}
 
 // Message is used to send a single event at a time
 //msgp:tuple Message
@@ -202,9 +205,7 @@ func NewPackedForwardMessage(
 	msg := &PackedForwardMessage{
 		Tag:         tag,
 		EventStream: eventStream(entries),
-		Options: MessageOptions{
-			OPT_SIZE: strconv.Itoa(len(entries)),
-		},
+		Options: opts,
 	}
 	return msg
 }
@@ -245,9 +246,6 @@ func NewCompressedPackedForwardMessage(
 	return &CompressedPackedForwardMessage{
 		Tag:                   tag,
 		CompressedEventStream: buf.Bytes(),
-		Options: MessageOptions{
-			OPT_SIZE:       strconv.Itoa(len(entries)),
-			OPT_COMPRESSED: OPT_VAL_GZIP,
-		},
+		Options: opts,
 	}
 }
