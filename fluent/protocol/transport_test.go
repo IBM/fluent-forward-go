@@ -2,7 +2,6 @@ package protocol_test
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -161,9 +160,7 @@ var _ = Describe("Transport", func() {
 
 		It("Includes the number of events as the `size` option", func() {
 			msg := NewPackedForwardMessage(tag, entries, opts)
-			Expect(msg.Options).To(HaveKey(OPT_SIZE))
-			size, err := strconv.Atoi(msg.Options[OPT_SIZE])
-			Expect(err).NotTo(HaveOccurred())
+			size := msg.Options.Size
 			Expect(size).To(Equal(len(entries)))
 		})
 
