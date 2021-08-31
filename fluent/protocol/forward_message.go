@@ -49,8 +49,7 @@ func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 		err error
 	)
 
-	sz, bits, err = msgp.ReadArrayHeaderBytes(bits)
-	if err != nil {
+	if sz, bits, err = msgp.ReadArrayHeaderBytes(bits); err != nil {
 		return bits, msgp.WrapError(err, "Array Header")
 	}
 
