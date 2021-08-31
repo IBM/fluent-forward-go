@@ -58,10 +58,10 @@ var _ = Describe("ForwardMessage", func() {
 			} else {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
-			Expect(msg.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
-			Expect(msg.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(msg.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
-			Expect(msg.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
+			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
+			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
+			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
+			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
 
 		It("Marshals and unmarshals correctly", func() {
