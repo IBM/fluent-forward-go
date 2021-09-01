@@ -59,10 +59,10 @@ var _ = Describe("ForwardMessage", func() {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
 			Expect(unmfwd.Tag).To(Equal("foo"))
-			Expect(unmfwd.Entries[0].Timestamp).To(Equal(msg.Entries[0].Timestamp))
+			Expect(unmfwd.Entries[0].Timestamp.Time.Equal(msg.Entries[0].Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(unmfwd.Entries[1].Timestamp).To(Equal(msg.Entries[1].Timestamp))
+			Expect(unmfwd.Entries[1].Timestamp.Time.Equal(msg.Entries[1].Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
@@ -93,10 +93,10 @@ var _ = Describe("ForwardMessage", func() {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
 			Expect(unmfwd.Tag).To(Equal("foo"))
-			Expect(unmfwd.Entries[0].Timestamp).To(Equal(msg.Entries[0].Timestamp))
+			Expect(unmfwd.Entries[0].Timestamp.Time.Equal(msg.Entries[0].Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(unmfwd.Entries[1].Timestamp).To(Equal(msg.Entries[1].Timestamp))
+			Expect(unmfwd.Entries[1].Timestamp.Time.Equal(msg.Entries[1].Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}

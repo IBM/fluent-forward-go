@@ -79,7 +79,7 @@ type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp EventTime `msg:"eventTime,extension"`
 	// Record is the actual event record - key-value pairs, keys are strings.
-	Record map[string]interface{}
+	Record Record
 }
 
 type EntryList []EntryExt
