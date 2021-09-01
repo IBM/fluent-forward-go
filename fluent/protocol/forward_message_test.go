@@ -58,8 +58,11 @@ var _ = Describe("ForwardMessage", func() {
 			} else {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
+			Expect(unmfwd.Tag).To(Equal("foo"))
+			Expect(unmfwd.Entries[0].Timestamp).To(Equal(msg.Entries[0].Timestamp))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
+			Expect(unmfwd.Entries[1].Timestamp).To(Equal(msg.Entries[1].Timestamp))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
@@ -89,8 +92,11 @@ var _ = Describe("ForwardMessage", func() {
 			} else {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
+			Expect(unmfwd.Tag).To(Equal("foo"))
+			Expect(unmfwd.Entries[0].Timestamp).To(Equal(msg.Entries[0].Timestamp))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
+			Expect(unmfwd.Entries[1].Timestamp).To(Equal(msg.Entries[1].Timestamp))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
@@ -100,14 +106,14 @@ var _ = Describe("ForwardMessage", func() {
 			// testEncodingDecoding(fwdmsg, nil)
 			testEncodingDecoding(fwdmsg, &MessageOptions{})
 		})
-	})
 
-	It("Properly deserializes real fluentbit messages with no options", func() {
-		bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
-		Expect(err).ToNot(HaveOccurred())
+		It("Properly deserializes real fluentbit messages with no options", func() {
+			bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
+			Expect(err).ToNot(HaveOccurred())
 
-		fwdmsg := ForwardMessage{}
-		_, err = fwdmsg.UnmarshalMsg(bits)
-		Expect(err).NotTo(HaveOccurred())
+			fwdmsg := ForwardMessage{}
+			_, err = fwdmsg.UnmarshalMsg(bits)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
