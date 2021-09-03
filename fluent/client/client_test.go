@@ -6,15 +6,16 @@ import (
 	// "io"
 	"math/rand"
 	"net"
+
 	// // "os"
 	"time"
 
+	. "github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/client/clientfakes"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tinylib/msgp/msgp"
-	. "github.ibm.com/Observability/fluent-forward-go/fluent/client"
-	"github.ibm.com/Observability/fluent-forward-go/fluent/client/clientfakes"
-	"github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Client", func() {

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
+	. "github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Transport", func() {
