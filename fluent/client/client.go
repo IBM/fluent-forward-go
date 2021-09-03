@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 
 	"github.com/tinylib/msgp/msgp"
 )

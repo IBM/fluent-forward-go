@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.ibm.com/Observability/fluent-forward-go/fluent/client"
+	. "github.com/IBM/fluent-forward-go/fluent/client"
 )
 
 var _ = Describe("Tcp", func() {

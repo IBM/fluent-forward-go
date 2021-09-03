@@ -5,7 +5,7 @@ import (
 	"net"
 	"sync"
 
-	"github.ibm.com/Observability/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/client"
 )
 
 type FakeConnectionFactory struct {

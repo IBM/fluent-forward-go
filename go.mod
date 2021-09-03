@@ -1,4 +1,4 @@
-module github.ibm.com/Observability/fluent-forward-go
+module github.com/IBM/fluent-forward-go
 
 go 1.15
 
