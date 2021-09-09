@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/tinylib/msgp/msgp"
 
-	. "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
+	. "github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("ForwardMessage", func() {

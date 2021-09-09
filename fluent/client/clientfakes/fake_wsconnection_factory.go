@@ -2,30 +2,30 @@
 package clientfakes
 
 import (
-	"net"
 	"sync"
 
 	"github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
 )
 
-type FakeConnectionFactory struct {
-	NewStub        func() (net.Conn, error)
+type FakeWSConnectionFactory struct {
+	NewStub        func() (ext.Conn, error)
 	newMutex       sync.RWMutex
 	newArgsForCall []struct {
 	}
 	newReturns struct {
-		result1 net.Conn
+		result1 ext.Conn
 		result2 error
 	}
 	newReturnsOnCall map[int]struct {
-		result1 net.Conn
+		result1 ext.Conn
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeConnectionFactory) New() (net.Conn, error) {
+func (fake *FakeWSConnectionFactory) New() (ext.Conn, error) {
 	fake.newMutex.Lock()
 	ret, specificReturn := fake.newReturnsOnCall[len(fake.newArgsForCall)]
 	fake.newArgsForCall = append(fake.newArgsForCall, struct {
@@ -43,45 +43,45 @@ func (fake *FakeConnectionFactory) New() (net.Conn, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeConnectionFactory) NewCallCount() int {
+func (fake *FakeWSConnectionFactory) NewCallCount() int {
 	fake.newMutex.RLock()
 	defer fake.newMutex.RUnlock()
 	return len(fake.newArgsForCall)
 }
 
-func (fake *FakeConnectionFactory) NewCalls(stub func() (net.Conn, error)) {
+func (fake *FakeWSConnectionFactory) NewCalls(stub func() (ext.Conn, error)) {
 	fake.newMutex.Lock()
 	defer fake.newMutex.Unlock()
 	fake.NewStub = stub
 }
 
-func (fake *FakeConnectionFactory) NewReturns(result1 net.Conn, result2 error) {
+func (fake *FakeWSConnectionFactory) NewReturns(result1 ext.Conn, result2 error) {
 	fake.newMutex.Lock()
 	defer fake.newMutex.Unlock()
 	fake.NewStub = nil
 	fake.newReturns = struct {
-		result1 net.Conn
+		result1 ext.Conn
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeConnectionFactory) NewReturnsOnCall(i int, result1 net.Conn, result2 error) {
+func (fake *FakeWSConnectionFactory) NewReturnsOnCall(i int, result1 ext.Conn, result2 error) {
 	fake.newMutex.Lock()
 	defer fake.newMutex.Unlock()
 	fake.NewStub = nil
 	if fake.newReturnsOnCall == nil {
 		fake.newReturnsOnCall = make(map[int]struct {
-			result1 net.Conn
+			result1 ext.Conn
 			result2 error
 		})
 	}
 	fake.newReturnsOnCall[i] = struct {
-		result1 net.Conn
+		result1 ext.Conn
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeConnectionFactory) Invocations() map[string][][]interface{} {
+func (fake *FakeWSConnectionFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newMutex.RLock()
@@ -93,7 +93,7 @@ func (fake *FakeConnectionFactory) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeConnectionFactory) recordInvocation(key string, args []interface{}) {
+func (fake *FakeWSConnectionFactory) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -105,4 +105,4 @@ func (fake *FakeConnectionFactory) recordInvocation(key string, args []interface
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ client.ConnectionFactory = new(FakeConnectionFactory)
+var _ client.WSConnectionFactory = new(FakeWSConnectionFactory)
