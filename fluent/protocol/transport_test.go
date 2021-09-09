@@ -60,14 +60,14 @@ var _ = Describe("Transport", func() {
 			e1 = EntryList{
 				{
 					Timestamp: EventTime{et},
-					Record: map[string]string{
+					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
 					Timestamp: EventTime{et},
-					Record: map[string]string{
+					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
 					},
@@ -84,14 +84,14 @@ var _ = Describe("Transport", func() {
 				e2 = EntryList{
 					{
 						Timestamp: EventTime{et},
-						Record: map[string]string{
+						Record: map[string]interface{}{
 							"foo":    "bar",
 							"george": "jungle",
 						},
 					},
 					{
 						Timestamp: EventTime{et},
-						Record: map[string]string{
+						Record: map[string]interface{}{
 							"foo":    "kablooie",
 							"george": "frank",
 						},
@@ -129,7 +129,7 @@ var _ = Describe("Transport", func() {
 		var (
 			tag     string
 			entries EntryList
-			opts    MessageOptions
+			opts    *MessageOptions
 		)
 
 		BeforeEach(func() {
@@ -137,20 +137,20 @@ var _ = Describe("Transport", func() {
 			entries = EntryList{
 				{
 					Timestamp: EventTime{time.Now()},
-					Record: map[string]string{
+					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
 					Timestamp: EventTime{time.Now()},
-					Record: map[string]string{
+					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
 					},
 				},
 			}
-			opts = MessageOptions{}
+			opts = &MessageOptions{}
 		})
 
 		It("Returns a PackedForwardMessage", func() {
@@ -182,7 +182,7 @@ var _ = Describe("Transport", func() {
 		var (
 			tag     string
 			entries []EntryExt
-			opts    MessageOptions
+			opts    *MessageOptions
 		)
 
 		BeforeEach(func() {
@@ -190,20 +190,20 @@ var _ = Describe("Transport", func() {
 			entries = []EntryExt{
 				{
 					Timestamp: EventTime{time.Now()},
-					Record: map[string]string{
+					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
 					Timestamp: EventTime{time.Now()},
-					Record: map[string]string{
+					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
 					},
 				},
 			}
-			opts = MessageOptions{}
+			opts = &MessageOptions{}
 		})
 
 		It("Returns a message with a gzip-compressed event stream", func() {

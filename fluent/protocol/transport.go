@@ -79,79 +79,12 @@ type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp EventTime `msg:"eventTime,extension"`
 	// Record is the actual event record - key-value pairs, keys are strings.
-	// At this point, we're using strings for the values as well, but we may
-	// want to make those interface{} or something more generic at some point.
-	Record map[string]string
-}
-
-// EntryExt is the basic representation of an individual event.  The timestamp
-// is an int64 representing seconds since the epoch (UTC).  The initial creator
-// of the entry is responsible for converting to UTC.
-//msgp:tuple Entry
-type Entry struct {
-	// Timestamp can contain the timestamp in either seconds or nanoseconds
-	Timestamp int64
-	// Record is the actual event record - key-value pairs, keys are strings.
-	// At this point, we're using strings for the values as well, but we may
-	// want to make those interface{} or something more generic at some point.
-	Record map[string]string
-}
-
-type MessageOptions struct {
-	Size int `msg:"size"`
-	Chunk string `msg:"chunk"`
-	Compressed string `msg:"compressed"`
-}
-
-// Message is used to send a single event at a time
-//msgp:tuple Message
-type Message struct {
-	// Tag is a dot-delimited string used to categorize events
-	Tag       string
-	Timestamp int64
-	Record    map[string]string
-	// Options - used to control server behavior.  Same as above, may need to
-	// switch to interface{} or similar at some point.
-	Options MessageOptions
-}
-
-// MessageExt
-//msgp:tuple MessageExt
-type MessageExt struct {
-	Tag       string
-	Timestamp EventTime `msg:"eventTime,extension"`
-	Record    map[string]string
-	Options   MessageOptions
-}
-
-// ForwardMessage is used in Forward mode to send multiple events in a single
-// msgpack array within a single request.
-//msgp:tuple ForwardMessage
-type ForwardMessage struct {
-	// Tag is a dot-delimted string used to categorize events
-	Tag string
-	// Entries is the set of event objects to be carried in this message
-	Entries []EntryExt
-	// Options - used to control server behavior.  Same as above, may need to
-	// switch to interface{} or similar at some point.
-	Options MessageOptions
-}
-
-// PackedForwardMessage is just like ForwardMessage, except that the events
-// are carried as a msgpack binary stream
-//msgp:tuple PackedForwardMessage
-type PackedForwardMessage struct {
-	// Tag is a dot-delimited string used to categorize events
-	Tag string
-	// EventStream is the set of events (entries in Fluent-speak) serialized
-	// into a msgpack byte stream
-	EventStream []byte
-	// Options - used to control server behavior.  Same as above, may need to
-	// switch to interface{} or similar at some point.
-	Options MessageOptions
+	Record Record
 }
 
 type EntryList []EntryExt
+
+type Record map[string]interface{}
 
 // Equal compares two EntryList objects and returns true if they have
 // exactly the same elements, false otherwise.
@@ -193,13 +126,64 @@ func (e EntryList) Equal(e2 EntryList) bool {
 	return false
 }
 
+// EntryExt is the basic representation of an individual event.  The timestamp
+// is an int64 representing seconds since the epoch (UTC).  The initial creator
+// of the entry is responsible for converting to UTC.
+//msgp:tuple Entry
+type Entry struct {
+	// Timestamp can contain the timestamp in either seconds or nanoseconds
+	Timestamp int64
+	// Record is the actual event record.
+	Record Record
+}
+
+type MessageOptions struct {
+	Size       int    `msg:"size"`
+	Chunk      string `msg:"chunk"`
+	Compressed string `msg:"compressed"`
+}
+
+// Message is used to send a single event at a time
+//msgp:tuple Message
+type Message struct {
+	// Tag is a dot-delimited string used to categorize events
+	Tag       string
+	Timestamp int64
+	Record    Record
+	// Options - used to control server behavior.
+	Options *MessageOptions
+}
+
+// MessageExt
+//msgp:tuple MessageExt
+type MessageExt struct {
+	Tag       string
+	Timestamp EventTime `msg:"eventTime,extension"`
+	Record    Record
+	Options   *MessageOptions
+}
+
+// PackedForwardMessage is just like ForwardMessage, except that the events
+// are carried as a msgpack binary stream
+//msgp:tuple PackedForwardMessage
+type PackedForwardMessage struct {
+	// Tag is a dot-delimited string used to categorize events
+	Tag string
+	// EventStream is the set of events (entries in Fluent-speak) serialized
+	// into a msgpack byte stream
+	EventStream []byte
+	// Options - used to control server behavior.  Same as above, may need to
+	// switch to interface{} or similar at some point.
+	Options *MessageOptions
+}
+
 // NewPackedForwardMessage creates a PackedForwardMessage from the supplied
 // tag, EntryList, and MessageOptions.  Regardless of the options supplied,
 // this function will set opts[OPT_SIZE] to the length of the entry list.
 func NewPackedForwardMessage(
 	tag string,
 	entries EntryList,
-	opts MessageOptions,
+	opts *MessageOptions,
 ) *PackedForwardMessage {
 	// set the options size to be the number of entries
 	opts.Size = len(entries)
@@ -207,7 +191,7 @@ func NewPackedForwardMessage(
 	msg := &PackedForwardMessage{
 		Tag:         tag,
 		EventStream: eventStream(entries),
-		Options: opts,
+		Options:     opts,
 	}
 	return msg
 }
@@ -216,7 +200,8 @@ func eventStream(entries EntryList) []byte {
 	var buf bytes.Buffer
 	w := msgp.NewWriter(&buf)
 	for _, e := range entries {
-		e.EncodeMsg(w)
+		// TODO: capture and return error
+		_ = e.EncodeMsg(w)
 	}
 	w.Flush()
 
@@ -233,21 +218,24 @@ func eventStream(entries EntryList) []byte {
 type CompressedPackedForwardMessage struct {
 	Tag                   string
 	CompressedEventStream []byte
-	Options               MessageOptions
+	Options               *MessageOptions
 }
 
 // TODO: This is not working correctly yet
 func NewCompressedPackedForwardMessage(
-	tag string, entries []EntryExt, opts MessageOptions,
+	tag string, entries []EntryExt, opts *MessageOptions,
 ) *CompressedPackedForwardMessage {
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
-	zw.Write(eventStream(entries))
+
+	// TODO: capture and return error
+	_, _ = zw.Write(eventStream(entries))
 	zw.Close()
+
 	// TODO: Do something real here.
 	return &CompressedPackedForwardMessage{
 		Tag:                   tag,
 		CompressedEventStream: buf.Bytes(),
-		Options: opts,
+		Options:               opts,
 	}
 }

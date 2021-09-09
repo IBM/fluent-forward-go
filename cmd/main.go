@@ -39,23 +39,23 @@ func main() {
 	msg := protocol.Message{
 		Tag:       tagVar,
 		Timestamp: time.Now().UTC().Unix(),
-		Record: map[string]string{
+		Record: map[string]interface{}{
 			"first": "Sir",
 			"last":  "Gawain",
 			"enemy": "Green Knight",
 		},
-		Options: protocol.MessageOptions{},
+		Options: &protocol.MessageOptions{},
 	}
 
 	mne := protocol.MessageExt{
 		Tag:       tagVar,
 		Timestamp: protocol.EventTime{Time: time.Now().UTC()},
-		Record: map[string]string{
+		Record: map[string]interface{}{
 			"first": "Sir",
 			"last":  "Gawain",
 			"enemy": "Green Knight",
 		},
-		Options: protocol.MessageOptions{},
+		Options: &protocol.MessageOptions{},
 	}
 
 	fwd := protocol.ForwardMessage{
@@ -63,7 +63,7 @@ func main() {
 		Entries: []protocol.EntryExt{
 			{
 				Timestamp: protocol.EventTime{Time: time.Now().UTC()},
-				Record: map[string]string{
+				Record: map[string]interface{}{
 					"first": "Edgar",
 					"last":  "Winter",
 					"enemy": "wimpy music",
@@ -71,21 +71,21 @@ func main() {
 			},
 			{
 				Timestamp: protocol.EventTime{Time: time.Now().UTC()},
-				Record: map[string]string{
+				Record: map[string]interface{}{
 					"first": "George",
 					"last":  "Clinton",
 					"enemy": "Sir Nose D Voidoffunk",
 				},
 			},
 		},
-		Options: protocol.MessageOptions{},
+		Options: &protocol.MessageOptions{},
 	}
 
 	packedFwd := protocol.NewPackedForwardMessage(tagVar+".packed", fwd.Entries,
-		protocol.MessageOptions{})
+		&protocol.MessageOptions{})
 
 	compressed := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
-		fwd.Entries, protocol.MessageOptions{})
+		fwd.Entries, &protocol.MessageOptions{})
 
 	c.SendMessage(&msg)
 	c.SendMessage(&mne)
