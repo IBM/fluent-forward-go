@@ -10,6 +10,7 @@ import "github.com/tinylib/msgp/msgp"
 //mgsp:test ignore ForwardMessage
 //msgp:encode ignore ForwardMessage
 //msgp:decode ignore ForwardMessage
+//msgp:marshal ignore ForwardMessage
 //msgp:unmarshal ignore ForwardMessage
 type ForwardMessage struct {
 	// Tag is a dot-delimted string used to categorize events
@@ -77,6 +78,33 @@ func (fm *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	return nil
+}
+
+func (fm *ForwardMessage) MarshalMsg(bits []byte) ([]byte, error) {
+	var (
+		sz uint32
+		err error
+	)
+
+	if fm.Options != nil {
+		sz = 3
+	} else {
+		sz = 2
+	}
+
+	bits = msgp.AppendArrayHeader(bits, sz)
+	bits = msgp.AppendString(bits, fm.Tag)
+
+	bits, err = fm.Entries.MarshalMsg(bits)
+	if err != nil {
+		return bits, err
+	}
+
+	if sz == 3 {
+		bits, err = fm.Options.MarshalMsg(bits)
+	}
+
+	return bits, err
 }
 
 func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {

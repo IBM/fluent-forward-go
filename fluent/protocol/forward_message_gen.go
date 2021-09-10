@@ -6,29 +6,6 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-// MarshalMsg implements msgp.Marshaler
-func (z *ForwardMessage) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// array header, size 3
-	o = append(o, 0x93)
-	o = msgp.AppendString(o, z.Tag)
-	o, err = z.Entries.MarshalMsg(o)
-	if err != nil {
-		err = msgp.WrapError(err, "Entries")
-		return
-	}
-	if z.Options == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		o, err = z.Options.MarshalMsg(o)
-		if err != nil {
-			err = msgp.WrapError(err, "Options")
-			return
-		}
-	}
-	return
-}
-
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *ForwardMessage) Msgsize() (s int) {
 	s = 1 + msgp.StringPrefixSize + len(z.Tag) + z.Entries.Msgsize()

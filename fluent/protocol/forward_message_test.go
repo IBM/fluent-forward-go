@@ -68,8 +68,7 @@ var _ = Describe("ForwardMessage", func() {
 		}
 
 		It("Marshals and unmarshals correctly", func() {
-			// Uncomment after adding custom encoding
-			// testMarshalling(fwdmsg, nil)
+			testMarshalling(fwdmsg, nil)
 			testMarshalling(fwdmsg, &MessageOptions{})
 		})
 
@@ -101,8 +100,7 @@ var _ = Describe("ForwardMessage", func() {
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
 
-		FIt("Encodes and decodes correctly", func() {
-			// Uncomment after adding custom encoding
+		It("Encodes and decodes correctly", func() {
 			testEncodingDecoding(fwdmsg, nil)
 			testEncodingDecoding(fwdmsg, &MessageOptions{})
 		})
