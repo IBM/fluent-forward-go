@@ -7,257 +7,6 @@ import (
 )
 
 // DecodeMsg implements msgp.Decodable
-func (z *CompressedPackedForwardMessage) DecodeMsg(dc *msgp.Reader) (err error) {
-	var zb0001 uint32
-	zb0001, err = dc.ReadArrayHeader()
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	if zb0001 != 3 {
-		err = msgp.ArrayError{Wanted: 3, Got: zb0001}
-		return
-	}
-	z.Tag, err = dc.ReadString()
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	z.CompressedEventStream, err = dc.ReadBytes(z.CompressedEventStream)
-	if err != nil {
-		err = msgp.WrapError(err, "CompressedEventStream")
-		return
-	}
-	if dc.IsNil() {
-		err = dc.ReadNil()
-		if err != nil {
-			err = msgp.WrapError(err, "Options")
-			return
-		}
-		z.Options = nil
-	} else {
-		if z.Options == nil {
-			z.Options = new(MessageOptions)
-		}
-		var field []byte
-		_ = field
-		var zb0002 uint32
-		zb0002, err = dc.ReadMapHeader()
-		if err != nil {
-			err = msgp.WrapError(err, "Options")
-			return
-		}
-		for zb0002 > 0 {
-			zb0002--
-			field, err = dc.ReadMapKeyPtr()
-			if err != nil {
-				err = msgp.WrapError(err, "Options")
-				return
-			}
-			switch msgp.UnsafeString(field) {
-			case "size":
-				z.Options.Size, err = dc.ReadInt()
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Size")
-					return
-				}
-			case "chunk":
-				z.Options.Chunk, err = dc.ReadString()
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Chunk")
-					return
-				}
-			case "compressed":
-				z.Options.Compressed, err = dc.ReadString()
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Compressed")
-					return
-				}
-			default:
-				err = dc.Skip()
-				if err != nil {
-					err = msgp.WrapError(err, "Options")
-					return
-				}
-			}
-		}
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z *CompressedPackedForwardMessage) EncodeMsg(en *msgp.Writer) (err error) {
-	// array header, size 3
-	err = en.Append(0x93)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Tag)
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	err = en.WriteBytes(z.CompressedEventStream)
-	if err != nil {
-		err = msgp.WrapError(err, "CompressedEventStream")
-		return
-	}
-	if z.Options == nil {
-		err = en.WriteNil()
-		if err != nil {
-			return
-		}
-	} else {
-		// map header, size 3
-		// write "size"
-		err = en.Append(0x83, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-		if err != nil {
-			return
-		}
-		err = en.WriteInt(z.Options.Size)
-		if err != nil {
-			err = msgp.WrapError(err, "Options", "Size")
-			return
-		}
-		// write "chunk"
-		err = en.Append(0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
-		if err != nil {
-			return
-		}
-		err = en.WriteString(z.Options.Chunk)
-		if err != nil {
-			err = msgp.WrapError(err, "Options", "Chunk")
-			return
-		}
-		// write "compressed"
-		err = en.Append(0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
-		if err != nil {
-			return
-		}
-		err = en.WriteString(z.Options.Compressed)
-		if err != nil {
-			err = msgp.WrapError(err, "Options", "Compressed")
-			return
-		}
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z *CompressedPackedForwardMessage) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// array header, size 3
-	o = append(o, 0x93)
-	o = msgp.AppendString(o, z.Tag)
-	o = msgp.AppendBytes(o, z.CompressedEventStream)
-	if z.Options == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		// map header, size 3
-		// string "size"
-		o = append(o, 0x83, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-		o = msgp.AppendInt(o, z.Options.Size)
-		// string "chunk"
-		o = append(o, 0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
-		o = msgp.AppendString(o, z.Options.Chunk)
-		// string "compressed"
-		o = append(o, 0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
-		o = msgp.AppendString(o, z.Options.Compressed)
-	}
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *CompressedPackedForwardMessage) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	if zb0001 != 3 {
-		err = msgp.ArrayError{Wanted: 3, Got: zb0001}
-		return
-	}
-	z.Tag, bts, err = msgp.ReadStringBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	z.CompressedEventStream, bts, err = msgp.ReadBytesBytes(bts, z.CompressedEventStream)
-	if err != nil {
-		err = msgp.WrapError(err, "CompressedEventStream")
-		return
-	}
-	if msgp.IsNil(bts) {
-		bts, err = msgp.ReadNilBytes(bts)
-		if err != nil {
-			return
-		}
-		z.Options = nil
-	} else {
-		if z.Options == nil {
-			z.Options = new(MessageOptions)
-		}
-		var field []byte
-		_ = field
-		var zb0002 uint32
-		zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
-		if err != nil {
-			err = msgp.WrapError(err, "Options")
-			return
-		}
-		for zb0002 > 0 {
-			zb0002--
-			field, bts, err = msgp.ReadMapKeyZC(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Options")
-				return
-			}
-			switch msgp.UnsafeString(field) {
-			case "size":
-				z.Options.Size, bts, err = msgp.ReadIntBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Size")
-					return
-				}
-			case "chunk":
-				z.Options.Chunk, bts, err = msgp.ReadStringBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Chunk")
-					return
-				}
-			case "compressed":
-				z.Options.Compressed, bts, err = msgp.ReadStringBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Compressed")
-					return
-				}
-			default:
-				bts, err = msgp.Skip(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options")
-					return
-				}
-			}
-		}
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *CompressedPackedForwardMessage) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.Tag) + msgp.BytesPrefixSize + len(z.CompressedEventStream)
-	if z.Options == nil {
-		s += msgp.NilSize
-	} else {
-		s += 1 + 5 + msgp.IntSize + 6 + msgp.StringPrefixSize + len(z.Options.Chunk) + 11 + msgp.StringPrefixSize + len(z.Options.Compressed)
-	}
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
 func (z *Entry) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadArrayHeader()
@@ -891,72 +640,107 @@ func (z EventTime) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *Message) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *MessageOptions) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
 	var zb0001 uint32
-	zb0001, err = dc.ReadArrayHeader()
+	zb0001, err = dc.ReadMapHeader()
 	if err != nil {
 		err = msgp.WrapError(err)
 		return
 	}
-	if zb0001 != 4 {
-		err = msgp.ArrayError{Wanted: 4, Got: zb0001}
-		return
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "size":
+			z.Size, err = dc.ReadInt()
+			if err != nil {
+				err = msgp.WrapError(err, "Size")
+				return
+			}
+		case "chunk":
+			z.Chunk, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "Chunk")
+				return
+			}
+		case "compressed":
+			z.Compressed, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "Compressed")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
 	}
-	z.Tag, err = dc.ReadString()
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z MessageOptions) EncodeMsg(en *msgp.Writer) (err error) {
+	// omitempty: check for empty values
+	zb0001Len := uint32(3)
+	var zb0001Mask uint8 /* 3 bits */
+	if z.Size == 0 {
+		zb0001Len--
+		zb0001Mask |= 0x1
+	}
+	if z.Chunk == "" {
+		zb0001Len--
+		zb0001Mask |= 0x2
+	}
+	if z.Compressed == "" {
+		zb0001Len--
+		zb0001Mask |= 0x4
+	}
+	// variable map header, size zb0001Len
+	err = en.Append(0x80 | uint8(zb0001Len))
 	if err != nil {
-		err = msgp.WrapError(err, "Tag")
 		return
 	}
-	z.Timestamp, err = dc.ReadInt64()
-	if err != nil {
-		err = msgp.WrapError(err, "Timestamp")
-		return
-	}
-	var zb0002 uint32
-	zb0002, err = dc.ReadMapHeader()
-	if err != nil {
-		err = msgp.WrapError(err, "Record")
-		return
-	}
+<<<<<<< HEAD
 	if z.Record == nil {
 		z.Record = make(Record, zb0002)
 	} else if len(z.Record) > 0 {
 		for key := range z.Record {
 			delete(z.Record, key)
 		}
+=======
+	if zb0001Len == 0 {
+		return
+>>>>>>> add custom marshalling for Message and PackedMessage
 	}
-	for zb0002 > 0 {
-		zb0002--
-		var za0001 string
-		var za0002 interface{}
-		za0001, err = dc.ReadString()
+	if (zb0001Mask & 0x1) == 0 { // if not empty
+		// write "size"
+		err = en.Append(0xa4, 0x73, 0x69, 0x7a, 0x65)
 		if err != nil {
-			err = msgp.WrapError(err, "Record")
 			return
 		}
-		za0002, err = dc.ReadIntf()
+		err = en.WriteInt(z.Size)
 		if err != nil {
-			err = msgp.WrapError(err, "Record", za0001)
+			err = msgp.WrapError(err, "Size")
 			return
 		}
-		z.Record[za0001] = za0002
 	}
-	if dc.IsNil() {
-		err = dc.ReadNil()
+	if (zb0001Mask & 0x2) == 0 { // if not empty
+		// write "chunk"
+		err = en.Append(0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
 		if err != nil {
-			err = msgp.WrapError(err, "Options")
 			return
 		}
-		z.Options = nil
-	} else {
-		if z.Options == nil {
-			z.Options = new(MessageOptions)
-		}
-		var field []byte
-		_ = field
-		var zb0003 uint32
-		zb0003, err = dc.ReadMapHeader()
+		err = en.WriteString(z.Chunk)
 		if err != nil {
+<<<<<<< HEAD
 			err = msgp.WrapError(err, "Options")
 			return
 		}
@@ -1398,16 +1182,21 @@ func (z *MessageExt) EncodeMsg(en *msgp.Writer) (err error) {
 		err = en.WriteString(z.Options.Chunk)
 		if err != nil {
 			err = msgp.WrapError(err, "Options", "Chunk")
+=======
+			err = msgp.WrapError(err, "Chunk")
+>>>>>>> add custom marshalling for Message and PackedMessage
 			return
 		}
+	}
+	if (zb0001Mask & 0x4) == 0 { // if not empty
 		// write "compressed"
 		err = en.Append(0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
 		if err != nil {
 			return
 		}
-		err = en.WriteString(z.Options.Compressed)
+		err = en.WriteString(z.Compressed)
 		if err != nil {
-			err = msgp.WrapError(err, "Options", "Compressed")
+			err = msgp.WrapError(err, "Compressed")
 			return
 		}
 	}
@@ -1415,8 +1204,9 @@ func (z *MessageExt) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z *MessageExt) MarshalMsg(b []byte) (o []byte, err error) {
+func (z MessageOptions) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
+<<<<<<< HEAD
 	// array header, size 4
 	o = append(o, 0x94)
 	o = msgp.AppendString(o, z.Tag)
@@ -1619,59 +1409,43 @@ func (z *MessageOptions) DecodeMsg(dc *msgp.Reader) (err error) {
 				return
 			}
 		}
+=======
+	// omitempty: check for empty values
+	zb0001Len := uint32(3)
+	var zb0001Mask uint8 /* 3 bits */
+	if z.Size == 0 {
+		zb0001Len--
+		zb0001Mask |= 0x1
+>>>>>>> add custom marshalling for Message and PackedMessage
 	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z MessageOptions) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
-	// write "size"
-	err = en.Append(0x83, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-	if err != nil {
+	if z.Chunk == "" {
+		zb0001Len--
+		zb0001Mask |= 0x2
+	}
+	if z.Compressed == "" {
+		zb0001Len--
+		zb0001Mask |= 0x4
+	}
+	// variable map header, size zb0001Len
+	o = append(o, 0x80|uint8(zb0001Len))
+	if zb0001Len == 0 {
 		return
 	}
-	err = en.WriteInt(z.Size)
-	if err != nil {
-		err = msgp.WrapError(err, "Size")
-		return
+	if (zb0001Mask & 0x1) == 0 { // if not empty
+		// string "size"
+		o = append(o, 0xa4, 0x73, 0x69, 0x7a, 0x65)
+		o = msgp.AppendInt(o, z.Size)
 	}
-	// write "chunk"
-	err = en.Append(0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
-	if err != nil {
-		return
+	if (zb0001Mask & 0x2) == 0 { // if not empty
+		// string "chunk"
+		o = append(o, 0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
+		o = msgp.AppendString(o, z.Chunk)
 	}
-	err = en.WriteString(z.Chunk)
-	if err != nil {
-		err = msgp.WrapError(err, "Chunk")
-		return
+	if (zb0001Mask & 0x4) == 0 { // if not empty
+		// string "compressed"
+		o = append(o, 0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
+		o = msgp.AppendString(o, z.Compressed)
 	}
-	// write "compressed"
-	err = en.Append(0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Compressed)
-	if err != nil {
-		err = msgp.WrapError(err, "Compressed")
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z MessageOptions) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
-	// string "size"
-	o = append(o, 0x83, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-	o = msgp.AppendInt(o, z.Size)
-	// string "chunk"
-	o = append(o, 0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
-	o = msgp.AppendString(o, z.Chunk)
-	// string "compressed"
-	o = append(o, 0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
-	o = msgp.AppendString(o, z.Compressed)
 	return
 }
 
@@ -1730,136 +1504,55 @@ func (z MessageOptions) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *PackedForwardMessage) DecodeMsg(dc *msgp.Reader) (err error) {
-	var zb0001 uint32
-	zb0001, err = dc.ReadArrayHeader()
+func (z *Record) DecodeMsg(dc *msgp.Reader) (err error) {
+	var zb0003 uint32
+	zb0003, err = dc.ReadMapHeader()
 	if err != nil {
 		err = msgp.WrapError(err)
 		return
 	}
-	if zb0001 != 3 {
-		err = msgp.ArrayError{Wanted: 3, Got: zb0001}
-		return
+	if (*z) == nil {
+		(*z) = make(Record, zb0003)
+	} else if len((*z)) > 0 {
+		for key := range *z {
+			delete((*z), key)
+		}
 	}
-	z.Tag, err = dc.ReadString()
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	z.EventStream, err = dc.ReadBytes(z.EventStream)
-	if err != nil {
-		err = msgp.WrapError(err, "EventStream")
-		return
-	}
-	if dc.IsNil() {
-		err = dc.ReadNil()
+	for zb0003 > 0 {
+		zb0003--
+		var zb0001 string
+		var zb0002 interface{}
+		zb0001, err = dc.ReadString()
 		if err != nil {
-			err = msgp.WrapError(err, "Options")
+			err = msgp.WrapError(err)
 			return
 		}
-		z.Options = nil
-	} else {
-		if z.Options == nil {
-			z.Options = new(MessageOptions)
-		}
-		var field []byte
-		_ = field
-		var zb0002 uint32
-		zb0002, err = dc.ReadMapHeader()
+		zb0002, err = dc.ReadIntf()
 		if err != nil {
-			err = msgp.WrapError(err, "Options")
+			err = msgp.WrapError(err, zb0001)
 			return
 		}
-		for zb0002 > 0 {
-			zb0002--
-			field, err = dc.ReadMapKeyPtr()
-			if err != nil {
-				err = msgp.WrapError(err, "Options")
-				return
-			}
-			switch msgp.UnsafeString(field) {
-			case "size":
-				z.Options.Size, err = dc.ReadInt()
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Size")
-					return
-				}
-			case "chunk":
-				z.Options.Chunk, err = dc.ReadString()
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Chunk")
-					return
-				}
-			case "compressed":
-				z.Options.Compressed, err = dc.ReadString()
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Compressed")
-					return
-				}
-			default:
-				err = dc.Skip()
-				if err != nil {
-					err = msgp.WrapError(err, "Options")
-					return
-				}
-			}
-		}
+		(*z)[zb0001] = zb0002
 	}
 	return
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z *PackedForwardMessage) EncodeMsg(en *msgp.Writer) (err error) {
-	// array header, size 3
-	err = en.Append(0x93)
+func (z Record) EncodeMsg(en *msgp.Writer) (err error) {
+	err = en.WriteMapHeader(uint32(len(z)))
 	if err != nil {
+		err = msgp.WrapError(err)
 		return
 	}
-	err = en.WriteString(z.Tag)
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	err = en.WriteBytes(z.EventStream)
-	if err != nil {
-		err = msgp.WrapError(err, "EventStream")
-		return
-	}
-	if z.Options == nil {
-		err = en.WriteNil()
+	for zb0004, zb0005 := range z {
+		err = en.WriteString(zb0004)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
-	} else {
-		// map header, size 3
-		// write "size"
-		err = en.Append(0x83, 0xa4, 0x73, 0x69, 0x7a, 0x65)
+		err = en.WriteIntf(zb0005)
 		if err != nil {
-			return
-		}
-		err = en.WriteInt(z.Options.Size)
-		if err != nil {
-			err = msgp.WrapError(err, "Options", "Size")
-			return
-		}
-		// write "chunk"
-		err = en.Append(0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
-		if err != nil {
-			return
-		}
-		err = en.WriteString(z.Options.Chunk)
-		if err != nil {
-			err = msgp.WrapError(err, "Options", "Chunk")
-			return
-		}
-		// write "compressed"
-		err = en.Append(0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
-		if err != nil {
-			return
-		}
-		err = en.WriteString(z.Options.Compressed)
-		if err != nil {
-			err = msgp.WrapError(err, "Options", "Compressed")
+			err = msgp.WrapError(err, zb0004)
 			return
 		}
 	}
@@ -1867,115 +1560,63 @@ func (z *PackedForwardMessage) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z *PackedForwardMessage) MarshalMsg(b []byte) (o []byte, err error) {
+func (z Record) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// array header, size 3
-	o = append(o, 0x93)
-	o = msgp.AppendString(o, z.Tag)
-	o = msgp.AppendBytes(o, z.EventStream)
-	if z.Options == nil {
-		o = msgp.AppendNil(o)
-	} else {
-		// map header, size 3
-		// string "size"
-		o = append(o, 0x83, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-		o = msgp.AppendInt(o, z.Options.Size)
-		// string "chunk"
-		o = append(o, 0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
-		o = msgp.AppendString(o, z.Options.Chunk)
-		// string "compressed"
-		o = append(o, 0xaa, 0x63, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64)
-		o = msgp.AppendString(o, z.Options.Compressed)
+	o = msgp.AppendMapHeader(o, uint32(len(z)))
+	for zb0004, zb0005 := range z {
+		o = msgp.AppendString(o, zb0004)
+		o, err = msgp.AppendIntf(o, zb0005)
+		if err != nil {
+			err = msgp.WrapError(err, zb0004)
+			return
+		}
 	}
 	return
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
-func (z *PackedForwardMessage) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
+func (z *Record) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var zb0003 uint32
+	zb0003, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
 		err = msgp.WrapError(err)
 		return
 	}
-	if zb0001 != 3 {
-		err = msgp.ArrayError{Wanted: 3, Got: zb0001}
-		return
+	if (*z) == nil {
+		(*z) = make(Record, zb0003)
+	} else if len((*z)) > 0 {
+		for key := range *z {
+			delete((*z), key)
+		}
 	}
-	z.Tag, bts, err = msgp.ReadStringBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	z.EventStream, bts, err = msgp.ReadBytesBytes(bts, z.EventStream)
-	if err != nil {
-		err = msgp.WrapError(err, "EventStream")
-		return
-	}
-	if msgp.IsNil(bts) {
-		bts, err = msgp.ReadNilBytes(bts)
+	for zb0003 > 0 {
+		var zb0001 string
+		var zb0002 interface{}
+		zb0003--
+		zb0001, bts, err = msgp.ReadStringBytes(bts)
 		if err != nil {
+			err = msgp.WrapError(err)
 			return
 		}
-		z.Options = nil
-	} else {
-		if z.Options == nil {
-			z.Options = new(MessageOptions)
-		}
-		var field []byte
-		_ = field
-		var zb0002 uint32
-		zb0002, bts, err = msgp.ReadMapHeaderBytes(bts)
+		zb0002, bts, err = msgp.ReadIntfBytes(bts)
 		if err != nil {
-			err = msgp.WrapError(err, "Options")
+			err = msgp.WrapError(err, zb0001)
 			return
 		}
-		for zb0002 > 0 {
-			zb0002--
-			field, bts, err = msgp.ReadMapKeyZC(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Options")
-				return
-			}
-			switch msgp.UnsafeString(field) {
-			case "size":
-				z.Options.Size, bts, err = msgp.ReadIntBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Size")
-					return
-				}
-			case "chunk":
-				z.Options.Chunk, bts, err = msgp.ReadStringBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Chunk")
-					return
-				}
-			case "compressed":
-				z.Options.Compressed, bts, err = msgp.ReadStringBytes(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options", "Compressed")
-					return
-				}
-			default:
-				bts, err = msgp.Skip(bts)
-				if err != nil {
-					err = msgp.WrapError(err, "Options")
-					return
-				}
-			}
-		}
+		(*z)[zb0001] = zb0002
 	}
 	o = bts
 	return
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *PackedForwardMessage) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.Tag) + msgp.BytesPrefixSize + len(z.EventStream)
-	if z.Options == nil {
-		s += msgp.NilSize
-	} else {
-		s += 1 + 5 + msgp.IntSize + 6 + msgp.StringPrefixSize + len(z.Options.Chunk) + 11 + msgp.StringPrefixSize + len(z.Options.Compressed)
+func (z Record) Msgsize() (s int) {
+	s = msgp.MapHeaderSize
+	if z != nil {
+		for zb0004, zb0005 := range z {
+			_ = zb0005
+			s += msgp.StringPrefixSize + len(zb0004) + msgp.GuessSize(zb0005)
+		}
 	}
 	return
 }
