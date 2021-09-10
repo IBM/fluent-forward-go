@@ -6,38 +6,6 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-// EncodeMsg implements msgp.Encodable
-func (z *ForwardMessage) EncodeMsg(en *msgp.Writer) (err error) {
-	// array header, size 3
-	err = en.Append(0x93)
-	if err != nil {
-		return
-	}
-	err = en.WriteString(z.Tag)
-	if err != nil {
-		err = msgp.WrapError(err, "Tag")
-		return
-	}
-	err = z.Entries.EncodeMsg(en)
-	if err != nil {
-		err = msgp.WrapError(err, "Entries")
-		return
-	}
-	if z.Options == nil {
-		err = en.WriteNil()
-		if err != nil {
-			return
-		}
-	} else {
-		err = z.Options.EncodeMsg(en)
-		if err != nil {
-			err = msgp.WrapError(err, "Options")
-			return
-		}
-	}
-	return
-}
-
 // MarshalMsg implements msgp.Marshaler
 func (z *ForwardMessage) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())

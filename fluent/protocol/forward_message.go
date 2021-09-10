@@ -7,6 +7,8 @@ import "github.com/tinylib/msgp/msgp"
 // ForwardMessage is used in Forward mode to send multiple events in a single
 // msgpack array within a single request.
 //msgp:tuple ForwardMessage
+//mgsp:test ignore ForwardMessage
+//msgp:encode ignore ForwardMessage
 //msgp:decode ignore ForwardMessage
 //msgp:unmarshal ignore ForwardMessage
 type ForwardMessage struct {
@@ -17,6 +19,38 @@ type ForwardMessage struct {
 	// Options - used to control server behavior.  Same as above, may need to
 	// switch to interface{} or similar at some point.
 	Options *MessageOptions
+}
+
+func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
+	size := 2
+	if fm.Options != nil {
+		size =3
+	}
+
+	err := dc.WriteArrayHeader(uint32(size))
+	if err != nil {
+		return msgp.WrapError(err, "Array Header")
+	}
+
+	err = dc.WriteString(fm.Tag)
+	if err != nil {
+		return msgp.WrapError(err, "Tag")
+	}
+
+	err = fm.Entries.EncodeMsg(dc)
+	if err != nil {
+		return err
+	}
+
+	// if the options were included, inlcude them in our encoded message
+	if size == 3 {
+		err = fm.Options.EncodeMsg(dc)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (fm *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
