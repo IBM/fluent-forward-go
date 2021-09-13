@@ -145,9 +145,6 @@ type MessageOptions struct {
 func NewCompressedPackedForwardMessage(
 	tag string, entries []EntryExt, opts *MessageOptions,
 ) *PackedForwardMessage {
-	// set the options size to be the number of entries
-	opts.Size = len(entries)
-
 	// TODO: create buffer and writer pool
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
@@ -156,13 +153,11 @@ func NewCompressedPackedForwardMessage(
 	_, _ = zw.Write(eventStream(entries))
 	zw.Close()
 
-	// TODO:
-	//   opts.Compression = "gzip"
-	//   opts.Chunk = getAUniqueID()
+	opts.Size = len(entries)
+	opts.Compressed = "gzip"
 
 	// TODO:
 	//   NewCompressedPackedForwardMessageFromBytes
 
-	// TODO: Do something real here.
 	return NewPackedForwardMessageFromBytes(tag, buf.Bytes(), opts)
 }
