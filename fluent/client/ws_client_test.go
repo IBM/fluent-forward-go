@@ -4,10 +4,6 @@ import (
 	"bytes"
 	"errors"
 
-	// "fmt"
-	// "io"
-
-	// // "os"
 	"time"
 
 	. "github.com/IBM/fluent-forward-go/fluent/client"

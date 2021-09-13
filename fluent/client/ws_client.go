@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"sync"
 
-	// "fmt"
-
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
 	"github.com/gorilla/websocket"
@@ -15,6 +13,10 @@ import (
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+const (
+	AuthorizationHeader = "Authorization"
+)
 
 type IAMAuthInfo struct {
 	token string
@@ -66,7 +68,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	)
 
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {
-		header.Add("Authorization", wcf.AuthInfo.IAMToken())
+		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
 	}
 
 	conn, _, err := dialer.Dial(wcf.ServerAddress.String(), header)
@@ -101,9 +103,14 @@ func (c *WSClient) Connect() error {
 		return err
 	}
 
+	connection, err := ws.NewConnection(conn, c.ConnectionOptions)
+	if err != nil {
+		return err
+	}
+
 	c.Session = &WSSession{
 		ServerAddress: c.ServerAddress,
-		Connection:    ws.NewConnection(conn, c.ConnectionOptions),
+		Connection:    connection,
 	}
 
 	return nil

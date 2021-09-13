@@ -3,6 +3,7 @@ package ws_test
 import (
 	"bytes"
 	"errors"
+	"sync/atomic"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext/extfakes"
@@ -22,7 +23,7 @@ var _ = Describe("Connection", func() {
 		fakeConn           *extfakes.FakeConn
 		opts               ws.ConnectionOptions
 		readMsgs           chan message
-		rhCallCt, rmCallCt int
+		rhCallCt, rmCallCt int32
 		onFail             func(err error)
 	)
 
@@ -31,8 +32,9 @@ var _ = Describe("Connection", func() {
 		rhCallCt = 0
 		readMsgs = make(chan message, 1)
 		fakeConn = &extfakes.FakeConn{}
+
 		fakeConn.ReadMessageStub = func() (int, []byte, error) {
-			rmCallCt++
+			atomic.AddInt32(&rmCallCt, 1)
 			m, ok := <-readMsgs
 			if !ok {
 				return m.mt, m.msg, errors.New("connection")
@@ -42,7 +44,7 @@ var _ = Describe("Connection", func() {
 
 		opts = ws.ConnectionOptions{
 			ReadHandler: func(_ ws.Connection, msgType int, p []byte, err error) error {
-				rhCallCt++
+				atomic.AddInt32(&rhCallCt, 1)
 				return err
 			},
 		}
@@ -56,7 +58,9 @@ var _ = Describe("Connection", func() {
 
 	Describe("NewConnection", func() {
 		It("works", func() {
-			Expect(ws.NewConnection(fakeConn, ws.ConnectionOptions{})).ToNot(BeNil())
+			c, err := ws.NewConnection(fakeConn, ws.ConnectionOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(c).ToNot(BeNil())
 			// TODO: test options are set correctly
 		})
 	})
@@ -69,14 +73,19 @@ var _ = Describe("Connection", func() {
 
 		BeforeEach(func() {
 			doClose = true
-			connection = ws.NewConnection(fakeConn, opts)
+			connection, _ = ws.NewConnection(fakeConn, opts)
+			startSig := make(chan struct{}, 1)
 
 			go func() {
 				defer GinkgoRecover()
+				startSig <- struct{}{}
 				if err := connection.Listen(); err != nil {
 					onFail(err)
 				}
 			}()
+
+			// wait for go routine to start
+			<-startSig
 		})
 
 		AfterEach(func() {
@@ -122,8 +131,9 @@ var _ = Describe("Connection", func() {
 			When("everything is copacetic", func() {
 				It("reads a message from the connection and calls the read handler", func() {
 					readMsgs <- message{1, []byte("oi"), nil}
-					Eventually(func() int { return rhCallCt }).Should(BeNumerically(">", 0))
-					Eventually(func() int { return rmCallCt }).Should(BeNumerically(">", 0))
+					var gt int32
+					Eventually(func() int32 { return rhCallCt }).Should(BeNumerically(">", gt))
+					Eventually(func() int32 { return rmCallCt }).Should(BeNumerically(">", gt))
 				})
 			})
 
@@ -138,7 +148,7 @@ var _ = Describe("Connection", func() {
 				})
 
 				It("enqueues the error", func() {
-					Consistently(func() int { return rhCallCt }).Should(BeNumerically("==", 0))
+					Consistently(func() int32 { return rhCallCt }).Should(BeNumerically("==", 0))
 				})
 			})
 		})

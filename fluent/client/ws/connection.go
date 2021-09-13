@@ -46,7 +46,7 @@ type connection struct {
 	closeErrChan sync.Once
 }
 
-func NewConnection(conn ext.Conn, opts ConnectionOptions) Connection {
+func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	wsc := &connection{
 		Conn:    conn,
 		errChan: make(chan error),
@@ -74,10 +74,15 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) Connection {
 		wsc.SetReadHandler(opts.ReadHandler)
 	}
 
-	wsc.SetReadDeadline(opts.ReadDeadline)
-	wsc.SetWriteDeadline(opts.WriteDeadline)
+	if err := wsc.SetReadDeadline(opts.ReadDeadline); err != nil {
+		return nil, err
+	}
 
-	return wsc
+	if err := wsc.SetWriteDeadline(opts.WriteDeadline); err != nil {
+		return nil, err
+	}
+
+	return wsc, nil
 }
 
 // CloseConn return true
@@ -149,6 +154,9 @@ func (wsc *connection) startReadLoop() {
 
 func (wsc *connection) Close() error {
 	wsc.closeErrChan.Do(func() {
+		wsc.closedLock.Lock()
+		defer wsc.closedLock.Unlock()
+
 		close(wsc.errChan)
 	})
 
