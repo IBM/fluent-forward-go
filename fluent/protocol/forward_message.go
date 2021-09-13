@@ -25,7 +25,7 @@ type ForwardMessage struct {
 func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
 	size := 2
 	if fm.Options != nil {
-		size =3
+		size = 3
 	}
 
 	err := dc.WriteArrayHeader(uint32(size))
@@ -82,7 +82,7 @@ func (fm *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 
 func (fm *ForwardMessage) MarshalMsg(bits []byte) ([]byte, error) {
 	var (
-		sz uint32
+		sz  uint32
 		err error
 	)
 
