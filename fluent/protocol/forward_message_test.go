@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/tinylib/msgp/msgp"
 
-	. "github.ibm.com/Observability/fluent-forward-go/fluent/protocol"
+	. "github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("ForwardMessage", func() {
@@ -68,8 +68,7 @@ var _ = Describe("ForwardMessage", func() {
 		}
 
 		It("Marshals and unmarshals correctly", func() {
-			// Uncomment after adding custom encoding
-			// testMarshalling(fwdmsg, nil)
+			testMarshalling(fwdmsg, nil)
 			testMarshalling(fwdmsg, &MessageOptions{})
 		})
 
@@ -101,9 +100,8 @@ var _ = Describe("ForwardMessage", func() {
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
 
-		It("Marshals and unmarshals correctly", func() {
-			// Uncomment after adding custom encoding
-			// testEncodingDecoding(fwdmsg, nil)
+		It("Encodes and decodes correctly", func() {
+			testEncodingDecoding(fwdmsg, nil)
 			testEncodingDecoding(fwdmsg, &MessageOptions{})
 		})
 
