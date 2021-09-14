@@ -119,9 +119,9 @@ var _ = Describe("WSClient", func() {
 			})
 
 			It("does not error or panic", func() {
-				Ω(func() {
+				Expect(func() {
 					Expect(client.Disconnect()).ToNot(HaveOccurred())
-				}).ShouldNot(Panic())
+				}).ToNot(Panic())
 			})
 		})
 	})
