@@ -127,7 +127,7 @@ var _ = Describe("Client", func() {
 		})
 	})
 
-	Describe("Handshake", func() {
+	XDescribe("Handshake", func() {
 		var (
 			serverSide       net.Conn
 			serverWriter     *msgp.Writer

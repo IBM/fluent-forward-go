@@ -2,6 +2,8 @@ package client
 
 import (
 	"errors"
+	"fmt"
+
 	// "fmt"
 	"math/rand"
 	"net"
@@ -31,6 +33,10 @@ type ServerAddress struct {
 	Port     int
 }
 
+func (sa ServerAddress) String() string {
+	return fmt.Sprintf("%s:%d", sa.Hostname, sa.Port)
+}
+
 type AuthInfo struct {
 	SharedKey []byte
 	Username  string
@@ -47,7 +53,6 @@ type Session struct {
 //counterfeiter:generate . ConnectionFactory
 type ConnectionFactory interface {
 	New() (net.Conn, error)
-	Session() (*Session, error)
 }
 
 // Connect initializes the Session and Connection objects by opening
@@ -90,19 +95,25 @@ func (c *Client) Reconnect() error {
 }
 
 // Disconnect terminates a client connection
-func (c *Client) Disconnect() {
+func (c *Client) Disconnect() (err error) {
 	if c.Session != nil {
 		if c.Session.Connection != nil {
-			c.Session.Connection.Close()
+			err = c.Session.Connection.Close()
 		}
 	}
 
 	c.Session = nil
+
+	return
 }
 
 // SendMessage sends a single msgp.Encodable across the wire.  If the session
 // is not yet in transport phase, an error is returned, and no message is sent.
 func (c *Client) SendMessage(e msgp.Encodable) error {
+	if c.Session == nil {
+		return errors.New("No active session")
+	}
+
 	if !c.Session.TransportPhase {
 		return errors.New("Session handshake not completed")
 	}
@@ -111,11 +122,13 @@ func (c *Client) SendMessage(e msgp.Encodable) error {
 }
 
 // Private sender, bypasses transport phase checks.
-func (c *Client) sendMessage(e msgp.Encodable) error {
-	w := msgp.NewWriter(c.Session.Connection)
-	e.EncodeMsg(w)
-	w.Flush()
-	return nil
+func (c *Client) sendMessage(e msgp.Encodable) (err error) {
+	if c.Session != nil {
+		// msgp.Encode makes use of object pool to decrease allocations
+		return msgp.Encode(c.Session.Connection, e)
+	}
+
+	return
 }
 
 // Handshake initiates handshake mode.  Users must call this before attempting
