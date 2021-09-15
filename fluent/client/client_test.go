@@ -199,7 +199,8 @@ var _ = Describe("Client", func() {
 
 		Context("When the client is not currently connected", func() {
 			JustBeforeEach(func() {
-				client.Disconnect()
+				err := client.Disconnect()
+				Expect(err).NotTo(HaveOccurred())
 				Expect(client.Session).To(BeNil())
 			})
 
