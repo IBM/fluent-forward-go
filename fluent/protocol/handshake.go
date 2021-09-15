@@ -158,7 +158,10 @@ func validateDigest(received, key, nonce, salt []byte, hostname string) error {
 func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) []byte {
 	h := sha512.New()
 	h.Write(salt)
-	io.WriteString(h, hostname)
+	_, err := io.WriteString(h, hostname)
+	if err != nil {
+		return nil
+	}
 	h.Write(nonce)
 	h.Write(sharedKey)
 	sum := h.Sum(nil)

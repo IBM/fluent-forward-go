@@ -48,7 +48,8 @@ var _ = Describe("Client", func() {
 		})
 
 		It("Gets the connection from the ConnectionFactory", func() {
-			client.Connect()
+			err := client.Connect()
+			Expect(err).To(BeNil())
 			Expect(factory.NewCallCount()).To(Equal(1))
 		})
 

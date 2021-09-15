@@ -143,7 +143,11 @@ func (c *Client) Handshake() error {
 
 	var helo protocol.Helo
 	r := msgp.NewReader(c.Session.Connection)
-	helo.DecodeMsg(r)
+	err := helo.DecodeMsg(r)
+
+	if err != nil {
+		return err
+	}
 
 	salt := make([]byte, 16)
 	rand.Read(salt)
