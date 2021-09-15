@@ -149,7 +149,8 @@ func ValidatePongDigest(p *Pong, key, nonce, salt []byte) error {
 
 func validateDigest(received, key, nonce, salt []byte, hostname string) error {
 	expected := computeHexDigest(salt, hostname, nonce, key)
-	if bytes.Compare(received, expected) != 0 {
+	//if bytes.Compare(received, expected) != 0 {
+	if !bytes.Equal(received, expected) {
 		return errors.New("No match")
 	}
 	return nil

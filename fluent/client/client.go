@@ -152,9 +152,15 @@ func (c *Client) Handshake() error {
 	salt := make([]byte, 16)
 	rand.Read(salt)
 
-	c.sendMessage(protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce))
+	err = c.sendMessage(protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce))
+	if err != nil {
+		return err
+	}
 	var pong protocol.Pong
-	pong.DecodeMsg(r)
+	err = pong.DecodeMsg(r)
+	if err != nil {
+		return err
+	}
 
 	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
 		helo.Options.Nonce, salt); err != nil {

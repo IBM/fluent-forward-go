@@ -87,11 +87,30 @@ func main() {
 	compressed := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
 		fwd.Entries, &protocol.MessageOptions{})
 
-	c.SendMessage(&msg)
-	c.SendMessage(&mne)
-	c.SendMessage(&fwd)
-	c.SendMessage(packedFwd)
-	c.SendMessage(compressed)
+	err = c.SendMessage(&msg)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = c.SendMessage(&mne)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = c.SendMessage(&fwd)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = c.SendMessage(packedFwd)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	err = c.SendMessage(compressed)
+	if err != nil {
+		os.Exit(1)
+	}
 
 	fmt.Println("Messages sent")
 

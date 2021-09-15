@@ -2,6 +2,8 @@ package client_test
 
 import (
 	"errors"
+	"fmt"
+
 	// "fmt"
 	// "io"
 	"math/rand"
@@ -49,12 +51,13 @@ var _ = Describe("Client", func() {
 
 		It("Gets the connection from the ConnectionFactory", func() {
 			err := client.Connect()
-			Expect(err).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 			Expect(factory.NewCallCount()).To(Equal(1))
 		})
 
 		It("Stores the connection in the Session", func() {
-			client.Connect()
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(client.Session).NotTo(BeNil())
 			Expect(client.Session.Connection).To(Equal(clientSide))
 		})
@@ -87,7 +90,7 @@ var _ = Describe("Client", func() {
 			clientSide, serverSide = net.Pipe()
 			msg = protocol.MessageExt{
 				Tag:       "foo.bar",
-				Timestamp: protocol.EventTime{time.Now()},
+				Timestamp: protocol.EventTime{time.Now()}, //nolint
 				Record: map[string]interface{}{
 					"first": "Eddie",
 					"last":  "Van Halen",
@@ -103,10 +106,15 @@ var _ = Describe("Client", func() {
 
 		It("Sends the message", func() {
 			go func() {
-				client.SendMessage(&msg)
+				err := client.SendMessage(&msg)
+				if err != nil {
+					// TODO: Insert better check here
+					fmt.Println("Err:", err)
+				}
 			}()
 			var recvd protocol.MessageExt
-			recvd.DecodeMsg(msgp.NewReader(serverSide))
+			err := recvd.DecodeMsg(msgp.NewReader(serverSide))
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(recvd.Tag).To(Equal(msg.Tag))
 			Expect(recvd.Options).To(Equal(msg.Options))
@@ -171,10 +179,12 @@ var _ = Describe("Client", func() {
 				Expect(client.Session.TransportPhase).To(BeTrue())
 			}()
 
-			helo.EncodeMsg(serverWriter)
+			err := helo.EncodeMsg(serverWriter)
+			Expect(err).NotTo(HaveOccurred())
 			serverWriter.Flush()
 
-			ping.DecodeMsg(serverReader)
+			err = ping.DecodeMsg(serverReader)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(ping.MessageType).To(Equal(protocol.MSGTYPE_PING))
 			Expect(protocol.ValidatePingDigest(&ping, sharedKey, nonce)).NotTo(HaveOccurred())
 
@@ -182,7 +192,8 @@ var _ = Describe("Client", func() {
 			Expect(pong).NotTo(BeNil())
 			Expect(err).NotTo(HaveOccurred())
 
-			pong.EncodeMsg(serverWriter)
+			err = pong.EncodeMsg(serverWriter)
+			Expect(err).NotTo(HaveOccurred())
 			serverWriter.Flush()
 		})
 
@@ -214,10 +225,12 @@ var _ = Describe("Client", func() {
 						Expect(err).NotTo(HaveOccurred())
 					}()
 
-					helo.EncodeMsg(serverWriter)
+					err := helo.EncodeMsg(serverWriter)
+					Expect(err).NotTo(HaveOccurred())
 					serverWriter.Flush()
 
-					ping.DecodeMsg(serverReader)
+					err = ping.DecodeMsg(serverReader)
+					Expect(err).NotTo(HaveOccurred())
 					Expect(ping.MessageType).To(Equal(protocol.MSGTYPE_PING))
 					Expect(protocol.ValidatePingDigest(&ping, sharedKey, nonce)).To(HaveOccurred())
 				})

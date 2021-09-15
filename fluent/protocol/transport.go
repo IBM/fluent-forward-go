@@ -120,10 +120,8 @@ func (e EntryList) Equal(e2 EntryList) bool {
 			}
 		}
 	}
-	if matches == len(e) {
-		return true
-	}
-	return false
+
+	return matches == len(e)
 }
 
 // EntryExt is the basic representation of an individual event.  The timestamp
