@@ -101,10 +101,13 @@ var _ = Describe("Client", func() {
 		})
 
 		It("Sends the message", func() {
+			c := make(chan bool, 1)
 			go func() {
+				c <- true
 				client.SendMessage(&msg)
 			}()
 			var recvd protocol.MessageExt
+			<-c
 			recvd.DecodeMsg(msgp.NewReader(serverSide))
 
 			Expect(recvd.Tag).To(Equal(msg.Tag))

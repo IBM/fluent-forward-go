@@ -36,12 +36,20 @@ func (msg *Message) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	msg.Record = Record{}
-	if err = msg.DecodeMsg(dc); err != nil {
+	if err = msg.Record.DecodeMsg(dc); err != nil {
 		return msgp.WrapError(err, "Record")
 	}
 
 	// has four elements only when options are included
 	if sz == 4 {
+		if t, err := dc.NextType(); t == msgp.NilType || err != nil {
+			if err != nil {
+				return msgp.WrapError(err, "Options")
+			}
+
+			return dc.ReadNil()
+		}
+
 		msg.Options = &MessageOptions{}
 		if err = msg.Options.DecodeMsg(dc); err != nil {
 			return msgp.WrapError(err, "Options")
@@ -76,6 +84,10 @@ func (msg *Message) UnmarshalMsg(bits []byte) ([]byte, error) {
 
 	// has four elements only when options are included
 	if sz == 4 {
+		if t := msgp.NextType(bits); t == msgp.NilType {
+			return msgp.ReadNilBytes(bits)
+		}
+
 		msg.Options = &MessageOptions{}
 		if bits, err = msg.Options.UnmarshalMsg(bits); err != nil {
 			return bits, msgp.WrapError(err, "Options")
@@ -122,12 +134,20 @@ func (msg *MessageExt) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	msg.Record = Record{}
-	if err = msg.DecodeMsg(dc); err != nil {
+	if err = msg.Record.DecodeMsg(dc); err != nil {
 		return msgp.WrapError(err, "Record")
 	}
 
 	// has four elements only when options are included
 	if sz == 4 {
+		if t, err := dc.NextType(); t == msgp.NilType || err != nil {
+			if err != nil {
+				return msgp.WrapError(err, "Options")
+			}
+
+			return dc.ReadNil()
+		}
+
 		msg.Options = &MessageOptions{}
 		if err = msg.Options.DecodeMsg(dc); err != nil {
 			return msgp.WrapError(err, "Options")
@@ -151,7 +171,7 @@ func (msg *MessageExt) UnmarshalMsg(bits []byte) ([]byte, error) {
 		return bits, msgp.WrapError(err, "Tag")
 	}
 
-	if bits, err = msg.Timestamp.UnmarshalMsg(bits); err != nil {
+	if bits, err = msgp.ReadExtensionBytes(bits, &msg.Timestamp); err != nil {
 		return bits, msgp.WrapError(err, "Timestamp")
 	}
 
@@ -162,6 +182,10 @@ func (msg *MessageExt) UnmarshalMsg(bits []byte) ([]byte, error) {
 
 	// has four elements only when options are included
 	if sz == 4 {
+		if t := msgp.NextType(bits); t == msgp.NilType {
+			return msgp.ReadNilBytes(bits)
+		}
+
 		msg.Options = &MessageOptions{}
 		if bits, err = msg.Options.UnmarshalMsg(bits); err != nil {
 			return bits, msgp.WrapError(err, "Options")

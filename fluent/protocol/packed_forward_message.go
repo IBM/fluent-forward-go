@@ -83,6 +83,10 @@ func (msg *PackedForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 
 	// has three elements only when options are included
 	if sz == 3 {
+		if t, _ := dc.NextType(); t == msgp.NilType {
+			return dc.ReadNil()
+		}
+
 		msg.Options = &MessageOptions{}
 		if err = msg.Options.DecodeMsg(dc); err != nil {
 			return msgp.WrapError(err, "Options")
@@ -112,6 +116,10 @@ func (msg *PackedForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 
 	// has three elements only when options are included
 	if sz == 3 {
+		if t := msgp.NextType(bits); t == msgp.NilType {
+			return msgp.ReadNilBytes(bits)
+		}
+
 		msg.Options = &MessageOptions{}
 		if bits, err = msg.Options.UnmarshalMsg(bits); err != nil {
 			return bits, msgp.WrapError(err, "Options")
