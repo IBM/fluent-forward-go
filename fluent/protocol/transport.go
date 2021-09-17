@@ -72,6 +72,8 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	return nil
 }
 
+type Record map[string]interface{}
+
 // EntryExt is the basic representation of an individual event, but using the
 // msgpack extension format for the timestamp.
 //msgp:tuple EntryExt
@@ -83,8 +85,6 @@ type EntryExt struct {
 }
 
 type EntryList []EntryExt
-
-type Record map[string]interface{}
 
 // Equal compares two EntryList objects and returns true if they have
 // exactly the same elements, false otherwise.
@@ -120,10 +120,8 @@ func (e EntryList) Equal(e2 EntryList) bool {
 			}
 		}
 	}
-	if matches == len(e) {
-		return true
-	}
-	return false
+
+	return matches == len(e)
 }
 
 // EntryExt is the basic representation of an individual event.  The timestamp
@@ -139,92 +137,15 @@ type Entry struct {
 
 type MessageOptions struct {
 	Size       int    `msg:"size"`
-	Chunk      string `msg:"chunk"`
-	Compressed string `msg:"compressed"`
-}
-
-// Message is used to send a single event at a time
-//msgp:tuple Message
-type Message struct {
-	// Tag is a dot-delimited string used to categorize events
-	Tag       string
-	Timestamp int64
-	Record    Record
-	// Options - used to control server behavior.
-	Options *MessageOptions
-}
-
-// MessageExt
-//msgp:tuple MessageExt
-type MessageExt struct {
-	Tag       string
-	Timestamp EventTime `msg:"eventTime,extension"`
-	Record    Record
-	Options   *MessageOptions
-}
-
-// PackedForwardMessage is just like ForwardMessage, except that the events
-// are carried as a msgpack binary stream
-//msgp:tuple PackedForwardMessage
-type PackedForwardMessage struct {
-	// Tag is a dot-delimited string used to categorize events
-	Tag string
-	// EventStream is the set of events (entries in Fluent-speak) serialized
-	// into a msgpack byte stream
-	EventStream []byte
-	// Options - used to control server behavior.  Same as above, may need to
-	// switch to interface{} or similar at some point.
-	Options *MessageOptions
-}
-
-// NewPackedForwardMessage creates a PackedForwardMessage from the supplied
-// tag, EntryList, and MessageOptions.  Regardless of the options supplied,
-// this function will set opts[OPT_SIZE] to the length of the entry list.
-func NewPackedForwardMessage(
-	tag string,
-	entries EntryList,
-	opts *MessageOptions,
-) *PackedForwardMessage {
-	// set the options size to be the number of entries
-	opts.Size = len(entries)
-
-	msg := &PackedForwardMessage{
-		Tag:         tag,
-		EventStream: eventStream(entries),
-		Options:     opts,
-	}
-	return msg
-}
-
-func eventStream(entries EntryList) []byte {
-	var buf bytes.Buffer
-	w := msgp.NewWriter(&buf)
-	for _, e := range entries {
-		// TODO: capture and return error
-		_ = e.EncodeMsg(w)
-	}
-	w.Flush()
-
-	return buf.Bytes()
-}
-
-// CompressedPackedForwardMode is just like PackedForwardMessage, except that
-// the msgpack byte stream containing the events/entries is compressed using
-// gzip.  The protocol spec states that the event stream may be formed by
-// concatenating multiple gzipped binary strings, but we do not claim to
-// support that yet.
-// Users of this type MUST set the option "compressed" => "gzip"
-//msgp:tuple CompressedPackedForwardMessage
-type CompressedPackedForwardMessage struct {
-	Tag                   string
-	CompressedEventStream []byte
-	Options               *MessageOptions
+	Chunk      string `msg:"chunk,omitempty"`
+	Compressed string `msg:"compressed,omitempty"`
 }
 
 // TODO: This is not working correctly yet
 func NewCompressedPackedForwardMessage(
 	tag string, entries []EntryExt, opts *MessageOptions,
-) *CompressedPackedForwardMessage {
+) *PackedForwardMessage {
+	// TODO: create buffer and writer pool
 	var buf bytes.Buffer
 	zw := gzip.NewWriter(&buf)
 
@@ -232,10 +153,11 @@ func NewCompressedPackedForwardMessage(
 	_, _ = zw.Write(eventStream(entries))
 	zw.Close()
 
-	// TODO: Do something real here.
-	return &CompressedPackedForwardMessage{
-		Tag:                   tag,
-		CompressedEventStream: buf.Bytes(),
-		Options:               opts,
-	}
+	opts.Size = len(entries)
+	opts.Compressed = "gzip"
+
+	// TODO:
+	//   NewCompressedPackedForwardMessageFromBytes
+
+	return NewPackedForwardMessageFromBytes(tag, buf.Bytes(), opts)
 }

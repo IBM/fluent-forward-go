@@ -12,6 +12,8 @@ import "github.com/tinylib/msgp/msgp"
 //msgp:decode ignore ForwardMessage
 //msgp:marshal ignore ForwardMessage
 //msgp:unmarshal ignore ForwardMessage
+//msgp:size ignore ForwardMessage
+//msgp:test ignore ForwardMessage
 type ForwardMessage struct {
 	// Tag is a dot-delimted string used to categorize events
 	Tag string
@@ -54,26 +56,34 @@ func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
 	return nil
 }
 
-func (fm *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
+func (msg *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 	sz, err := dc.ReadArrayHeader()
 	if err != nil {
 		return msgp.WrapError(err, "Array Header")
 	}
 
-	if fm.Tag, err = dc.ReadString(); err != nil {
+	if msg.Tag, err = dc.ReadString(); err != nil {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	fm.Entries = EntryList{}
-	if err = fm.Entries.DecodeMsg(dc); err != nil {
-		return err
+	msg.Entries = EntryList{}
+	if err = msg.Entries.DecodeMsg(dc); err != nil {
+		return msgp.WrapError(err, "Entries")
 	}
 
 	// has three elements only when options are included
 	if sz == 3 {
-		fm.Options = &MessageOptions{}
-		if err = fm.Options.DecodeMsg(dc); err != nil {
-			return err
+		if t, err := dc.NextType(); t == msgp.NilType || err != nil {
+			if err != nil {
+				return msgp.WrapError(err, "Options")
+			}
+
+			return dc.ReadNil()
+		}
+
+		msg.Options = &MessageOptions{}
+		if err = msg.Options.DecodeMsg(dc); err != nil {
+			return msgp.WrapError(err, "Options")
 		}
 	}
 
@@ -107,7 +117,7 @@ func (fm *ForwardMessage) MarshalMsg(bits []byte) ([]byte, error) {
 	return bits, err
 }
 
-func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
+func (msg *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 	var (
 		sz  uint32
 		err error
@@ -117,22 +127,35 @@ func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 		return bits, msgp.WrapError(err, "Array Header")
 	}
 
-	if fm.Tag, bits, err = msgp.ReadStringBytes(bits); err != nil {
+	if msg.Tag, bits, err = msgp.ReadStringBytes(bits); err != nil {
 		return bits, msgp.WrapError(err, "Tag")
 	}
 
-	fm.Entries = EntryList{}
-	if bits, err = fm.Entries.UnmarshalMsg(bits); err != nil {
+	msg.Entries = EntryList{}
+	if bits, err = msg.Entries.UnmarshalMsg(bits); err != nil {
 		return bits, err
 	}
 
 	// has three elements only when options are included
 	if sz == 3 {
-		fm.Options = &MessageOptions{}
-		if bits, err = fm.Options.UnmarshalMsg(bits); err != nil {
-			return bits, err
+		if t := msgp.NextType(bits); t == msgp.NilType {
+			return msgp.ReadNilBytes(bits)
+		}
+
+		msg.Options = &MessageOptions{}
+		if bits, err = msg.Options.UnmarshalMsg(bits); err != nil {
+			return bits, msgp.WrapError(err, "Options")
 		}
 	}
 
 	return bits, err
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (msg *ForwardMessage) Msgsize() (s int) {
+	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msg.Entries.Msgsize()
+	if msg.Options != nil {
+		s += msg.Options.Msgsize()
+	}
+	return
 }
