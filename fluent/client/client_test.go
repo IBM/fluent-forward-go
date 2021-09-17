@@ -2,8 +2,6 @@ package client_test
 
 import (
 	"errors"
-	"fmt"
-
 	// "fmt"
 	// "io"
 	"math/rand"
@@ -107,10 +105,7 @@ var _ = Describe("Client", func() {
 		It("Sends the message", func() {
 			go func() {
 				err := client.SendMessage(&msg)
-				if err != nil {
-					// TODO: Insert better check here
-					fmt.Println("Err:", err)
-				}
+				Expect(err).NotTo(HaveOccurred())
 			}()
 			var recvd protocol.MessageExt
 			err := recvd.DecodeMsg(msgp.NewReader(serverSide))

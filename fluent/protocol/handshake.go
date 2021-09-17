@@ -68,11 +68,13 @@ func NewPingWithAuth(hostname string, sharedKey, salt, nonce []byte, username, p
 }
 
 func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) *Ping {
+	bytes, _ := computeHexDigest(salt, hostname, nonce, sharedKey)
+
 	p := Ping{
 		MessageType:        MSGTYPE_PING,
 		ClientHostname:     hostname,
 		SharedKeySalt:      salt,
-		SharedKeyHexDigest: computeHexDigest(salt, hostname, nonce, sharedKey),
+		SharedKeyHexDigest: bytes,
 	}
 
 	if len(creds) >= 2 {
@@ -112,14 +114,16 @@ func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 		return nil, errors.New("Helo has a nil options field")
 	}
 
+	bytes, err := computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey)
+
 	p := Pong{
 		MessageType:        MSGTYPE_PONG,
 		AuthResult:         authResult,
 		Reason:             reason,
 		ServerHostname:     hostname,
-		SharedKeyHexDigest: computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey),
+		SharedKeyHexDigest: bytes,
 	}
-	return &p, nil
+	return &p, err
 }
 
 // Pong is the response message sent by the server after receiving a
@@ -148,25 +152,27 @@ func ValidatePongDigest(p *Pong, key, nonce, salt []byte) error {
 }
 
 func validateDigest(received, key, nonce, salt []byte, hostname string) error {
-	expected := computeHexDigest(salt, hostname, nonce, key)
-	//if bytes.Compare(received, expected) != 0 {
+	expected, err := computeHexDigest(salt, hostname, nonce, key)
+	if err != nil {
+		return err
+	}
 	if !bytes.Equal(received, expected) {
 		return errors.New("No match")
 	}
 	return nil
 }
 
-func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) []byte {
+func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) ([]byte, error) {
 	h := sha512.New()
 	h.Write(salt)
 	_, err := io.WriteString(h, hostname)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	h.Write(nonce)
 	h.Write(sharedKey)
 	sum := h.Sum(nil)
 	hexOut := make([]byte, hex.EncodedLen(len(sum)))
 	hex.Encode(hexOut, sum)
-	return hexOut
+	return hexOut, err
 }
