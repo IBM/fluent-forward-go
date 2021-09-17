@@ -56,19 +56,19 @@ type HeloOpts struct {
 
 // NewPing returns a PING message.  The digest is computed
 // from the hostname, key, salt, and nonce using SHA512.
-func NewPing(hostname string, sharedKey, salt, nonce []byte) *Ping {
+func NewPing(hostname string, sharedKey, salt, nonce []byte) (*Ping, error) {
 	return makePing(hostname, sharedKey, salt, nonce)
 }
 
 // NewPingWithAuth returns a PING message containing the username and password
 // to be used for authentication.  The digest is computed
 // from the hostname, key, salt, and nonce using SHA512.
-func NewPingWithAuth(hostname string, sharedKey, salt, nonce []byte, username, password string) *Ping {
+func NewPingWithAuth(hostname string, sharedKey, salt, nonce []byte, username, password string) (*Ping, error) {
 	return makePing(hostname, sharedKey, salt, nonce, username, password)
 }
 
-func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) *Ping {
-	bytes, _ := computeHexDigest(salt, hostname, nonce, sharedKey)
+func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (*Ping, error) {
+	bytes, err := computeHexDigest(salt, hostname, nonce, sharedKey)
 
 	p := Ping{
 		MessageType:        MSGTYPE_PING,
@@ -81,7 +81,7 @@ func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) *
 		p.Username = creds[0]
 		p.Password = creds[1]
 	}
-	return &p
+	return &p, err
 }
 
 // Ping is the response message sent by the client after receiving a
