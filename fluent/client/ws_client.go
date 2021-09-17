@@ -18,6 +18,12 @@ const (
 	AuthorizationHeader = "Authorization"
 )
 
+// Expose message types as defined in underlying websocket library
+const (
+	TextMessage   = websocket.TextMessage
+	BinaryMessage = websocket.BinaryMessage
+)
+
 type IAMAuthInfo struct {
 	token string
 	mutex sync.RWMutex
