@@ -55,12 +55,14 @@ var _ = Describe("WSClient", func() {
 		})
 
 		It("Gets the connection from the ConnectionFactory", func() {
-			client.Connect()
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(factory.NewCallCount()).To(Equal(1))
 		})
 
 		It("Stores the connection in the Session", func() {
-			client.Connect()
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
 			Expect(client.Session).ToNot(BeNil())
 			Expect(client.Session.Connection).ToNot(BeNil())
 		})
@@ -103,7 +105,8 @@ var _ = Describe("WSClient", func() {
 	Describe("Disconnect", func() {
 		When("the session is not nil", func() {
 			JustBeforeEach(func() {
-				client.Connect()
+				err := client.Connect()
+				Expect(err).NotTo(HaveOccurred())
 				client.Session.Connection = conn
 			})
 
@@ -132,7 +135,8 @@ var _ = Describe("WSClient", func() {
 		)
 
 		JustBeforeEach(func() {
-			client.Connect()
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
 			client.Session.Connection = conn
 			session1 = client.Session
 		})
@@ -151,7 +155,8 @@ var _ = Describe("WSClient", func() {
 
 	Describe("Listen", func() {
 		JustBeforeEach(func() {
-			client.Connect()
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
 			client.Session.Connection = conn
 		})
 
@@ -169,7 +174,7 @@ var _ = Describe("WSClient", func() {
 		BeforeEach(func() {
 			msg = protocol.MessageExt{
 				Tag:       "foo.bar",
-				Timestamp: protocol.EventTime{time.Now()},
+				Timestamp: protocol.EventTime{time.Now()}, //nolint
 				Record:    map[string]interface{}{},
 				Options:   &protocol.MessageOptions{},
 			}

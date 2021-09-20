@@ -143,14 +143,29 @@ func (c *Client) Handshake() error {
 
 	var helo protocol.Helo
 	r := msgp.NewReader(c.Session.Connection)
-	helo.DecodeMsg(r)
+	err := helo.DecodeMsg(r)
+
+	if err != nil {
+		return err
+	}
 
 	salt := make([]byte, 16)
 	rand.Read(salt)
 
-	c.sendMessage(protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce))
+	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
+	if err != nil {
+		return err
+	}
+
+	err = c.sendMessage(ping)
+	if err != nil {
+		return err
+	}
 	var pong protocol.Pong
-	pong.DecodeMsg(r)
+	err = pong.DecodeMsg(r)
+	if err != nil {
+		return err
+	}
 
 	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
 		helo.Options.Nonce, salt); err != nil {
