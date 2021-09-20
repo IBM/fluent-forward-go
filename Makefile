@@ -23,3 +23,8 @@ travis-lint:
 gosec:
 	go get github.com/securego/gosec/cmd/gosec
 	gosec -quiet --exclude=G104 ./...
+
+.PHONY: scan-nancy
+scan-nancy:
+	go get github.com/sonatype-nexus-community/nancy
+	go list -json -m all | nancy sleuth --skip-update-check

@@ -5,7 +5,7 @@ go:
 
 env:
   matrix:
-    - MAKE_TASK="lintall travis-lint gosec"
+    - MAKE_TASK="scan-nancy"
 
 matrix:
   fast_finish: true
@@ -22,6 +22,7 @@ cache:
   directories:
     - $HOME/.cache/go-build
     - $HOME/gopath/pkg/mod
+
 jobs:
   include:
     - stage: unit tests
