@@ -11,6 +11,9 @@ matrix:
   allow_failures:
     - go : tip
 
+before_install:
+	- pip --quiet install yamllint
+
 script:
   - make $MAKE_TASK
 
