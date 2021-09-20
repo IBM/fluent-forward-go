@@ -1,10 +1,9 @@
 package protocol
 
 import (
-	"bytes"
-	"compress/gzip"
 	"encoding/binary"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
@@ -26,10 +25,18 @@ const (
 	eventTimeLen  int  = 8
 )
 
+var (
+	compressorPool sync.Pool
+)
+
 func init() {
 	msgp.RegisterExtension(extensionType, func() msgp.Extension {
 		return new(EventTime)
 	})
+
+	compressorPool.New = func() interface{} {
+		return NewGzipCompressor()
+	}
 }
 
 // EventTime is the fluent-forward representation of a timestamp
@@ -139,25 +146,4 @@ type MessageOptions struct {
 	Size       int    `msg:"size"`
 	Chunk      string `msg:"chunk,omitempty"`
 	Compressed string `msg:"compressed,omitempty"`
-}
-
-// TODO: This is not working correctly yet
-func NewCompressedPackedForwardMessage(
-	tag string, entries []EntryExt, opts *MessageOptions,
-) *PackedForwardMessage {
-	// TODO: create buffer and writer pool
-	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-
-	// TODO: capture and return error
-	_, _ = zw.Write(eventStream(entries))
-	zw.Close()
-
-	opts.Size = len(entries)
-	opts.Compressed = "gzip"
-
-	// TODO:
-	//   NewCompressedPackedForwardMessageFromBytes
-
-	return NewPackedForwardMessageFromBytes(tag, buf.Bytes(), opts)
 }
