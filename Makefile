@@ -7,7 +7,6 @@ lintall: fmt lint
 lint:
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
 	golangci-lint run ./...
-	$(MAKE) deps
 
 .PHONY: fmt
 fmt:
@@ -19,7 +18,3 @@ fmt:
 .PHONY: travis-lint
 travis-lint:
 	yamllint .travis.yml
-
-.PHONY: deps
-	go mod tidy
-
