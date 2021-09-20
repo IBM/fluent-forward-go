@@ -5,7 +5,7 @@ go:
 
 env:
   matrix:
-    - MAKE_TASK="scan-nancy"
+    - MAKE_TASK="lintall travis-lint gosec scan-nancy"
 
 matrix:
   fast_finish: true
