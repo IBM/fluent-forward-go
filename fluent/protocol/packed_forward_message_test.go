@@ -37,7 +37,10 @@ func BenchmarkMarshalMsgPackedForwardMessage(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		v.MarshalMsg(nil)
+		_, err := v.MarshalMsg(nil)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -70,7 +73,10 @@ func BenchmarkUnmarshalPackedForwardMessage(b *testing.B) {
 func TestEncodeDecodePackedForwardMessage(t *testing.T) {
 	v := PackedForwardMessage{}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		t.Error(err)
+	}
 
 	m := v.Msgsize()
 	if buf.Len() > m {
@@ -78,13 +84,16 @@ func TestEncodeDecodePackedForwardMessage(t *testing.T) {
 	}
 
 	vn := PackedForwardMessage{}
-	err := msgp.Decode(&buf, &vn)
+	err = msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
 	}
 
 	buf.Reset()
-	msgp.Encode(&buf, &v)
+	err = msgp.Encode(&buf, &v)
+	if err != nil {
+		t.Error(err)
+	}
 	err = msgp.NewReader(&buf).Skip()
 	if err != nil {
 		t.Error(err)
@@ -94,13 +103,19 @@ func TestEncodeDecodePackedForwardMessage(t *testing.T) {
 func BenchmarkEncodePackedForwardMessage(b *testing.B) {
 	v := PackedForwardMessage{}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		b.Error(err)
+	}
 	b.SetBytes(int64(buf.Len()))
 	en := msgp.NewWriter(msgp.Nowhere)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		v.EncodeMsg(en)
+		err := v.EncodeMsg(en)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 	en.Flush()
 }
@@ -108,7 +123,10 @@ func BenchmarkEncodePackedForwardMessage(b *testing.B) {
 func BenchmarkDecodePackedForwardMessage(b *testing.B) {
 	v := PackedForwardMessage{}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		b.Error(err)
+	}
 	b.SetBytes(int64(buf.Len()))
 	rd := msgp.NewEndlessReader(buf.Bytes(), b)
 	dc := msgp.NewReader(rd)

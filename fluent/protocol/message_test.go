@@ -41,7 +41,10 @@ func BenchmarkMarshalMsgMessage(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		v.MarshalMsg(nil)
+		_, err := v.MarshalMsg(nil)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -80,7 +83,10 @@ func TestEncodeDecodeMessage(t *testing.T) {
 		Options: &MessageOptions{},
 	}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		t.Error(err)
+	}
 
 	m := v.Msgsize()
 	if buf.Len() > m {
@@ -88,13 +94,16 @@ func TestEncodeDecodeMessage(t *testing.T) {
 	}
 
 	vn := Message{}
-	err := msgp.Decode(&buf, &vn)
+	err = msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
 	}
 
 	buf.Reset()
-	msgp.Encode(&buf, &v)
+	err = msgp.Encode(&buf, &v)
+	if err != nil {
+		t.Error(err)
+	}
 	err = msgp.NewReader(&buf).Skip()
 	if err != nil {
 		t.Error(err)
@@ -104,13 +113,19 @@ func TestEncodeDecodeMessage(t *testing.T) {
 func BenchmarkEncodeMessage(b *testing.B) {
 	v := Message{}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		b.Error(err)
+	}
 	b.SetBytes(int64(buf.Len()))
 	en := msgp.NewWriter(msgp.Nowhere)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		v.EncodeMsg(en)
+		err := v.EncodeMsg(en)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 	en.Flush()
 }
@@ -118,7 +133,10 @@ func BenchmarkEncodeMessage(b *testing.B) {
 func BenchmarkDecodeMessage(b *testing.B) {
 	v := Message{}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		b.Error(err)
+	}
 	b.SetBytes(int64(buf.Len()))
 	rd := msgp.NewEndlessReader(buf.Bytes(), b)
 	dc := msgp.NewReader(rd)
@@ -164,7 +182,10 @@ func BenchmarkMarshalMsgMessageExt(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		v.MarshalMsg(nil)
+		_, err := v.MarshalMsg(nil)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
 
@@ -203,7 +224,10 @@ func TestEncodeDecodeMessageExt(t *testing.T) {
 		Options: &MessageOptions{},
 	}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		t.Error(err)
+	}
 
 	m := v.Msgsize()
 	if buf.Len() > m {
@@ -211,13 +235,16 @@ func TestEncodeDecodeMessageExt(t *testing.T) {
 	}
 
 	vn := MessageExt{}
-	err := msgp.Decode(&buf, &vn)
+	err = msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
 	}
 
 	buf.Reset()
-	msgp.Encode(&buf, &v)
+	err = msgp.Encode(&buf, &v)
+	if err != nil {
+		t.Error(err)
+	}
 	err = msgp.NewReader(&buf).Skip()
 	if err != nil {
 		t.Error(err)
@@ -229,13 +256,19 @@ func BenchmarkEncodeMessageExt(b *testing.B) {
 		Options: &MessageOptions{},
 	}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		b.Error(err)
+	}
 	b.SetBytes(int64(buf.Len()))
 	en := msgp.NewWriter(msgp.Nowhere)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		v.EncodeMsg(en)
+		err := v.EncodeMsg(en)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 	en.Flush()
 }
@@ -245,7 +278,10 @@ func BenchmarkDecodeMessageExt(b *testing.B) {
 		Options: &MessageOptions{},
 	}
 	var buf bytes.Buffer
-	msgp.Encode(&buf, &v)
+	err := msgp.Encode(&buf, &v)
+	if err != nil {
+		b.Error(err)
+	}
 	b.SetBytes(int64(buf.Len()))
 	rd := msgp.NewEndlessReader(buf.Bytes(), b)
 	dc := msgp.NewReader(rd)
