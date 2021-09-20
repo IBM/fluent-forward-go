@@ -15,3 +15,7 @@ fmt:
 	  echo "Please run 'make dofmt'" && exit 1; \
 	fi
 
+.PHONY: travis-lint
+travis-lint:
+	yamllint .travis.yml
+

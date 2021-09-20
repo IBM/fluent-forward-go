@@ -4,7 +4,7 @@ go:
 
 env:
   matrix:
-    - MAKE_TASK="lintall"
+    - MAKE_TASK="travis-lint"
 
 matrix:
   fast_finish: true
