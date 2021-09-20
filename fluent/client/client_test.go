@@ -103,13 +103,19 @@ var _ = Describe("Client", func() {
 		})
 
 		It("Sends the message", func() {
+			c := make(chan bool, 1)
 			go func() {
-				err := client.SendMessage(&msg)
+        defer GinkgoRecover()
+ 
+				c <- true
+				client.SendMessage(&msg)
+      	err := client.SendMessage(&msg)
 				Expect(err).NotTo(HaveOccurred())
 			}()
+      
 			var recvd protocol.MessageExt
-			err := recvd.DecodeMsg(msgp.NewReader(serverSide))
-			Expect(err).NotTo(HaveOccurred())
+			<-c
+			recvd.DecodeMsg(msgp.NewReader(serverSide))
 
 			Expect(recvd.Tag).To(Equal(msg.Tag))
 			Expect(recvd.Options).To(Equal(msg.Options))
