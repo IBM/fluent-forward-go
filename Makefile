@@ -18,3 +18,8 @@ fmt:
 .PHONY: travis-lint
 travis-lint:
 	yamllint .travis.yml
+
+.PHONY: gosec
+gosec:
+	go get github.com/securego/gosec/cmd/gosec
+	gosec -quiet --exclude=G104 ./...

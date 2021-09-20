@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	// "fmt"
-	"math/rand"
+	"crypto/rand"
 	"net"
 	"time"
 
