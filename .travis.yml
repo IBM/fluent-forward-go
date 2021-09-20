@@ -5,7 +5,7 @@ go:
 
 env:
   matrix:
-    - MAKE_TASK="gosec"
+    - MAKE_TASK="lintall travis-lint gosec"
 
 matrix:
   fast_finish: true
