@@ -24,4 +24,5 @@ gosec:
 
 .PHONY: scan-nancy
 scan-nancy:
+	go mod tidy
 	go list -json -m all | nancy sleuth --skip-update-check
