@@ -148,7 +148,10 @@ func TestEncodeDecodeCompressedPackedForwardMessage(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	msgp.Encode(&buf, v)
+	err = msgp.Encode(&buf, v)
+	if err != nil {
+		t.Error(err)
+	}
 
 	m := v.Msgsize()
 	if buf.Len() > m {
@@ -162,7 +165,10 @@ func TestEncodeDecodeCompressedPackedForwardMessage(t *testing.T) {
 	}
 
 	buf.Reset()
-	msgp.Encode(&buf, v)
+	err = msgp.Encode(&buf, v)
+	if err != nil {
+		t.Error(err)
+	}
 	err = msgp.NewReader(&buf).Skip()
 	if err != nil {
 		t.Error(err)
@@ -170,10 +176,13 @@ func TestEncodeDecodeCompressedPackedForwardMessage(t *testing.T) {
 }
 
 func BenchmarkNCFMFB(b *testing.B) {
-	bits := make([]byte, 1028)
+	bits := make([]byte, 1024)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		NewCompressedPackedForwardMessageFromBytes("foo", bits)
+		_, err := NewCompressedPackedForwardMessageFromBytes("foo", bits)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
