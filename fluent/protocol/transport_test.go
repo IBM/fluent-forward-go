@@ -129,7 +129,6 @@ var _ = Describe("Transport", func() {
 		var (
 			tag     string
 			entries EntryList
-			opts    *MessageOptions
 		)
 
 		BeforeEach(func() {
@@ -150,18 +149,17 @@ var _ = Describe("Transport", func() {
 					},
 				},
 			}
-			opts = &MessageOptions{}
 		})
 
 		It("Returns a PackedForwardMessage", func() {
-			msg := NewPackedForwardMessage(tag, entries, opts)
+			msg := NewPackedForwardMessage(tag, entries)
 			Expect(msg).NotTo(BeNil())
 		})
 
 		It("Includes the number of events as the `size` option", func() {
-			msg := NewPackedForwardMessage(tag, entries, opts)
-			size := msg.Options.Size
-			Expect(size).To(Equal(len(entries)))
+			msg := NewPackedForwardMessage(tag, entries)
+			Expect(msg.Options.Size).To(Equal(len(entries)))
+			Expect(msg.Options.Compressed).To(BeEmpty())
 		})
 
 		XIt("Correctly encodes the entries into a bytestream", func() {
@@ -169,7 +167,7 @@ var _ = Describe("Transport", func() {
 			// single array of EntryExt objects, but it's a stream of encoded
 			// EntryExt objects (NOT an array), and the test does not match
 			// up to that.
-			msg := NewPackedForwardMessage(tag, entries, opts)
+			msg := NewPackedForwardMessage(tag, entries)
 			elist := make(EntryList, 2)
 			_, err := elist.UnmarshalMsg(msg.EventStream)
 			Expect(err).NotTo(HaveOccurred())
@@ -182,7 +180,6 @@ var _ = Describe("Transport", func() {
 		var (
 			tag     string
 			entries []EntryExt
-			opts    *MessageOptions
 		)
 
 		BeforeEach(func() {
@@ -203,12 +200,14 @@ var _ = Describe("Transport", func() {
 					},
 				},
 			}
-			opts = &MessageOptions{}
 		})
 
 		It("Returns a message with a gzip-compressed event stream", func() {
-			msg := NewCompressedPackedForwardMessage(tag, entries, opts)
+			msg, err := NewCompressedPackedForwardMessage(tag, entries)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(msg).NotTo(BeNil())
+			Expect(msg.Options.Size).To(Equal(len(entries)))
+			Expect(msg.Options.Compressed).To(Equal("gzip"))
 		})
 	})
 })

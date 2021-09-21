@@ -121,3 +121,41 @@ func BenchmarkDecodePackedForwardMessage(b *testing.B) {
 		}
 	}
 }
+
+func TestEncodeDecodeCompressedPackedForwardMessage(t *testing.T) {
+	bits := make([]byte, 1028)
+	v, err := NewCompressedPackedForwardMessageFromBytes("foo", bits)
+	if err != nil {
+		t.Error(err)
+	}
+
+	var buf bytes.Buffer
+	msgp.Encode(&buf, v)
+
+	m := v.Msgsize()
+	if buf.Len() > m {
+		t.Log("WARNING: TestEncodeDecodePackedForwardMessage Msgsize() is inaccurate")
+	}
+
+	vn := PackedForwardMessage{}
+	err = msgp.Decode(&buf, &vn)
+	if err != nil {
+		t.Error(err)
+	}
+
+	buf.Reset()
+	msgp.Encode(&buf, v)
+	err = msgp.NewReader(&buf).Skip()
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func BenchmarkNCFMFB(b *testing.B) {
+	bits := make([]byte, 1028)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		NewCompressedPackedForwardMessageFromBytes("foo", bits)
+	}
+}

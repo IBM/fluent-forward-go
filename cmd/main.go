@@ -81,11 +81,10 @@ func main() {
 		Options: &protocol.MessageOptions{},
 	}
 
-	packedFwd := protocol.NewPackedForwardMessage(tagVar+".packed", fwd.Entries,
-		&protocol.MessageOptions{})
+	packedFwd := protocol.NewPackedForwardMessage(tagVar+".packed", fwd.Entries)
 
-	compressed := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
-		fwd.Entries, &protocol.MessageOptions{})
+	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
+		fwd.Entries)
 
 	err = c.SendMessage(&msg)
 	if err != nil {

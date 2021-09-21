@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"bytes"
+	"compress/gzip"
 
 	"github.com/tinylib/msgp/msgp"
 )
@@ -44,12 +45,13 @@ type PackedForwardMessage struct {
 func NewPackedForwardMessage(
 	tag string,
 	entries EntryList,
-	opts *MessageOptions,
 ) *PackedForwardMessage {
-	// set the options size to be the number of entries
-	opts.Size = len(entries)
+	pfm := NewPackedForwardMessageFromBytes(tag, eventStream(entries))
+	pfm.Options = &MessageOptions{
+		Size: len(entries),
+	}
 
-	return NewPackedForwardMessageFromBytes(tag, eventStream(entries), opts)
+	return pfm
 }
 
 // NewPackedForwardMessageFromBytes creates a PackedForwardMessage from the
@@ -58,12 +60,10 @@ func NewPackedForwardMessage(
 func NewPackedForwardMessageFromBytes(
 	tag string,
 	entries []byte,
-	opts *MessageOptions,
 ) *PackedForwardMessage {
 	return &PackedForwardMessage{
 		Tag:         tag,
 		EventStream: entries,
-		Options:     opts,
 	}
 }
 
@@ -135,4 +135,75 @@ func (msg *PackedForwardMessage) Msgsize() (s int) {
 		s += msg.Options.Msgsize()
 	}
 	return
+}
+
+//msgp:ignore GzipCompressor
+type GzipCompressor struct {
+	Buffer     *bytes.Buffer
+	GzipWriter *gzip.Writer
+}
+
+func NewGzipCompressor() *GzipCompressor {
+	buf := new(bytes.Buffer)
+	zw := gzip.NewWriter(buf)
+
+	return &GzipCompressor{buf, zw}
+}
+
+// Write writes to the compression stream.
+func (mc *GzipCompressor) Write(bits []byte) error {
+	_, err := mc.GzipWriter.Write(bits)
+
+	if cerr := mc.GzipWriter.Close(); err == nil {
+		err = cerr
+	}
+
+	return err
+}
+
+// Reset resets the buffer to be empty, but it retains the
+// underlying storage for use by future writes.
+func (mc *GzipCompressor) Reset() {
+	mc.Buffer.Reset()
+	mc.GzipWriter.Reset(mc.Buffer)
+}
+
+// Bytes returns the gzip-compressed byte stream.
+func (mc *GzipCompressor) Bytes() []byte {
+	return mc.Buffer.Bytes()
+}
+
+// NewCompressedPackedForwardMessage returns a PackedForwardMessage with a gzip-compressed byte stream.
+func NewCompressedPackedForwardMessage(
+	tag string, entries []EntryExt,
+) (*PackedForwardMessage, error) {
+	return newCompressedPackedForwardMessageFromBytes(tag, eventStream(entries), len(entries))
+}
+
+// NewCompressedPackedForwardMessageFromBytes returns a PackedForwardMessage with a gzip-compressed byte stream.
+func NewCompressedPackedForwardMessageFromBytes(
+	tag string, entries []byte,
+) (*PackedForwardMessage, error) {
+	return newCompressedPackedForwardMessageFromBytes(tag, entries, 0)
+}
+
+func newCompressedPackedForwardMessageFromBytes(
+	tag string, entries []byte, sz int,
+) (*PackedForwardMessage, error) {
+	mc := compressorPool.Get().(*GzipCompressor)
+	defer func() {
+		mc.Reset()
+		compressorPool.Put(mc)
+	}()
+
+	if err := mc.Write(entries); err != nil {
+		return nil, err
+	}
+
+	pfm := NewPackedForwardMessageFromBytes(tag, mc.Bytes())
+	pfm.Options = &MessageOptions{
+		Size: sz, Compressed: "gzip",
+	}
+
+	return pfm, nil
 }
