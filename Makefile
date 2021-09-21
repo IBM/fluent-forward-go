@@ -26,6 +26,6 @@ gosec:
 
 .PHONY: scan-nancy
 scan-nancy:
-	go get github.com/sonatype-nexus-community/nancy
+	#go get github.com/sonatype-nexus-community/nancy
 	go mod tidy
 	go list -json -m all | nancy sleuth --skip-update-check
