@@ -5,7 +5,6 @@ lintall: fmt lint
 
 .PHONY:
 lint:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
 	golangci-lint run ./...
 
 .PHONY: fmt
@@ -21,11 +20,8 @@ travis-lint:
 
 .PHONY: gosec
 gosec:
-	go get github.com/securego/gosec/cmd/gosec
 	gosec -quiet --exclude=G104 ./...
 
 .PHONY: scan-nancy
 scan-nancy:
-	#go get github.com/sonatype-nexus-community/nancy
-	go mod tidy
 	go list -json -m all | nancy sleuth --skip-update-check
