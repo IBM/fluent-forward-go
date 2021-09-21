@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	// "fmt"
-	"math/rand"
+	"crypto/rand"
 	"net"
 	"time"
 
@@ -150,7 +150,10 @@ func (c *Client) Handshake() error {
 	}
 
 	salt := make([]byte, 16)
-	rand.Read(salt)
+	_, err = rand.Read(salt)
+	if err != nil {
+		return err
+	}
 
 	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
 	if err != nil {
