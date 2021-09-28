@@ -158,7 +158,7 @@ var _ = Describe("Transport", func() {
 
 		It("Includes the number of events as the `size` option", func() {
 			msg := NewPackedForwardMessage(tag, entries)
-			Expect(msg.Options.Size).To(Equal(len(entries)))
+			Expect(*msg.Options.Size).To(Equal(len(entries)))
 			Expect(msg.Options.Compressed).To(BeEmpty())
 		})
 
@@ -206,7 +206,7 @@ var _ = Describe("Transport", func() {
 			msg, err := NewCompressedPackedForwardMessage(tag, entries)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg).NotTo(BeNil())
-			Expect(msg.Options.Size).To(Equal(len(entries)))
+			Expect(*msg.Options.Size).To(Equal(len(entries)))
 			Expect(msg.Options.Compressed).To(Equal("gzip"))
 		})
 	})

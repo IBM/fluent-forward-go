@@ -143,7 +143,7 @@ type Entry struct {
 }
 
 type MessageOptions struct {
-	Size       int    `msg:"size"`
+	Size       *int   `msg:"size,omitempty"`
 	Chunk      string `msg:"chunk,omitempty"`
 	Compressed string `msg:"compressed,omitempty"`
 }
