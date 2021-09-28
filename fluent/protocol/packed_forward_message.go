@@ -46,9 +46,11 @@ func NewPackedForwardMessage(
 	tag string,
 	entries EntryList,
 ) *PackedForwardMessage {
+	lenEntries := len(entries)
+
 	pfm := NewPackedForwardMessageFromBytes(tag, eventStream(entries))
 	pfm.Options = &MessageOptions{
-		Size: len(entries),
+		Size: &lenEntries,
 	}
 
 	return pfm
@@ -173,22 +175,25 @@ func (mc *GzipCompressor) Bytes() []byte {
 	return mc.Buffer.Bytes()
 }
 
-// NewCompressedPackedForwardMessage returns a PackedForwardMessage with a gzip-compressed byte stream.
+// NewCompressedPackedForwardMessage returns a PackedForwardMessage with a
+// gzip-compressed byte stream.
 func NewCompressedPackedForwardMessage(
 	tag string, entries []EntryExt,
 ) (*PackedForwardMessage, error) {
-	return newCompressedPackedForwardMessageFromBytes(tag, eventStream(entries), len(entries))
+	lenEntries := len(entries)
+
+	msg, err := NewCompressedPackedForwardMessageFromBytes(tag, eventStream(entries))
+	if err == nil {
+		msg.Options.Size = &lenEntries
+	}
+
+	return msg, err
 }
 
-// NewCompressedPackedForwardMessageFromBytes returns a PackedForwardMessage with a gzip-compressed byte stream.
+// NewCompressedPackedForwardMessageFromBytes returns a PackedForwardMessage
+// with a gzip-compressed byte stream.
 func NewCompressedPackedForwardMessageFromBytes(
 	tag string, entries []byte,
-) (*PackedForwardMessage, error) {
-	return newCompressedPackedForwardMessageFromBytes(tag, entries, 0)
-}
-
-func newCompressedPackedForwardMessageFromBytes(
-	tag string, entries []byte, sz int,
 ) (*PackedForwardMessage, error) {
 	mc := compressorPool.Get().(*GzipCompressor)
 	defer func() {
@@ -201,9 +206,7 @@ func newCompressedPackedForwardMessageFromBytes(
 	}
 
 	pfm := NewPackedForwardMessageFromBytes(tag, mc.Bytes())
-	pfm.Options = &MessageOptions{
-		Size: sz, Compressed: "gzip",
-	}
+	pfm.Options = &MessageOptions{Compressed: "gzip"}
 
 	return pfm, nil
 }

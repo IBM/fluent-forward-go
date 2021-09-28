@@ -658,10 +658,22 @@ func (z *MessageOptions) DecodeMsg(dc *msgp.Reader) (err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "size":
-			z.Size, err = dc.ReadInt()
-			if err != nil {
-				err = msgp.WrapError(err, "Size")
-				return
+			if dc.IsNil() {
+				err = dc.ReadNil()
+				if err != nil {
+					err = msgp.WrapError(err, "Size")
+					return
+				}
+				z.Size = nil
+			} else {
+				if z.Size == nil {
+					z.Size = new(int)
+				}
+				*z.Size, err = dc.ReadInt()
+				if err != nil {
+					err = msgp.WrapError(err, "Size")
+					return
+				}
 			}
 		case "chunk":
 			z.Chunk, err = dc.ReadString()
@@ -687,10 +699,14 @@ func (z *MessageOptions) DecodeMsg(dc *msgp.Reader) (err error) {
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z MessageOptions) EncodeMsg(en *msgp.Writer) (err error) {
+func (z *MessageOptions) EncodeMsg(en *msgp.Writer) (err error) {
 	// omitempty: check for empty values
 	zb0001Len := uint32(3)
 	var zb0001Mask uint8 /* 3 bits */
+	if z.Size == nil {
+		zb0001Len--
+		zb0001Mask |= 0x1
+	}
 	if z.Chunk == "" {
 		zb0001Len--
 		zb0001Mask |= 0x2
@@ -707,15 +723,24 @@ func (z MessageOptions) EncodeMsg(en *msgp.Writer) (err error) {
 	if zb0001Len == 0 {
 		return
 	}
-	// write "size"
-	err = en.Append(0xa4, 0x73, 0x69, 0x7a, 0x65)
-	if err != nil {
-		return
-	}
-	err = en.WriteInt(z.Size)
-	if err != nil {
-		err = msgp.WrapError(err, "Size")
-		return
+	if (zb0001Mask & 0x1) == 0 { // if not empty
+		// write "size"
+		err = en.Append(0xa4, 0x73, 0x69, 0x7a, 0x65)
+		if err != nil {
+			return
+		}
+		if z.Size == nil {
+			err = en.WriteNil()
+			if err != nil {
+				return
+			}
+		} else {
+			err = en.WriteInt(*z.Size)
+			if err != nil {
+				err = msgp.WrapError(err, "Size")
+				return
+			}
+		}
 	}
 	if (zb0001Mask & 0x2) == 0 { // if not empty
 		// write "chunk"
@@ -745,11 +770,15 @@ func (z MessageOptions) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z MessageOptions) MarshalMsg(b []byte) (o []byte, err error) {
+func (z *MessageOptions) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	// omitempty: check for empty values
 	zb0001Len := uint32(3)
 	var zb0001Mask uint8 /* 3 bits */
+	if z.Size == nil {
+		zb0001Len--
+		zb0001Mask |= 0x1
+	}
 	if z.Chunk == "" {
 		zb0001Len--
 		zb0001Mask |= 0x2
@@ -763,9 +792,15 @@ func (z MessageOptions) MarshalMsg(b []byte) (o []byte, err error) {
 	if zb0001Len == 0 {
 		return
 	}
-	// string "size"
-	o = append(o, 0xa4, 0x73, 0x69, 0x7a, 0x65)
-	o = msgp.AppendInt(o, z.Size)
+	if (zb0001Mask & 0x1) == 0 { // if not empty
+		// string "size"
+		o = append(o, 0xa4, 0x73, 0x69, 0x7a, 0x65)
+		if z.Size == nil {
+			o = msgp.AppendNil(o)
+		} else {
+			o = msgp.AppendInt(o, *z.Size)
+		}
+	}
 	if (zb0001Mask & 0x2) == 0 { // if not empty
 		// string "chunk"
 		o = append(o, 0xa5, 0x63, 0x68, 0x75, 0x6e, 0x6b)
@@ -798,10 +833,21 @@ func (z *MessageOptions) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "size":
-			z.Size, bts, err = msgp.ReadIntBytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Size")
-				return
+			if msgp.IsNil(bts) {
+				bts, err = msgp.ReadNilBytes(bts)
+				if err != nil {
+					return
+				}
+				z.Size = nil
+			} else {
+				if z.Size == nil {
+					z.Size = new(int)
+				}
+				*z.Size, bts, err = msgp.ReadIntBytes(bts)
+				if err != nil {
+					err = msgp.WrapError(err, "Size")
+					return
+				}
 			}
 		case "chunk":
 			z.Chunk, bts, err = msgp.ReadStringBytes(bts)
@@ -828,8 +874,14 @@ func (z *MessageOptions) UnmarshalMsg(bts []byte) (o []byte, err error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z MessageOptions) Msgsize() (s int) {
-	s = 1 + 5 + msgp.IntSize + 6 + msgp.StringPrefixSize + len(z.Chunk) + 11 + msgp.StringPrefixSize + len(z.Compressed)
+func (z *MessageOptions) Msgsize() (s int) {
+	s = 1 + 5
+	if z.Size == nil {
+		s += msgp.NilSize
+	} else {
+		s += msgp.IntSize
+	}
+	s += 6 + msgp.StringPrefixSize + len(z.Chunk) + 11 + msgp.StringPrefixSize + len(z.Compressed)
 	return
 }
 
