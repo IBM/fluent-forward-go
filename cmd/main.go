@@ -21,6 +21,7 @@ func init() {
 
 func main() {
 	flag.Parse()
+
 	c := &client.Client{
 		ConnectionFactory: &client.TCPConnectionFactory{
 			Target: client.ServerAddress{

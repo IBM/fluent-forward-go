@@ -16,10 +16,10 @@ import (
 // =========
 
 const (
-	OPT_SIZE       string = "size"
-	OPT_CHUNK      string = "chunk"
-	OPT_COMPRESSED string = "compressed"
-	OPT_VAL_GZIP   string = "gzip"
+	OptSize       string = "size"
+	OptChunk      string = "chunk"
+	OptCompressed string = "compressed"
+	OptValGZIP    string = "gzip"
 
 	extensionType int8 = 0
 	eventTimeLen  int  = 8
@@ -76,6 +76,7 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	nanoseconds := binary.BigEndian.Uint32(timeBytes[4:])
 
 	et.Time = time.Unix(int64(seconds), int64(nanoseconds))
+
 	return nil
 }
 
@@ -101,11 +102,15 @@ func (e EntryList) Equal(e2 EntryList) bool {
 	}
 
 	first := make(EntryList, len(e))
+
 	copy(first, e)
+
 	second := make(EntryList, len(e2))
+
 	copy(second, e2)
 
 	matches := 0
+
 	for _, ea := range first {
 		for _, eb := range second {
 			if ea.Timestamp.Equal(eb.Timestamp.Time) {
@@ -119,6 +124,7 @@ func (e EntryList) Equal(e2 EntryList) bool {
 							delete(eb.Record, k)
 						}
 					}
+
 					if len(ea.Record) == 0 && len(eb.Record) == 0 {
 						// No more keys left means everything matched
 						matches++

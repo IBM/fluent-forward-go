@@ -11,11 +11,13 @@ import (
 
 func eventStream(entries EntryList) []byte {
 	var buf bytes.Buffer
+
 	w := msgp.NewWriter(&buf)
 	for _, e := range entries {
 		// TODO: capture and return error
 		_ = e.EncodeMsg(w)
 	}
+
 	w.Flush()
 
 	return buf.Bytes()
@@ -136,6 +138,7 @@ func (msg *PackedForwardMessage) Msgsize() (s int) {
 	if msg.Options != nil {
 		s += msg.Options.Msgsize()
 	}
+
 	return
 }
 

@@ -186,7 +186,7 @@ var _ = Describe("Client", func() {
 
 			err = ping.DecodeMsg(serverReader)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(ping.MessageType).To(Equal(protocol.MSGTYPE_PING))
+			Expect(ping.MessageType).To(Equal(protocol.MsgTypePing))
 			Expect(protocol.ValidatePingDigest(&ping, sharedKey, nonce)).NotTo(HaveOccurred())
 
 			pong, err := protocol.NewPong(true, "", "", sharedKey, helo, &ping)
@@ -233,7 +233,7 @@ var _ = Describe("Client", func() {
 
 					err = ping.DecodeMsg(serverReader)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(ping.MessageType).To(Equal(protocol.MSGTYPE_PING))
+					Expect(ping.MessageType).To(Equal(protocol.MsgTypePing))
 					Expect(protocol.ValidatePingDigest(&ping, sharedKey, nonce)).To(HaveOccurred())
 				})
 			})
