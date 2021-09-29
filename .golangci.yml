@@ -1,0 +1,38 @@
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 3m
+linters:
+  # enable some additional (non-default) linters
+  enable:
+    - revive
+    - bodyclose
+    - exportloopref
+    - gocognit
+    - goconst
+    - gofmt
+    - gosec
+    - misspell
+    - nakedret
+    - unconvert
+    - unparam
+    - wsl
+issues:
+  exclude-rules:
+    # exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - errcheck
+        - exportloopref
+        - gocognit
+        - goconst
+        - gosec
+        - unparam
+        - wsl
+  # maximum count of issues with the same text. set to 0 to disable. default is 3.
+  max-same-issues: 0
+linters-settings:
+  goconst:
+    min-len: 2
+    min-occurrences: 5
+  misspell:
+    locale: US
