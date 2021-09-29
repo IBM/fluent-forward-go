@@ -56,18 +56,18 @@ func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
 	return nil
 }
 
-func (msg *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
+func (fm *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 	sz, err := dc.ReadArrayHeader()
 	if err != nil {
 		return msgp.WrapError(err, "Array Header")
 	}
 
-	if msg.Tag, err = dc.ReadString(); err != nil {
+	if fm.Tag, err = dc.ReadString(); err != nil {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	msg.Entries = EntryList{}
-	if err = msg.Entries.DecodeMsg(dc); err != nil {
+	fm.Entries = EntryList{}
+	if err = fm.Entries.DecodeMsg(dc); err != nil {
 		return msgp.WrapError(err, "Entries")
 	}
 
@@ -81,8 +81,8 @@ func (msg *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 			return dc.ReadNil()
 		}
 
-		msg.Options = &MessageOptions{}
-		if err = msg.Options.DecodeMsg(dc); err != nil {
+		fm.Options = &MessageOptions{}
+		if err = fm.Options.DecodeMsg(dc); err != nil {
 			return msgp.WrapError(err, "Options")
 		}
 	}
@@ -117,7 +117,7 @@ func (fm *ForwardMessage) MarshalMsg(bits []byte) ([]byte, error) {
 	return bits, err
 }
 
-func (msg *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
+func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 	var (
 		sz  uint32
 		err error
@@ -127,12 +127,12 @@ func (msg *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 		return bits, msgp.WrapError(err, "Array Header")
 	}
 
-	if msg.Tag, bits, err = msgp.ReadStringBytes(bits); err != nil {
+	if fm.Tag, bits, err = msgp.ReadStringBytes(bits); err != nil {
 		return bits, msgp.WrapError(err, "Tag")
 	}
 
-	msg.Entries = EntryList{}
-	if bits, err = msg.Entries.UnmarshalMsg(bits); err != nil {
+	fm.Entries = EntryList{}
+	if bits, err = fm.Entries.UnmarshalMsg(bits); err != nil {
 		return bits, err
 	}
 
@@ -142,8 +142,8 @@ func (msg *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 			return msgp.ReadNilBytes(bits)
 		}
 
-		msg.Options = &MessageOptions{}
-		if bits, err = msg.Options.UnmarshalMsg(bits); err != nil {
+		fm.Options = &MessageOptions{}
+		if bits, err = fm.Options.UnmarshalMsg(bits); err != nil {
 			return bits, msgp.WrapError(err, "Options")
 		}
 	}
@@ -152,10 +152,11 @@ func (msg *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (msg *ForwardMessage) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msg.Entries.Msgsize()
-	if msg.Options != nil {
-		s += msg.Options.Msgsize()
+func (fm *ForwardMessage) Msgsize() (s int) {
+	s = 1 + msgp.StringPrefixSize + len(fm.Tag) + fm.Entries.Msgsize()
+	if fm.Options != nil {
+		s += fm.Options.Msgsize()
 	}
+
 	return
 }

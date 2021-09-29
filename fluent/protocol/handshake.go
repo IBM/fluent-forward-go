@@ -15,9 +15,9 @@ import (
 // =========
 
 const (
-	MSGTYPE_HELO = "HELO"
-	MSGTYPE_PING = "PING"
-	MSGTYPE_PONG = "PONG"
+	MsgTypeHelo = "HELO"
+	MsgTypePing = "PING"
+	MsgTypePong = "PONG"
 )
 
 // Remember that the handshake flow is like this:
@@ -29,7 +29,7 @@ const (
 // if opts is nil, then a nonce is generated, auth is left empty, and
 // keepalive is true.
 func NewHelo(opts *HeloOpts) *Helo {
-	h := Helo{MessageType: MSGTYPE_HELO}
+	h := Helo{MessageType: MsgTypeHelo}
 	if opts == nil {
 		h.Options = &HeloOpts{
 			Keepalive: true,
@@ -37,6 +37,7 @@ func NewHelo(opts *HeloOpts) *Helo {
 	} else {
 		h.Options = opts
 	}
+
 	return &h
 }
 
@@ -71,7 +72,7 @@ func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (
 	bytes, err := computeHexDigest(salt, hostname, nonce, sharedKey)
 
 	p := Ping{
-		MessageType:        MSGTYPE_PING,
+		MessageType:        MsgTypePing,
 		ClientHostname:     hostname,
 		SharedKeySalt:      salt,
 		SharedKeyHexDigest: bytes,
@@ -81,6 +82,7 @@ func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (
 		p.Username = creds[0]
 		p.Password = creds[1]
 	}
+
 	return &p, err
 }
 
@@ -117,12 +119,13 @@ func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 	bytes, err := computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey)
 
 	p := Pong{
-		MessageType:        MSGTYPE_PONG,
+		MessageType:        MsgTypePong,
 		AuthResult:         authResult,
 		Reason:             reason,
 		ServerHostname:     hostname,
 		SharedKeyHexDigest: bytes,
 	}
+
 	return &p, err
 }
 
@@ -156,23 +159,28 @@ func validateDigest(received, key, nonce, salt []byte, hostname string) error {
 	if err != nil {
 		return err
 	}
+
 	if !bytes.Equal(received, expected) {
 		return errors.New("No match")
 	}
+
 	return nil
 }
 
 func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) ([]byte, error) {
 	h := sha512.New()
 	h.Write(salt)
+
 	_, err := io.WriteString(h, hostname)
 	if err != nil {
 		return nil, err
 	}
+
 	h.Write(nonce)
 	h.Write(sharedKey)
 	sum := h.Sum(nil)
 	hexOut := make([]byte, hex.EncodedLen(len(sum)))
 	hex.Encode(hexOut, sum)
+
 	return hexOut, err
 }

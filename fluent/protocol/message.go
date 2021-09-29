@@ -98,11 +98,12 @@ func (msg *Message) UnmarshalMsg(bits []byte) ([]byte, error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *Message) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.Tag) + msgp.Int64Size + z.Record.Msgsize()
-	if z.Options != nil {
-		s += z.Options.Msgsize()
+func (msg *Message) Msgsize() (s int) {
+	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msgp.Int64Size + msg.Record.Msgsize()
+	if msg.Options != nil {
+		s += msg.Options.Msgsize()
 	}
+
 	return
 }
 
@@ -196,10 +197,11 @@ func (msg *MessageExt) UnmarshalMsg(bits []byte) ([]byte, error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z *MessageExt) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.Tag) + msgp.ExtensionPrefixSize + z.Timestamp.Len() + z.Record.Msgsize()
-	if z.Options != nil {
+func (msg *MessageExt) Msgsize() (s int) {
+	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msgp.ExtensionPrefixSize + msg.Timestamp.Len() + msg.Record.Msgsize()
+	if msg.Options != nil {
 		s += msgp.NilSize
 	}
+
 	return
 }

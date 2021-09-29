@@ -17,7 +17,7 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 const (
-	DEFAULT_CONNECTION_TIMEOUT time.Duration = 60 * time.Second
+	DefaultConnectionTimeout time.Duration = 60 * time.Second
 )
 
 type Client struct {
@@ -71,6 +71,7 @@ func (c *Client) Connect() error {
 	if c.AuthInfo.SharedKey == nil {
 		c.Session.TransportPhase = true
 	}
+
 	return nil
 }
 
@@ -90,7 +91,6 @@ func (c *Client) Reconnect() error {
 	// 	}
 	// 	c.Session.Connection = conn
 	// }
-
 	return nil
 }
 
@@ -142,6 +142,7 @@ func (c *Client) Handshake() error {
 	}
 
 	var helo protocol.Helo
+
 	r := msgp.NewReader(c.Session.Connection)
 	err := helo.DecodeMsg(r)
 
@@ -150,6 +151,7 @@ func (c *Client) Handshake() error {
 	}
 
 	salt := make([]byte, 16)
+
 	_, err = rand.Read(salt)
 	if err != nil {
 		return err
@@ -164,7 +166,9 @@ func (c *Client) Handshake() error {
 	if err != nil {
 		return err
 	}
+
 	var pong protocol.Pong
+
 	err = pong.DecodeMsg(r)
 	if err != nil {
 		return err
@@ -176,5 +180,6 @@ func (c *Client) Handshake() error {
 	}
 
 	c.Session.TransportPhase = true
+
 	return nil
 }

@@ -15,6 +15,7 @@ func (f *TCPConnectionFactory) New() (net.Conn, error) {
 
 func (f *TCPConnectionFactory) Session() (*Session, error) {
 	conn, _ := f.New()
+
 	return &Session{
 		ServerAddress: f.Target,
 		Connection:    conn,
