@@ -44,6 +44,16 @@ type FakeConnection struct {
 	closeWithMsgReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ClosedStub        func() bool
+	closedMutex       sync.RWMutex
+	closedArgsForCall []struct {
+	}
+	closedReturns struct {
+		result1 bool
+	}
+	closedReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	EnableWriteCompressionStub        func(bool)
 	enableWriteCompressionMutex       sync.RWMutex
 	enableWriteCompressionArgsForCall []struct {
@@ -446,6 +456,59 @@ func (fake *FakeConnection) CloseWithMsgReturnsOnCall(i int, result1 error) {
 	}
 	fake.closeWithMsgReturnsOnCall[i] = struct {
 		result1 error
+	}{result1}
+}
+
+func (fake *FakeConnection) Closed() bool {
+	fake.closedMutex.Lock()
+	ret, specificReturn := fake.closedReturnsOnCall[len(fake.closedArgsForCall)]
+	fake.closedArgsForCall = append(fake.closedArgsForCall, struct {
+	}{})
+	stub := fake.ClosedStub
+	fakeReturns := fake.closedReturns
+	fake.recordInvocation("Closed", []interface{}{})
+	fake.closedMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeConnection) ClosedCallCount() int {
+	fake.closedMutex.RLock()
+	defer fake.closedMutex.RUnlock()
+	return len(fake.closedArgsForCall)
+}
+
+func (fake *FakeConnection) ClosedCalls(stub func() bool) {
+	fake.closedMutex.Lock()
+	defer fake.closedMutex.Unlock()
+	fake.ClosedStub = stub
+}
+
+func (fake *FakeConnection) ClosedReturns(result1 bool) {
+	fake.closedMutex.Lock()
+	defer fake.closedMutex.Unlock()
+	fake.ClosedStub = nil
+	fake.closedReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeConnection) ClosedReturnsOnCall(i int, result1 bool) {
+	fake.closedMutex.Lock()
+	defer fake.closedMutex.Unlock()
+	fake.ClosedStub = nil
+	if fake.closedReturnsOnCall == nil {
+		fake.closedReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.closedReturnsOnCall[i] = struct {
+		result1 bool
 	}{result1}
 }
 
@@ -1704,6 +1767,8 @@ func (fake *FakeConnection) Invocations() map[string][][]interface{} {
 	defer fake.closeHandlerMutex.RUnlock()
 	fake.closeWithMsgMutex.RLock()
 	defer fake.closeWithMsgMutex.RUnlock()
+	fake.closedMutex.RLock()
+	defer fake.closedMutex.RUnlock()
 	fake.enableWriteCompressionMutex.RLock()
 	defer fake.enableWriteCompressionMutex.RUnlock()
 	fake.listenMutex.RLock()

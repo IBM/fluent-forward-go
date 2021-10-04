@@ -31,6 +31,7 @@ var _ = Describe("WSClient", func() {
 		client     *WSClient
 		clientSide ext.Conn
 		conn       *wsfakes.FakeConnection
+		session    *WSSession
 	)
 
 	BeforeEach(func() {
@@ -40,6 +41,7 @@ var _ = Describe("WSClient", func() {
 		}
 		clientSide = &extfakes.FakeConn{}
 		conn = &wsfakes.FakeConnection{}
+		session = &WSSession{Connection: conn}
 
 		Expect(factory.NewCallCount()).To(Equal(0))
 		Expect(client.Session).To(BeNil())
@@ -47,6 +49,7 @@ var _ = Describe("WSClient", func() {
 
 	JustBeforeEach(func() {
 		factory.NewReturns(clientSide, nil)
+		factory.NewSessionReturns(session)
 	})
 
 	Describe("Connect", func() {
@@ -58,13 +61,9 @@ var _ = Describe("WSClient", func() {
 			err := client.Connect()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(factory.NewCallCount()).To(Equal(1))
-		})
-
-		It("Stores the connection in the Session", func() {
-			err := client.Connect()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(client.Session).ToNot(BeNil())
-			Expect(client.Session.Connection).ToNot(BeNil())
+			Expect(factory.NewSessionCallCount()).To(Equal(1))
+			Expect(client.Session).To(Equal(session))
+			Expect(client.Session.Connection).To(Equal(conn))
 		})
 
 		When("the factory returns an error", func() {
@@ -107,7 +106,7 @@ var _ = Describe("WSClient", func() {
 			JustBeforeEach(func() {
 				err := client.Connect()
 				Expect(err).NotTo(HaveOccurred())
-				client.Session.Connection = conn
+				time.Sleep(100 * time.Millisecond)
 			})
 
 			It("closes the connection", func() {
@@ -130,15 +129,10 @@ var _ = Describe("WSClient", func() {
 	})
 
 	Describe("Reconnect", func() {
-		var (
-			session1 *WSSession
-		)
-
 		JustBeforeEach(func() {
 			err := client.Connect()
 			Expect(err).NotTo(HaveOccurred())
-			client.Session.Connection = conn
-			session1 = client.Session
+			time.Sleep(100 * time.Millisecond)
 		})
 
 		It("calls Disconnect and creates a new Session", func() {
@@ -146,23 +140,8 @@ var _ = Describe("WSClient", func() {
 
 			Expect(conn.CloseCallCount()).To(Equal(1))
 
-			Expect(client.Session).ToNot(BeNil())
-			Expect(client.Session).ToNot(Equal(session1))
+			Expect(factory.NewSessionCallCount()).To(Equal(2))
 			Expect(client.Session.Connection).ToNot(BeNil())
-			Expect(client.Session.Connection).ToNot(Equal(conn))
-		})
-	})
-
-	Describe("Listen", func() {
-		JustBeforeEach(func() {
-			err := client.Connect()
-			Expect(err).NotTo(HaveOccurred())
-			client.Session.Connection = conn
-		})
-
-		It("listens on the Session connection", func() {
-			Expect(client.Listen()).ToNot(HaveOccurred())
-			Expect(conn.ListenCallCount()).To(Equal(1))
 		})
 	})
 
@@ -182,7 +161,6 @@ var _ = Describe("WSClient", func() {
 
 		JustBeforeEach(func() {
 			err := client.Connect()
-			client.Session.Connection = conn
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -192,6 +170,27 @@ var _ = Describe("WSClient", func() {
 
 			writtenbits := conn.WriteArgsForCall(0)
 			Expect(bytes.Equal(bits, writtenbits)).To(BeTrue())
+		})
+
+		When("the connection is disconnected", func() {
+			JustBeforeEach(func() {
+				err := client.Disconnect()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("returns an error", func() {
+				Expect(client.SendMessage(&msg)).To(MatchError("No active session"))
+			})
+		})
+
+		When("the connection is closed with an error", func() {
+			BeforeEach(func() {
+				conn.ListenReturns(errors.New("BOOM"))
+			})
+
+			It("returns the error", func() {
+				Expect(client.SendMessage(&msg)).To(MatchError("BOOM"))
+			})
 		})
 	})
 })

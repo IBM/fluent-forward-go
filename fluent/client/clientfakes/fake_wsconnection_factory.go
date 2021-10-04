@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
 )
 
@@ -20,6 +21,17 @@ type FakeWSConnectionFactory struct {
 	newReturnsOnCall map[int]struct {
 		result1 ext.Conn
 		result2 error
+	}
+	NewSessionStub        func(ws.Connection) *client.WSSession
+	newSessionMutex       sync.RWMutex
+	newSessionArgsForCall []struct {
+		arg1 ws.Connection
+	}
+	newSessionReturns struct {
+		result1 *client.WSSession
+	}
+	newSessionReturnsOnCall map[int]struct {
+		result1 *client.WSSession
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -81,11 +93,74 @@ func (fake *FakeWSConnectionFactory) NewReturnsOnCall(i int, result1 ext.Conn, r
 	}{result1, result2}
 }
 
+func (fake *FakeWSConnectionFactory) NewSession(arg1 ws.Connection) *client.WSSession {
+	fake.newSessionMutex.Lock()
+	ret, specificReturn := fake.newSessionReturnsOnCall[len(fake.newSessionArgsForCall)]
+	fake.newSessionArgsForCall = append(fake.newSessionArgsForCall, struct {
+		arg1 ws.Connection
+	}{arg1})
+	stub := fake.NewSessionStub
+	fakeReturns := fake.newSessionReturns
+	fake.recordInvocation("NewSession", []interface{}{arg1})
+	fake.newSessionMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeWSConnectionFactory) NewSessionCallCount() int {
+	fake.newSessionMutex.RLock()
+	defer fake.newSessionMutex.RUnlock()
+	return len(fake.newSessionArgsForCall)
+}
+
+func (fake *FakeWSConnectionFactory) NewSessionCalls(stub func(ws.Connection) *client.WSSession) {
+	fake.newSessionMutex.Lock()
+	defer fake.newSessionMutex.Unlock()
+	fake.NewSessionStub = stub
+}
+
+func (fake *FakeWSConnectionFactory) NewSessionArgsForCall(i int) ws.Connection {
+	fake.newSessionMutex.RLock()
+	defer fake.newSessionMutex.RUnlock()
+	argsForCall := fake.newSessionArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeWSConnectionFactory) NewSessionReturns(result1 *client.WSSession) {
+	fake.newSessionMutex.Lock()
+	defer fake.newSessionMutex.Unlock()
+	fake.NewSessionStub = nil
+	fake.newSessionReturns = struct {
+		result1 *client.WSSession
+	}{result1}
+}
+
+func (fake *FakeWSConnectionFactory) NewSessionReturnsOnCall(i int, result1 *client.WSSession) {
+	fake.newSessionMutex.Lock()
+	defer fake.newSessionMutex.Unlock()
+	fake.NewSessionStub = nil
+	if fake.newSessionReturnsOnCall == nil {
+		fake.newSessionReturnsOnCall = make(map[int]struct {
+			result1 *client.WSSession
+		})
+	}
+	fake.newSessionReturnsOnCall[i] = struct {
+		result1 *client.WSSession
+	}{result1}
+}
+
 func (fake *FakeWSConnectionFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.newMutex.RLock()
 	defer fake.newMutex.RUnlock()
+	fake.newSessionMutex.RLock()
+	defer fake.newSessionMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

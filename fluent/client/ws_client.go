@@ -58,6 +58,7 @@ type WSSession struct {
 //counterfeiter:generate . WSConnectionFactory
 type WSConnectionFactory interface {
 	New() (ext.Conn, error)
+	NewSession(ws.Connection) *WSSession
 }
 
 // DefaultWSConnectionFactory is used by the client if no other
@@ -86,6 +87,13 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	return conn, err
 }
 
+func (wcf *DefaultWSConnectionFactory) NewSession(connection ws.Connection) *WSSession {
+	return &WSSession{
+		ServerAddress: wcf.ServerAddress,
+		Connection:    connection,
+	}
+}
+
 // WSClient manages the lifetime of a single websocket connection.
 type WSClient struct {
 	ConnectionFactory WSConnectionFactory
@@ -93,6 +101,22 @@ type WSClient struct {
 	AuthInfo          *IAMAuthInfo
 	ConnectionOptions ws.ConnectionOptions
 	Session           *WSSession
+	errLock           sync.RWMutex
+	err               error
+}
+
+func (c *WSClient) setErr(err error) {
+	c.errLock.Lock()
+	defer c.errLock.Unlock()
+
+	c.err = err
+}
+
+func (c *WSClient) getErr() error {
+	c.errLock.RLock()
+	defer c.errLock.RUnlock()
+
+	return c.err
 }
 
 // Connect initializes the Session and Connection objects by opening
@@ -100,6 +124,10 @@ type WSClient struct {
 // will be passed via the "Authentication" header during the initial
 // HTTP call.
 func (c *WSClient) Connect() error {
+	if c.Session != nil {
+		return errors.New("A session is already active")
+	}
+
 	if c.ConnectionFactory == nil {
 		c.ConnectionFactory = &DefaultWSConnectionFactory{
 			ServerAddress: c.ServerAddress,
@@ -117,10 +145,19 @@ func (c *WSClient) Connect() error {
 		return err
 	}
 
-	c.Session = &WSSession{
-		ServerAddress: c.ServerAddress,
-		Connection:    connection,
-	}
+	c.Session = c.ConnectionFactory.NewSession(connection)
+	waitChan := make(chan struct{}, 1)
+
+	go func() {
+		waitChan <- struct{}{}
+
+		if err := c.Session.Connection.Listen(); err != nil {
+			c.setErr(err)
+		}
+	}()
+
+	// wait for go routine to start
+	<-waitChan
 
 	return nil
 }
@@ -142,25 +179,21 @@ func (c *WSClient) Reconnect() (err error) {
 		err = c.Connect()
 	}
 
+	c.setErr(err)
+
 	return
 }
 
 // SendMessage sends a single msgp.Encodable across the wire.
 func (c *WSClient) SendMessage(e msgp.Encodable) error {
-	if c.Session == nil {
+	if err := c.getErr(); err != nil {
+		return err // TODO: wrap this
+	}
+
+	if c.Session == nil || c.Session.Connection.Closed() {
 		return errors.New("No active session")
 	}
 
 	// msgp.Encode makes use of object pool to decrease allocations
 	return msgp.Encode(c.Session.Connection, e)
-}
-
-// Listen starts a read loop on the Session's websocket connection. It blocks until the Session
-// is closed.
-func (c *WSClient) Listen() error {
-	if c.Session == nil || c.Session.Connection == nil {
-		return errors.New("No active session")
-	}
-
-	return c.Session.Connection.Listen()
 }
