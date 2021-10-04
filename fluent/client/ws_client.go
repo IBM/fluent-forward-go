@@ -78,7 +78,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	}
 
 	conn, resp, err := dialer.Dial(wcf.ServerAddress.String(), header)
-	if resp.Body != nil {
+	if resp != nil && resp.Body != nil {
 		// TODO: dump response, which is second return value from Dial
 		resp.Body.Close()
 	}
