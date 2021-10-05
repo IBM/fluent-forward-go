@@ -12,22 +12,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type HttpServer interface {
-	Shutdown(ctx context.Context) error
-	ListenAndServe() error
-	Close() error
-}
-
 type Listener struct {
 	upgrader       *websocket.Upgrader
-	server         HttpServer
+	server         *http.Server
 	shutdown       chan struct{}
 	exited         chan struct{}
 	connectionLock sync.Mutex
 	wsopts         ws.ConnectionOptions
 }
 
-func NewListener(server HttpServer, wsopts ws.ConnectionOptions) *Listener {
+func NewListener(server *http.Server, wsopts ws.ConnectionOptions) *Listener {
 	return &Listener{
 		&websocket.Upgrader{},
 		server,
@@ -90,6 +84,7 @@ func (s *Listener) ListenAndServe() error {
 	var err error
 	if err = s.server.Shutdown(ctx); err != nil && err != http.ErrServerClosed {
 		log.Println("shutdown server error:", err)
+
 		if err = s.server.Close(); err != nil {
 			log.Println("close server error:", err)
 		}
@@ -100,6 +95,7 @@ func (s *Listener) ListenAndServe() error {
 	}
 
 	s.exited <- struct{}{}
+
 	log.Println("signaled exit")
 
 	return err

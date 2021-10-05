@@ -23,6 +23,7 @@ func init() {
 	flag.StringVar(&tagVar, "t", "test.message", "-t <dot-delimited tag> (shorthand for -tag)")
 }
 
+//nolint
 func listen() *Listener {
 
 	log.Println("Starting server on port 8085")
@@ -57,6 +58,7 @@ func listen() *Listener {
 
 func main() {
 	flag.Parse()
+
 	c := &client.WSClient{
 		ServerAddress: client.ServerAddress{
 			Hostname: "ws://127.0.0.1",
