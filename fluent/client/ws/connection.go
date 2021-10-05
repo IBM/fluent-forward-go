@@ -21,7 +21,7 @@ type ConnectionOptions struct {
 	PongHandler  func(conn Connection, appData string) error
 	ReadDeadline time.Time
 	// ReadHandler handles new messages received on the websocket. If the handler receives
-	// or returns an error, the client MUST close the connection and return an error.
+	// an error, the client MUST close the connection and return an error.
 	ReadHandler ReadHandler
 	// A zero value for means writes will not time out.
 	WriteDeadline time.Time
