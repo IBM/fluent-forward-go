@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"sync/atomic"
+	"time"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext/extfakes"
@@ -43,13 +44,16 @@ var _ = Describe("Connection", func() {
 		}
 
 		opts = ws.ConnectionOptions{
-			ReadHandler: func(_ ws.Connection, msgType int, p []byte, err error) error {
+			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
 				atomic.AddInt32(&rhCallCt, 1)
+				if err != nil {
+					conn.Close()
+				}
 				return err
 			},
 		}
 
-		onFail = func(e error) { Fail(e.Error()) }
+		onFail = nil
 	})
 
 	AfterEach(func() {
@@ -74,23 +78,32 @@ var _ = Describe("Connection", func() {
 		BeforeEach(func() {
 			doClose = true
 			connection, _ = ws.NewConnection(fakeConn, opts)
+		})
+
+		JustBeforeEach(func() {
 			startSig := make(chan struct{}, 1)
 
 			go func() {
 				defer GinkgoRecover()
 				startSig <- struct{}{}
 				if err := connection.Listen(); err != nil {
+					if onFail == nil {
+						defer GinkgoRecover()
+						Fail(err.Error())
+					}
 					onFail(err)
 				}
 			}()
 
-			// wait for go routine to start
+			// wait for Listen loop to start
 			<-startSig
+			time.Sleep(time.Millisecond)
 		})
 
 		AfterEach(func() {
 			if doClose {
 				Expect(connection.Close()).ToNot(HaveOccurred())
+				Eventually(connection.Closed).Should(BeTrue())
 			}
 		})
 
@@ -138,9 +151,13 @@ var _ = Describe("Connection", func() {
 			})
 
 			When("an error occurs", func() {
+				var callCt int
 				BeforeEach(func() {
-					fakeConn.ReadMessageReturns(1, nil, errors.New("BOOM"))
+					callCt = 0
+					fakeConn.ReadMessageReturns(1, nil, &websocket.CloseError{})
 					onFail = func(e error) {
+						defer GinkgoRecover()
+						callCt++
 						if e == nil {
 							Fail("the BOOMing, where is it?")
 						}
@@ -148,7 +165,19 @@ var _ = Describe("Connection", func() {
 				})
 
 				It("enqueues the error", func() {
-					Consistently(func() int32 { return rhCallCt }).Should(BeNumerically("==", 0))
+					Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically("==", 1))
+					Eventually(func() int { return callCt }).Should(BeNumerically("==", 1))
+				})
+
+				When("the error is a normal close", func() {
+					BeforeEach(func() {
+						fakeConn.ReadMessageReturns(1, nil, &websocket.CloseError{Code: websocket.CloseNormalClosure})
+					})
+
+					It("does not enqueue the error", func() {
+						Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically("==", 1))
+						Consistently(func() int { return callCt }).Should(BeNumerically("==", 0))
+					})
 				})
 			})
 		})

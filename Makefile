@@ -5,7 +5,7 @@ lintall: fmt lint
 
 .PHONY:
 lint:
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
 	golangci-lint run ./...
 
 .PHONY: fmt
