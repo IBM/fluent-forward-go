@@ -162,6 +162,7 @@ var _ = Describe("WSClient", func() {
 		JustBeforeEach(func() {
 			err := client.Connect()
 			Expect(err).ToNot(HaveOccurred())
+			time.Sleep(100 * time.Millisecond)
 		})
 
 		It("Sends the message", func() {

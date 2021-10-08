@@ -146,18 +146,17 @@ func (c *WSClient) Connect() error {
 	}
 
 	c.Session = c.ConnectionFactory.NewSession(connection)
-	waitChan := make(chan struct{}, 1)
 
 	go func() {
-		waitChan <- struct{}{}
-
+		// Starts the async read. If there is a read error, it is set so that
+		// it is returned the next time SendMessage is called. That should be
+		// sufficient for most cases where the client cares only about sending.
+		// If the client really cares about handling reads, they will define a
+		// custom ReadHandler that will receive the error synchronously.
 		if err := c.Session.Connection.Listen(); err != nil {
 			c.setErr(err)
 		}
 	}()
-
-	// wait for go routine to start
-	<-waitChan
 
 	return nil
 }
@@ -186,6 +185,9 @@ func (c *WSClient) Reconnect() (err error) {
 
 // SendMessage sends a single msgp.Encodable across the wire.
 func (c *WSClient) SendMessage(e msgp.Encodable) error {
+	// Check for an async connection error and return it here.
+	// In most cases, the client will not care about reading from
+	// the connection, so checking for the error here is sufficient.
 	if err := c.getErr(); err != nil {
 		return err // TODO: wrap this
 	}

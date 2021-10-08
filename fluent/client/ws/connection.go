@@ -110,12 +110,13 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 		),
 	)
 
-	if err != nil {
+	if err != nil && err != websocket.ErrCloseSent {
 		log.Println("write close failed", err)
-		return wsc.Conn.Close()
 	}
 
-	return nil
+	// TODO: add graceful close. This will terminate the connection
+	// even if the read buffer is still receiving data.
+	return wsc.Conn.Close()
 }
 
 func (wsc *connection) Close() error {
@@ -148,12 +149,13 @@ func (wsc *connection) Listen() error {
 		for {
 			mt, message, err := wsc.Conn.ReadMessage()
 			if err = wsc.readHandler(wsc, mt, message, err); err != nil {
-				log.Println("readhandler error:", err)
-
+				// enqueue error only it is something other than a normal close
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure) {
+					log.Println("readhandler error:", err)
 					errChan <- err
-					return
 				}
+
+				log.Println("exiting read loop")
 
 				return
 			}
