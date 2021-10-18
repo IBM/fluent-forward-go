@@ -41,15 +41,21 @@ func (s *Listener) Connect(w http.ResponseWriter, r *http.Request) {
 	if c, err = s.upgrader.Upgrade(w, r, nil); err == nil {
 		connection, _ := ws.NewConnection(c, s.wsopts)
 
-		defer func() {
-			if err := connection.Close(); err != nil && err != websocket.ErrCloseSent {
-				log.Println("close error:", err)
+		s.server.RegisterOnShutdown(func() {
+			if !connection.Closed() {
+				if err := connection.Close(); err != nil && err != websocket.ErrCloseSent {
+					log.Println("server conn close error:", err)
+				}
 			}
-		}()
 
-		if err = connection.Listen(); err != nil && !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-			log.Println("run error:", err)
+			log.Println("server conn closed")
+		})
+
+		if err = connection.Listen(); err != nil &&
+			!websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			log.Println("server listen error:", err)
 		}
+
 	}
 }
 
@@ -95,8 +101,6 @@ func (s *Listener) ListenAndServe() error {
 	}
 
 	s.exited <- struct{}{}
-
-	log.Println("signaled exit")
 
 	return err
 }
