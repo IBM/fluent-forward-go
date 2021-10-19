@@ -3,6 +3,10 @@ package ws_test
 import (
 	"bytes"
 	"errors"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -21,31 +25,65 @@ type message struct {
 
 var _ = Describe("Connection", func() {
 	var (
-		fakeConn           *extfakes.FakeConn
-		opts               ws.ConnectionOptions
-		readMsgs           chan message
-		rhCallCt, rmCallCt int32
-		onFail             func(err error)
+		fakeConn                    *extfakes.FakeConn
+		opts                        ws.ConnectionOptions
+		svrReadMsgs, clientReadMsgs chan message
+		rhCallCt, rcvdMsgCt         int32
+		onFail                      func(err error)
+		echo                        func(w http.ResponseWriter, r *http.Request)
 	)
 
+	var upgrader = websocket.Upgrader{}
+
 	BeforeEach(func() {
-		rmCallCt = 0
 		rhCallCt = 0
-		readMsgs = make(chan message, 1)
+		rcvdMsgCt = 0
+		svrReadMsgs = make(chan message)
+		clientReadMsgs = make(chan message)
 		fakeConn = &extfakes.FakeConn{}
 
-		fakeConn.ReadMessageStub = func() (int, []byte, error) {
-			atomic.AddInt32(&rmCallCt, 1)
-			m, ok := <-readMsgs
-			if !ok {
-				return m.mt, m.msg, errors.New("connection")
+		echo = func(w http.ResponseWriter, r *http.Request) {
+			xopts := ws.ConnectionOptions{
+				CloseDeadline: 100 * time.Millisecond,
+				ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
+					atomic.AddInt32(&rcvdMsgCt, 1)
+					msg := message{
+						mt:  msgType,
+						msg: p,
+						err: err,
+					}
+
+					svrReadMsgs <- msg
+
+					if err != nil {
+						conn.Close()
+					}
+
+					return err
+				},
 			}
-			return m.mt, m.msg, m.err
+
+			wc, _ := upgrader.Upgrade(w, r, nil)
+			c, err := ws.NewConnection(wc, xopts)
+
+			if err != nil {
+				return
+			}
+
+			defer c.Close()
+			c.Listen()
 		}
 
 		opts = ws.ConnectionOptions{
+			CloseDeadline: 100 * time.Millisecond,
 			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
 				atomic.AddInt32(&rhCallCt, 1)
+				msg := message{
+					mt:  msgType,
+					msg: p,
+					err: err,
+				}
+				clientReadMsgs <- msg
 				if err != nil {
 					conn.Close()
 				}
@@ -54,10 +92,12 @@ var _ = Describe("Connection", func() {
 		}
 
 		onFail = nil
+
 	})
 
 	AfterEach(func() {
-		close(readMsgs)
+		close(svrReadMsgs)
+		close(clientReadMsgs)
 	})
 
 	Describe("NewConnection", func() {
@@ -73,11 +113,22 @@ var _ = Describe("Connection", func() {
 		var (
 			connection ws.Connection
 			doClose    bool
+			svr        *httptest.Server
 		)
 
 		BeforeEach(func() {
 			doClose = true
-			connection, _ = ws.NewConnection(fakeConn, opts)
+
+			svr = httptest.NewServer(http.HandlerFunc(echo))
+
+			u := "ws" + strings.TrimPrefix(svr.URL, "http")
+
+			// Connect to the server
+			conn, _, err := websocket.DefaultDialer.Dial(u, nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			connection, err = ws.NewConnection(conn, opts)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		JustBeforeEach(func() {
@@ -105,37 +156,34 @@ var _ = Describe("Connection", func() {
 				Expect(connection.Close()).ToNot(HaveOccurred())
 				Eventually(connection.Closed).Should(BeTrue())
 			}
+			svr.Close()
 		})
 
 		Describe("WriteMessage", func() {
 			When("everything is copacetic", func() {
-				It("writes messages to the connection", func() {
+				FIt("writes messages to the connection", func() {
 					err := connection.WriteMessage(1, []byte("oi"))
 					Expect(err).ToNot(HaveOccurred())
 					err = connection.WriteMessage(1, []byte("koi"))
 					Expect(err).ToNot(HaveOccurred())
 
-					Eventually(fakeConn.WriteMessageCallCount).Should(Equal(2))
-					Consistently(fakeConn.WriteMessageCallCount).Should(BeNumerically("<", 3))
+					x := <-svrReadMsgs
+					Expect(x.msg).To(Equal([]byte("oi")))
+					x = <-svrReadMsgs
+					Expect(x.msg).To(Equal([]byte("koi")))
 
-					mt, bmsg := fakeConn.WriteMessageArgsForCall(0)
-					Expect(mt).To(Equal(1))
-					Expect(bmsg).To(Equal([]byte("oi")))
-
-					mt, bmsg = fakeConn.WriteMessageArgsForCall(1)
-					Expect(mt).To(Equal(1))
-					Expect(bmsg).To(Equal([]byte("koi")))
+					Consistently(svrReadMsgs).ShouldNot(Receive())
 				})
 			})
 
 			When("an error occurs", func() {
 				BeforeEach(func() {
-					fakeConn.WriteMessageReturns(errors.New("BOOM"))
+					doClose = false
+					connection.Close()
 				})
 
 				It("returns an error", func() {
-					Expect(connection.WriteMessage(1, []byte("oi"))).To(HaveOccurred())
-					Expect(fakeConn.WriteMessageCallCount()).To(Equal(1))
+					Expect(connection.WriteMessage(1, []byte("oi"))).To(MatchError(net.ErrClosed))
 				})
 			})
 		})
@@ -143,10 +191,13 @@ var _ = Describe("Connection", func() {
 		Describe("ReadMessage", func() {
 			When("everything is copacetic", func() {
 				It("reads a message from the connection and calls the read handler", func() {
-					readMsgs <- message{1, []byte("oi"), nil}
+					//svrReadMsgs <- message{1, []byte("oi"), nil}
 					var gt int32
-					Eventually(func() int32 { return rhCallCt }).Should(BeNumerically(">", gt))
-					Eventually(func() int32 { return rmCallCt }).Should(BeNumerically(">", gt))
+					Expect(rcvdMsgCt).To(Equal(gt))
+					err := connection.WriteMessage(1, []byte("oi"))
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(func() int32 { return rcvdMsgCt }).Should(BeNumerically(">", gt))
+					//Eventually(func() int32 { return rmCallCt }).Should(BeNumerically(">", gt))
 				})
 			})
 
@@ -212,9 +263,9 @@ var _ = Describe("Connection", func() {
 			})
 
 			When("called multiple times", func() {
-				It("doesn't error", func() {
+				It("errors", func() {
 					Expect(connection.Close()).ToNot(HaveOccurred())
-					Expect(connection.Close()).ToNot(HaveOccurred())
+					Expect(connection.Close()).To(MatchError("multiple close calls"))
 				})
 			})
 

@@ -212,7 +212,7 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	}
 
 	// spec says that only server should close the network connection,
-	// but general consensus is that it doesn't matter
+	// but consensus is that it doesn't matter
 	return wsc.Conn.Close()
 }
 
