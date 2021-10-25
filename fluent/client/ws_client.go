@@ -24,13 +24,13 @@ const (
 	BinaryMessage = websocket.BinaryMessage
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeClientFactory . WSConnectionFactory
+//counterfeiter:generate . WSConnectionFactory
 type WSConnectionFactory interface {
 	New() (ext.Conn, error)
 	NewSession(ws.Connection) *WSSession
 }
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeWSClientFactory . WSClientFactory
+//counterfeiter:generate . WSClientFactory
 type WSClientFactory interface {
 	Connect() error
 	Disconnect() (err error)

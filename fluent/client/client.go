@@ -14,30 +14,24 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-// ConnectionFactory implementations create new connections
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeConnectionFactory . ConnectionFactory
-type ConnectionFactory interface {
-	New() (net.Conn, error)
-}
-
-// ClientFactory implements the client functions
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeClientFactory . CFactory
-type CFactory interface {
-	Connect() error
-	SendMessage(e msgp.Encodable) error
-	Handshake() error
-	Disconnect() (err error)
-}
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 const (
 	DefaultConnectionTimeout time.Duration = 60 * time.Second
 )
 
+// MessageClient implementations send MessagePack messages to a peer
 //counterfeiter:generate . MessageClient
 type MessageClient interface {
 	Connect() error
 	SendMessage(e msgp.Encodable) error
 	Disconnect() (err error)
+}
+
+// ConnectionFactory implementations create new connections
+//counterfeiter:generate . ConnectionFactory
+type ConnectionFactory interface {
+	New() (net.Conn, error)
 }
 
 type Client struct {

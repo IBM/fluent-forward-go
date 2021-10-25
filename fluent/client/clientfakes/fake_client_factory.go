@@ -5,224 +5,104 @@ import (
 	"sync"
 
 	"github.com/IBM/fluent-forward-go/fluent/client"
-	"github.com/tinylib/msgp/msgp"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
 )
 
 type FakeClientFactory struct {
-	ConnectStub        func() error
-	connectMutex       sync.RWMutex
-	connectArgsForCall []struct {
+	NewStub        func() (ext.Conn, error)
+	newMutex       sync.RWMutex
+	newArgsForCall []struct {
 	}
-	connectReturns struct {
-		result1 error
+	newReturns struct {
+		result1 ext.Conn
+		result2 error
 	}
-	connectReturnsOnCall map[int]struct {
-		result1 error
+	newReturnsOnCall map[int]struct {
+		result1 ext.Conn
+		result2 error
 	}
-	DisconnectStub        func() error
-	disconnectMutex       sync.RWMutex
-	disconnectArgsForCall []struct {
+	NewSessionStub        func(ws.Connection) *client.WSSession
+	newSessionMutex       sync.RWMutex
+	newSessionArgsForCall []struct {
+		arg1 ws.Connection
 	}
-	disconnectReturns struct {
-		result1 error
+	newSessionReturns struct {
+		result1 *client.WSSession
 	}
-	disconnectReturnsOnCall map[int]struct {
-		result1 error
-	}
-	HandshakeStub        func() error
-	handshakeMutex       sync.RWMutex
-	handshakeArgsForCall []struct {
-	}
-	handshakeReturns struct {
-		result1 error
-	}
-	handshakeReturnsOnCall map[int]struct {
-		result1 error
-	}
-	SendMessageStub        func(msgp.Encodable) error
-	sendMessageMutex       sync.RWMutex
-	sendMessageArgsForCall []struct {
-		arg1 msgp.Encodable
-	}
-	sendMessageReturns struct {
-		result1 error
-	}
-	sendMessageReturnsOnCall map[int]struct {
-		result1 error
+	newSessionReturnsOnCall map[int]struct {
+		result1 *client.WSSession
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClientFactory) Connect() error {
-	fake.connectMutex.Lock()
-	ret, specificReturn := fake.connectReturnsOnCall[len(fake.connectArgsForCall)]
-	fake.connectArgsForCall = append(fake.connectArgsForCall, struct {
+func (fake *FakeClientFactory) New() (ext.Conn, error) {
+	fake.newMutex.Lock()
+	ret, specificReturn := fake.newReturnsOnCall[len(fake.newArgsForCall)]
+	fake.newArgsForCall = append(fake.newArgsForCall, struct {
 	}{})
-	stub := fake.ConnectStub
-	fakeReturns := fake.connectReturns
-	fake.recordInvocation("Connect", []interface{}{})
-	fake.connectMutex.Unlock()
+	stub := fake.NewStub
+	fakeReturns := fake.newReturns
+	fake.recordInvocation("New", []interface{}{})
+	fake.newMutex.Unlock()
 	if stub != nil {
 		return stub()
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fakeReturns.result1
+	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeClientFactory) ConnectCallCount() int {
-	fake.connectMutex.RLock()
-	defer fake.connectMutex.RUnlock()
-	return len(fake.connectArgsForCall)
+func (fake *FakeClientFactory) NewCallCount() int {
+	fake.newMutex.RLock()
+	defer fake.newMutex.RUnlock()
+	return len(fake.newArgsForCall)
 }
 
-func (fake *FakeClientFactory) ConnectCalls(stub func() error) {
-	fake.connectMutex.Lock()
-	defer fake.connectMutex.Unlock()
-	fake.ConnectStub = stub
+func (fake *FakeClientFactory) NewCalls(stub func() (ext.Conn, error)) {
+	fake.newMutex.Lock()
+	defer fake.newMutex.Unlock()
+	fake.NewStub = stub
 }
 
-func (fake *FakeClientFactory) ConnectReturns(result1 error) {
-	fake.connectMutex.Lock()
-	defer fake.connectMutex.Unlock()
-	fake.ConnectStub = nil
-	fake.connectReturns = struct {
-		result1 error
-	}{result1}
+func (fake *FakeClientFactory) NewReturns(result1 ext.Conn, result2 error) {
+	fake.newMutex.Lock()
+	defer fake.newMutex.Unlock()
+	fake.NewStub = nil
+	fake.newReturns = struct {
+		result1 ext.Conn
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeClientFactory) ConnectReturnsOnCall(i int, result1 error) {
-	fake.connectMutex.Lock()
-	defer fake.connectMutex.Unlock()
-	fake.ConnectStub = nil
-	if fake.connectReturnsOnCall == nil {
-		fake.connectReturnsOnCall = make(map[int]struct {
-			result1 error
+func (fake *FakeClientFactory) NewReturnsOnCall(i int, result1 ext.Conn, result2 error) {
+	fake.newMutex.Lock()
+	defer fake.newMutex.Unlock()
+	fake.NewStub = nil
+	if fake.newReturnsOnCall == nil {
+		fake.newReturnsOnCall = make(map[int]struct {
+			result1 ext.Conn
+			result2 error
 		})
 	}
-	fake.connectReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+	fake.newReturnsOnCall[i] = struct {
+		result1 ext.Conn
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeClientFactory) Disconnect() error {
-	fake.disconnectMutex.Lock()
-	ret, specificReturn := fake.disconnectReturnsOnCall[len(fake.disconnectArgsForCall)]
-	fake.disconnectArgsForCall = append(fake.disconnectArgsForCall, struct {
-	}{})
-	stub := fake.DisconnectStub
-	fakeReturns := fake.disconnectReturns
-	fake.recordInvocation("Disconnect", []interface{}{})
-	fake.disconnectMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeClientFactory) DisconnectCallCount() int {
-	fake.disconnectMutex.RLock()
-	defer fake.disconnectMutex.RUnlock()
-	return len(fake.disconnectArgsForCall)
-}
-
-func (fake *FakeClientFactory) DisconnectCalls(stub func() error) {
-	fake.disconnectMutex.Lock()
-	defer fake.disconnectMutex.Unlock()
-	fake.DisconnectStub = stub
-}
-
-func (fake *FakeClientFactory) DisconnectReturns(result1 error) {
-	fake.disconnectMutex.Lock()
-	defer fake.disconnectMutex.Unlock()
-	fake.DisconnectStub = nil
-	fake.disconnectReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClientFactory) DisconnectReturnsOnCall(i int, result1 error) {
-	fake.disconnectMutex.Lock()
-	defer fake.disconnectMutex.Unlock()
-	fake.DisconnectStub = nil
-	if fake.disconnectReturnsOnCall == nil {
-		fake.disconnectReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.disconnectReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClientFactory) Handshake() error {
-	fake.handshakeMutex.Lock()
-	ret, specificReturn := fake.handshakeReturnsOnCall[len(fake.handshakeArgsForCall)]
-	fake.handshakeArgsForCall = append(fake.handshakeArgsForCall, struct {
-	}{})
-	stub := fake.HandshakeStub
-	fakeReturns := fake.handshakeReturns
-	fake.recordInvocation("Handshake", []interface{}{})
-	fake.handshakeMutex.Unlock()
-	if stub != nil {
-		return stub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fakeReturns.result1
-}
-
-func (fake *FakeClientFactory) HandshakeCallCount() int {
-	fake.handshakeMutex.RLock()
-	defer fake.handshakeMutex.RUnlock()
-	return len(fake.handshakeArgsForCall)
-}
-
-func (fake *FakeClientFactory) HandshakeCalls(stub func() error) {
-	fake.handshakeMutex.Lock()
-	defer fake.handshakeMutex.Unlock()
-	fake.HandshakeStub = stub
-}
-
-func (fake *FakeClientFactory) HandshakeReturns(result1 error) {
-	fake.handshakeMutex.Lock()
-	defer fake.handshakeMutex.Unlock()
-	fake.HandshakeStub = nil
-	fake.handshakeReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClientFactory) HandshakeReturnsOnCall(i int, result1 error) {
-	fake.handshakeMutex.Lock()
-	defer fake.handshakeMutex.Unlock()
-	fake.HandshakeStub = nil
-	if fake.handshakeReturnsOnCall == nil {
-		fake.handshakeReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.handshakeReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeClientFactory) SendMessage(arg1 msgp.Encodable) error {
-	fake.sendMessageMutex.Lock()
-	ret, specificReturn := fake.sendMessageReturnsOnCall[len(fake.sendMessageArgsForCall)]
-	fake.sendMessageArgsForCall = append(fake.sendMessageArgsForCall, struct {
-		arg1 msgp.Encodable
+func (fake *FakeClientFactory) NewSession(arg1 ws.Connection) *client.WSSession {
+	fake.newSessionMutex.Lock()
+	ret, specificReturn := fake.newSessionReturnsOnCall[len(fake.newSessionArgsForCall)]
+	fake.newSessionArgsForCall = append(fake.newSessionArgsForCall, struct {
+		arg1 ws.Connection
 	}{arg1})
-	stub := fake.SendMessageStub
-	fakeReturns := fake.sendMessageReturns
-	fake.recordInvocation("SendMessage", []interface{}{arg1})
-	fake.sendMessageMutex.Unlock()
+	stub := fake.NewSessionStub
+	fakeReturns := fake.newSessionReturns
+	fake.recordInvocation("NewSession", []interface{}{arg1})
+	fake.newSessionMutex.Unlock()
 	if stub != nil {
 		return stub(arg1)
 	}
@@ -232,59 +112,55 @@ func (fake *FakeClientFactory) SendMessage(arg1 msgp.Encodable) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeClientFactory) SendMessageCallCount() int {
-	fake.sendMessageMutex.RLock()
-	defer fake.sendMessageMutex.RUnlock()
-	return len(fake.sendMessageArgsForCall)
+func (fake *FakeClientFactory) NewSessionCallCount() int {
+	fake.newSessionMutex.RLock()
+	defer fake.newSessionMutex.RUnlock()
+	return len(fake.newSessionArgsForCall)
 }
 
-func (fake *FakeClientFactory) SendMessageCalls(stub func(msgp.Encodable) error) {
-	fake.sendMessageMutex.Lock()
-	defer fake.sendMessageMutex.Unlock()
-	fake.SendMessageStub = stub
+func (fake *FakeClientFactory) NewSessionCalls(stub func(ws.Connection) *client.WSSession) {
+	fake.newSessionMutex.Lock()
+	defer fake.newSessionMutex.Unlock()
+	fake.NewSessionStub = stub
 }
 
-func (fake *FakeClientFactory) SendMessageArgsForCall(i int) msgp.Encodable {
-	fake.sendMessageMutex.RLock()
-	defer fake.sendMessageMutex.RUnlock()
-	argsForCall := fake.sendMessageArgsForCall[i]
+func (fake *FakeClientFactory) NewSessionArgsForCall(i int) ws.Connection {
+	fake.newSessionMutex.RLock()
+	defer fake.newSessionMutex.RUnlock()
+	argsForCall := fake.newSessionArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeClientFactory) SendMessageReturns(result1 error) {
-	fake.sendMessageMutex.Lock()
-	defer fake.sendMessageMutex.Unlock()
-	fake.SendMessageStub = nil
-	fake.sendMessageReturns = struct {
-		result1 error
+func (fake *FakeClientFactory) NewSessionReturns(result1 *client.WSSession) {
+	fake.newSessionMutex.Lock()
+	defer fake.newSessionMutex.Unlock()
+	fake.NewSessionStub = nil
+	fake.newSessionReturns = struct {
+		result1 *client.WSSession
 	}{result1}
 }
 
-func (fake *FakeClientFactory) SendMessageReturnsOnCall(i int, result1 error) {
-	fake.sendMessageMutex.Lock()
-	defer fake.sendMessageMutex.Unlock()
-	fake.SendMessageStub = nil
-	if fake.sendMessageReturnsOnCall == nil {
-		fake.sendMessageReturnsOnCall = make(map[int]struct {
-			result1 error
+func (fake *FakeClientFactory) NewSessionReturnsOnCall(i int, result1 *client.WSSession) {
+	fake.newSessionMutex.Lock()
+	defer fake.newSessionMutex.Unlock()
+	fake.NewSessionStub = nil
+	if fake.newSessionReturnsOnCall == nil {
+		fake.newSessionReturnsOnCall = make(map[int]struct {
+			result1 *client.WSSession
 		})
 	}
-	fake.sendMessageReturnsOnCall[i] = struct {
-		result1 error
+	fake.newSessionReturnsOnCall[i] = struct {
+		result1 *client.WSSession
 	}{result1}
 }
 
 func (fake *FakeClientFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.connectMutex.RLock()
-	defer fake.connectMutex.RUnlock()
-	fake.disconnectMutex.RLock()
-	defer fake.disconnectMutex.RUnlock()
-	fake.handshakeMutex.RLock()
-	defer fake.handshakeMutex.RUnlock()
-	fake.sendMessageMutex.RLock()
-	defer fake.sendMessageMutex.RUnlock()
+	fake.newMutex.RLock()
+	defer fake.newMutex.RUnlock()
+	fake.newSessionMutex.RLock()
+	defer fake.newSessionMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
@@ -304,4 +180,4 @@ func (fake *FakeClientFactory) recordInvocation(key string, args []interface{}) 
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ client.CFactory = new(FakeClientFactory)
+var _ client.WSConnectionFactory = new(FakeClientFactory)

@@ -165,7 +165,7 @@ var _ = Describe("Connection", func() {
 				})
 
 				It("enqueues the error", func() {
-					Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically("==", 1))
+					Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically(">=", 1))
 					Eventually(func() int { return callCt }).Should(BeNumerically("==", 1))
 				})
 
@@ -175,7 +175,7 @@ var _ = Describe("Connection", func() {
 					})
 
 					It("does not enqueue the error", func() {
-						Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically("==", 1))
+						Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically(">=", 1))
 						Consistently(func() int { return callCt }).Should(BeNumerically("==", 0))
 					})
 				})
