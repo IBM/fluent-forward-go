@@ -140,7 +140,7 @@ func (c *WSClient) Connect() error {
 		return err
 	}
 
-	connection, err := ws.NewConnection(conn, c.ConnectionOptions)
+	connection, err := ws.NewConnection(conn, &c.ConnectionOptions)
 	if err != nil {
 		return err
 	}

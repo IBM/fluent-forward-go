@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -65,7 +64,7 @@ type connection struct {
 	closeDeadline time.Duration
 }
 
-func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
+func NewConnection(conn ext.Conn, opts *ConnectionOptions) (Connection, error) {
 	wsc := &connection{
 		Conn:      conn,
 		closedSig: make(chan struct{}),
@@ -160,27 +159,34 @@ func (wsc *connection) unsetConnState(cs ConnState) {
 }
 
 func (wsc *connection) HandleClose(_ Connection, code int, text string) error {
+	var err error
+
 	if wsc.hasConnState(ConnStateClosed) {
 		// already closed, nothing else to do
 		return nil
 	}
 
-	log.Println("received close message")
+	log.Println("received close message", code, text)
 	wsc.setConnState(ConnStateCloseReceived)
 
+	// If the peer initiated the close, then this client must send a message
+	// confirming receipt. If this client sent the initial close message, then
+	// the closing handshake is complete and no further action is required.
 	if !wsc.hasConnState(ConnStateCloseSent) {
-		// respond with close
-		return wsc.Close()
+		log.Println("finalizing handshake", code, text)
+
+		// respond with close; Gorilla doesn't return the error when sending
+		// the close response, not sure why
+		err = wsc.Close()
 	}
 
-	// sent a close and received one, signal shutdown
-	log.Println("closing handshake complete")
-	wsc.setConnState(ConnStateClosed)
+	// sent a close and received one, all done
+	log.Println("handshake finalized", err)
 
-	return nil
+	return err
 }
 
-// CloseConn return true
+// CloseWithMsg sends a close message to the peer
 func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	if wsc.hasConnState(ConnStateCloseSent) {
 		return errors.New("multiple close calls")
@@ -203,13 +209,17 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 		log.Println("write close failed", err)
 	}
 
-	select {
-	case <-time.After(wsc.closeDeadline):
-		log.Println("close deadline expired")
-		// sent a close, but never heard back, close anyway
-		wsc.setConnState(ConnStateClosed)
-	case <-wsc.closedSig:
+	if !wsc.hasConnState(ConnStateCloseReceived) {
+		select {
+		case <-time.After(wsc.closeDeadline):
+			log.Println("close deadline expired")
+			// sent a close, but never heard back, close anyway
+		case <-wsc.closedSig:
+		}
 	}
+
+	log.Println("closing ws connection")
+	wsc.setConnState(ConnStateClosed)
 
 	// spec says that only server should close the network connection,
 	// but consensus is that it doesn't matter
@@ -231,19 +241,12 @@ type connMsg struct {
 }
 
 func (wsc *connection) Listen() error {
-	// TODO prevent call if already listening
-	nextMsg := make(chan connMsg)
-
 	defer func() {
-		log.Println("signaling closed")
-
+		log.Println("exit Listen")
 		wsc.closedSig <- struct{}{}
-
-		if r := recover(); r != nil {
-			debug.PrintStack()
-			log.Println("panic:", r)
-		}
 	}()
+
+	nextMsg := make(chan connMsg)
 
 	go func() {
 		msg := connMsg{}
@@ -252,27 +255,35 @@ func (wsc *connection) Listen() error {
 			msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 			nextMsg <- msg
 
-			if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed) ||
-				msg.err == net.ErrClosed {
-				close(nextMsg)
-				return
+			if msg.err == net.ErrClosed {
+				log.Println(msg.err.Error())
+				break
+			}
+
+			if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed) {
+				log.Println(wsc.connState)
+				break
 			}
 		}
+
+		close(nextMsg)
 	}()
 
-	var closeErr error
+	var err error
 
 	for msg := range nextMsg {
-		if err := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); err != nil {
+		//log.Println("readhandler error:", msg)
+		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
 			// enqueue error only if it is something other than a normal close
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseNormalClosure) {
-				log.Println("readhandler error:", err)
-				closeErr = err
+			if websocket.IsUnexpectedCloseError(rerr, websocket.CloseNormalClosure) {
+				log.Println("xreadhandler error:", rerr)
+				err = rerr
+				return err
 			}
 		}
 	}
 
-	return closeErr
+	return err
 }
 
 func (wsc *connection) NextReader() (messageType int, r io.Reader, err error) {
