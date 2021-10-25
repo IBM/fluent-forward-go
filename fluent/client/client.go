@@ -140,7 +140,7 @@ func (c *Client) sendMessage(e msgp.Encodable) (err error) {
 	return
 }
 
-// SendMessage sends bytes across the wire.  If the session
+// SendRaw sends bytes across the wire.  If the session
 // is not yet in transport phase, an error is returned, and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
 	if c.Session == nil {

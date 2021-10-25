@@ -200,7 +200,7 @@ func (c *WSClient) SendMessage(e msgp.Encodable) error {
 	return msgp.Encode(c.Session.Connection, e)
 }
 
-// SendMessage sends an array of bytes across the wire.
+// SendRaw sends an array of bytes across the wire.
 func (c *WSClient) SendRaw(m []byte) error {
 	// Check for an async connection error and return it here.
 	// In most cases, the client will not care about reading from
