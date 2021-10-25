@@ -24,6 +24,12 @@ const (
 	BinaryMessage = websocket.BinaryMessage
 )
 
+//counterfeiter:generate . WSConnectionFactory
+type WSConnectionFactory interface {
+	New() (ext.Conn, error)
+	NewSession(ws.Connection) *WSSession
+}
+
 type IAMAuthInfo struct {
 	token string
 	mutex sync.RWMutex
@@ -53,12 +59,6 @@ func NewIAMAuthInfo(token string) *IAMAuthInfo {
 type WSSession struct {
 	ServerAddress
 	Connection ws.Connection
-}
-
-//counterfeiter:generate . WSConnectionFactory
-type WSConnectionFactory interface {
-	New() (ext.Conn, error)
-	NewSession(ws.Connection) *WSSession
 }
 
 // DefaultWSConnectionFactory is used by the client if no other
@@ -125,7 +125,7 @@ func (c *WSClient) getErr() error {
 // HTTP call.
 func (c *WSClient) Connect() error {
 	if c.Session != nil {
-		return errors.New("A session is already active")
+		return errors.New("a session is already active")
 	}
 
 	if c.ConnectionFactory == nil {
@@ -193,7 +193,7 @@ func (c *WSClient) SendMessage(e msgp.Encodable) error {
 	}
 
 	if c.Session == nil || c.Session.Connection.Closed() {
-		return errors.New("No active session")
+		return errors.New("no active session")
 	}
 
 	// msgp.Encode makes use of object pool to decrease allocations

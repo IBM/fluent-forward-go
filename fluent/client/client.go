@@ -20,6 +20,21 @@ const (
 	DefaultConnectionTimeout time.Duration = 60 * time.Second
 )
 
+// MessageClient implementations send MessagePack messages to a peer
+//counterfeiter:generate . MessageClient
+type MessageClient interface {
+	Connect() error
+	SendMessage(e msgp.Encodable) error
+	Disconnect() (err error)
+	Reconnect() error
+}
+
+// ConnectionFactory implementations create new connections
+//counterfeiter:generate . ConnectionFactory
+type ConnectionFactory interface {
+	New() (net.Conn, error)
+}
+
 type Client struct {
 	ConnectionFactory
 	Timeout  time.Duration
@@ -47,12 +62,6 @@ type Session struct {
 	ServerAddress
 	Connection     net.Conn
 	TransportPhase bool
-}
-
-// ConnectionFactory implementations create new connections
-//counterfeiter:generate . ConnectionFactory
-type ConnectionFactory interface {
-	New() (net.Conn, error)
 }
 
 // Connect initializes the Session and Connection objects by opening
@@ -111,7 +120,7 @@ func (c *Client) Disconnect() (err error) {
 // is not yet in transport phase, an error is returned, and no message is sent.
 func (c *Client) SendMessage(e msgp.Encodable) error {
 	if c.Session == nil {
-		return errors.New("No active session")
+		return errors.New("no active session")
 	}
 
 	if !c.Session.TransportPhase {
@@ -138,7 +147,7 @@ func (c *Client) sendMessage(e msgp.Encodable) (err error) {
 // the client is free to send event messages.
 func (c *Client) Handshake() error {
 	if c.Session == nil || c.Session.Connection == nil {
-		return errors.New("Not connected")
+		return errors.New("not connected")
 	}
 
 	var helo protocol.Helo

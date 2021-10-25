@@ -180,7 +180,7 @@ var _ = Describe("WSClient", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(client.SendMessage(&msg)).To(MatchError("No active session"))
+				Expect(client.SendMessage(&msg)).To(MatchError("no active session"))
 			})
 		})
 
