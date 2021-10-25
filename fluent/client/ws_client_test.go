@@ -194,4 +194,48 @@ var _ = Describe("WSClient", func() {
 			})
 		})
 	})
+
+	Describe("SendRaw", func() {
+		var (
+			bits []byte
+		)
+
+		BeforeEach(func() {
+			bits = []byte("oi")
+		})
+
+		JustBeforeEach(func() {
+			err := client.Connect()
+			Expect(err).ToNot(HaveOccurred())
+			time.Sleep(100 * time.Millisecond)
+		})
+
+		It("Sends the message", func() {
+			Expect(client.SendRaw(bits)).ToNot(HaveOccurred())
+
+			writtenbits := conn.WriteArgsForCall(0)
+			Expect(bytes.Equal(bits, writtenbits)).To(BeTrue())
+		})
+
+		When("the connection is disconnected", func() {
+			JustBeforeEach(func() {
+				err := client.Disconnect()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("returns an error", func() {
+				Expect(client.SendRaw(bits)).To(MatchError("no active session"))
+			})
+		})
+
+		When("the connection is closed with an error", func() {
+			BeforeEach(func() {
+				conn.ListenReturns(errors.New("BOOM"))
+			})
+
+			It("returns the error", func() {
+				Expect(client.SendRaw(bits)).To(MatchError("BOOM"))
+			})
+		})
+	})
 })

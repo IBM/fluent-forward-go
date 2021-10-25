@@ -199,3 +199,21 @@ func (c *WSClient) SendMessage(e msgp.Encodable) error {
 	// msgp.Encode makes use of object pool to decrease allocations
 	return msgp.Encode(c.Session.Connection, e)
 }
+
+// SendRaw sends an array of bytes across the wire.
+func (c *WSClient) SendRaw(m []byte) error {
+	// Check for an async connection error and return it here.
+	// In most cases, the client will not care about reading from
+	// the connection, so checking for the error here is sufficient.
+	if err := c.getErr(); err != nil {
+		return err // TODO: wrap this
+	}
+
+	if c.Session == nil || c.Session.Connection.Closed() {
+		return errors.New("no active session")
+	}
+
+	_, err := c.Session.Connection.Write(m)
+
+	return err
+}

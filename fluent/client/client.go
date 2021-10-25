@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	// "fmt"
 	"crypto/rand"
 	"net"
 	"time"
@@ -24,9 +23,10 @@ const (
 //counterfeiter:generate . MessageClient
 type MessageClient interface {
 	Connect() error
-	SendMessage(e msgp.Encodable) error
 	Disconnect() (err error)
 	Reconnect() error
+	SendMessage(e msgp.Encodable) error
+	SendRaw(raw []byte) error
 }
 
 // ConnectionFactory implementations create new connections
@@ -124,7 +124,7 @@ func (c *Client) SendMessage(e msgp.Encodable) error {
 	}
 
 	if !c.Session.TransportPhase {
-		return errors.New("Session handshake not completed")
+		return errors.New("session handshake not completed")
 	}
 
 	return c.sendMessage(e)
@@ -138,6 +138,22 @@ func (c *Client) sendMessage(e msgp.Encodable) (err error) {
 	}
 
 	return
+}
+
+// SendRaw sends bytes across the wire.  If the session
+// is not yet in transport phase, an error is returned, and no message is sent.
+func (c *Client) SendRaw(m []byte) error {
+	if c.Session == nil {
+		return errors.New("no active session")
+	}
+
+	if !c.Session.TransportPhase {
+		return errors.New("session handshake not completed")
+	}
+
+	_, err := c.Session.Connection.Write(m)
+
+	return err
 }
 
 // Handshake initiates handshake mode.  Users must call this before attempting
