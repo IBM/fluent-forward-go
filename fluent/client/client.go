@@ -33,6 +33,13 @@ const (
 	DefaultConnectionTimeout time.Duration = 60 * time.Second
 )
 
+//counterfeiter:generate . MessageClient
+type MessageClient interface {
+	Connect() error
+	SendMessage(e msgp.Encodable) error
+	Disconnect() (err error)
+}
+
 type Client struct {
 	ConnectionFactory
 	Timeout  time.Duration
