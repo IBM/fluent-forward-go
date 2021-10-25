@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"errors"
+
 	// "fmt"
 	// "io"
 	"math/rand"
@@ -122,6 +123,58 @@ var _ = Describe("Client", func() {
 			Expect(recvd.Timestamp.Equal(msg.Timestamp.Time)).To(BeTrue())
 			Expect(recvd.Record["first"]).To(Equal(msg.Record["first"]))
 			Expect(recvd.Record["last"]).To(Equal(msg.Record["last"]))
+		})
+
+		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
+			JustBeforeEach(func() {
+				client.Session.TransportPhase = false
+			})
+
+			It("Returns an error", func() {
+				Expect(client.SendMessage(&msg)).To(HaveOccurred())
+			})
+
+			// TODO: We need a test that no message is sent
+		})
+	})
+
+	Describe("SendRaw", func() {
+		var (
+			serverSide net.Conn
+			msg        protocol.MessageExt
+			bits       []byte
+		)
+
+		BeforeEach(func() {
+			clientSide, serverSide = net.Pipe()
+			msg = protocol.MessageExt{
+				Tag: "foo.bar",
+			}
+			var err error
+			bits, err = msg.MarshalMsg(nil)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		JustBeforeEach(func() {
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("Sends the message", func() {
+			c := make(chan bool, 1)
+			go func() {
+				defer GinkgoRecover()
+
+				c <- true
+				err := client.SendRaw(bits)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+
+			var recvd protocol.MessageExt
+			<-c
+			err := recvd.DecodeMsg(msgp.NewReader(serverSide))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(recvd.Tag).To(Equal(msg.Tag))
 		})
 
 		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
