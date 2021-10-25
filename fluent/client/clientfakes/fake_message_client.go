@@ -29,6 +29,16 @@ type FakeMessageClient struct {
 	disconnectReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ReconnectStub        func() error
+	reconnectMutex       sync.RWMutex
+	reconnectArgsForCall []struct {
+	}
+	reconnectReturns struct {
+		result1 error
+	}
+	reconnectReturnsOnCall map[int]struct {
+		result1 error
+	}
 	SendMessageStub        func(msgp.Encodable) error
 	sendMessageMutex       sync.RWMutex
 	sendMessageArgsForCall []struct {
@@ -150,6 +160,59 @@ func (fake *FakeMessageClient) DisconnectReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeMessageClient) Reconnect() error {
+	fake.reconnectMutex.Lock()
+	ret, specificReturn := fake.reconnectReturnsOnCall[len(fake.reconnectArgsForCall)]
+	fake.reconnectArgsForCall = append(fake.reconnectArgsForCall, struct {
+	}{})
+	stub := fake.ReconnectStub
+	fakeReturns := fake.reconnectReturns
+	fake.recordInvocation("Reconnect", []interface{}{})
+	fake.reconnectMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) ReconnectCallCount() int {
+	fake.reconnectMutex.RLock()
+	defer fake.reconnectMutex.RUnlock()
+	return len(fake.reconnectArgsForCall)
+}
+
+func (fake *FakeMessageClient) ReconnectCalls(stub func() error) {
+	fake.reconnectMutex.Lock()
+	defer fake.reconnectMutex.Unlock()
+	fake.ReconnectStub = stub
+}
+
+func (fake *FakeMessageClient) ReconnectReturns(result1 error) {
+	fake.reconnectMutex.Lock()
+	defer fake.reconnectMutex.Unlock()
+	fake.ReconnectStub = nil
+	fake.reconnectReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) ReconnectReturnsOnCall(i int, result1 error) {
+	fake.reconnectMutex.Lock()
+	defer fake.reconnectMutex.Unlock()
+	fake.ReconnectStub = nil
+	if fake.reconnectReturnsOnCall == nil {
+		fake.reconnectReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.reconnectReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeMessageClient) SendMessage(arg1 msgp.Encodable) error {
 	fake.sendMessageMutex.Lock()
 	ret, specificReturn := fake.sendMessageReturnsOnCall[len(fake.sendMessageArgsForCall)]
@@ -218,6 +281,8 @@ func (fake *FakeMessageClient) Invocations() map[string][][]interface{} {
 	defer fake.connectMutex.RUnlock()
 	fake.disconnectMutex.RLock()
 	defer fake.disconnectMutex.RUnlock()
+	fake.reconnectMutex.RLock()
+	defer fake.reconnectMutex.RUnlock()
 	fake.sendMessageMutex.RLock()
 	defer fake.sendMessageMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

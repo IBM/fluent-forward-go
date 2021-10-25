@@ -26,6 +26,7 @@ type MessageClient interface {
 	Connect() error
 	SendMessage(e msgp.Encodable) error
 	Disconnect() (err error)
+	Reconnect() error
 }
 
 // ConnectionFactory implementations create new connections
