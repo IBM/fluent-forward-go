@@ -14,7 +14,14 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+// ConnectionFactory implementations create new connections
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeConnectionFactory . ConnectionFactory
+type ConnectionFactory interface {
+	New() (net.Conn, error)
+	SendMessage(e msgp.Encodable) error
+	Connect() error
+	Disconnect() (err error)
+}
 
 const (
 	DefaultConnectionTimeout time.Duration = 60 * time.Second
@@ -47,12 +54,6 @@ type Session struct {
 	ServerAddress
 	Connection     net.Conn
 	TransportPhase bool
-}
-
-// ConnectionFactory implementations create new connections
-//counterfeiter:generate . ConnectionFactory
-type ConnectionFactory interface {
-	New() (net.Conn, error)
 }
 
 // Connect initializes the Session and Connection objects by opening
