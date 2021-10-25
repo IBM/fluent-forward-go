@@ -304,4 +304,4 @@ func (fake *FakeClientFactory) recordInvocation(key string, args []interface{}) 
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ client.ClientFactory = new(FakeClientFactory)
+var _ client.CFactory = new(FakeClientFactory)

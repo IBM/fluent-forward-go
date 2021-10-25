@@ -21,8 +21,8 @@ type ConnectionFactory interface {
 }
 
 // ClientFactory implements the client functions
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeClientFactory . ClientFactory
-type ClientFactory interface {
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeClientFactory . CFactory
+type CFactory interface {
 	Connect() error
 	SendMessage(e msgp.Encodable) error
 	Handshake() error
