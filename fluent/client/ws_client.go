@@ -30,14 +30,6 @@ type WSConnectionFactory interface {
 	NewSession(ws.Connection) *WSSession
 }
 
-//counterfeiter:generate . WSClientFactory
-type WSClientFactory interface {
-	Connect() error
-	Disconnect() (err error)
-	Reconnect() (err error)
-	SendMessage(e msgp.Encodable) error
-}
-
 type IAMAuthInfo struct {
 	token string
 	mutex sync.RWMutex
