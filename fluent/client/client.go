@@ -18,8 +18,14 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeConnectionFactory . ConnectionFactory
 type ConnectionFactory interface {
 	New() (net.Conn, error)
-	SendMessage(e msgp.Encodable) error
+}
+
+// ClientFactory implements the client functions
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 --fake-name FakeClientFactory . ClientFactory
+type ClientFactory interface {
 	Connect() error
+	SendMessage(e msgp.Encodable) error
+	Handshake() error
 	Disconnect() (err error)
 }
 
@@ -112,7 +118,7 @@ func (c *Client) Disconnect() (err error) {
 // is not yet in transport phase, an error is returned, and no message is sent.
 func (c *Client) SendMessage(e msgp.Encodable) error {
 	if c.Session == nil {
-		return errors.New("No active session")
+		return errors.New("no active session")
 	}
 
 	if !c.Session.TransportPhase {
@@ -139,7 +145,7 @@ func (c *Client) sendMessage(e msgp.Encodable) (err error) {
 // the client is free to send event messages.
 func (c *Client) Handshake() error {
 	if c.Session == nil || c.Session.Connection == nil {
-		return errors.New("Not connected")
+		return errors.New("not connected")
 	}
 
 	var helo protocol.Helo
