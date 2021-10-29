@@ -21,23 +21,14 @@ type message struct {
 }
 
 var _ = Describe("Connection", func() {
-
-	// Describe("NewConnection", func() {
-	// 	It("works", func() {
-	// 		c, err := ws.NewConnection(fakeConn, ws.ConnectionOptions{})
-	// 		Expect(err).ToNot(HaveOccurred())
-	// 		Expect(c).ToNot(BeNil())
-	// 		// TODO: test options are set correctly
-	// 	})
-	// })
-
 	var (
-		checkSvrClose               bool
-		connection, svrConnection   ws.Connection
-		svr                         *httptest.Server
-		opts                        ws.ConnectionOptions
-		svrRcvdMsgs, clientRcvdMsgs chan message
-		listenErrs                  chan error
+		checkSvrClose                   bool
+		connection, svrConnection       ws.Connection
+		svr                             *httptest.Server
+		opts                            ws.ConnectionOptions
+		svrRcvdMsgs, clientRcvdMsgs     chan message
+		listenErrs                      chan error
+		exitConnState, svrExitConnState ws.ConnState
 	)
 
 	var makeOpts = func(msgChan chan message, name string) ws.ConnectionOptions {
@@ -81,6 +72,9 @@ var _ = Describe("Connection", func() {
 	}
 
 	BeforeEach(func() {
+		exitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
+		svrExitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
+
 		checkSvrClose = true
 		svrRcvdMsgs = make(chan message)
 		svr = httptest.NewServer(newHandler(svrRcvdMsgs))
@@ -103,6 +97,10 @@ var _ = Describe("Connection", func() {
 
 		go func() {
 			defer GinkgoRecover()
+
+			Expect(svrConnection.ConnState()).To(Equal(ws.ConnStateOpen | ws.ConnStateListening))
+			Expect(connection.ConnState()).To(Equal(ws.ConnStateOpen))
+
 			if err := connection.Listen(); err != nil {
 				listenErrs <- err
 			}
@@ -128,6 +126,9 @@ var _ = Describe("Connection", func() {
 		}
 
 		svr.Close()
+
+		Expect(connection.ConnState()).To(Equal(exitConnState))
+		Expect(svrConnection.ConnState()).To(Equal(svrExitConnState))
 	})
 
 	Describe("WriteMessage", func() {
@@ -166,8 +167,6 @@ var _ = Describe("Connection", func() {
 				m := <-svrRcvdMsgs
 				Expect(m.err).ToNot(HaveOccurred())
 				Expect(bytes.Equal(m.msg, []byte("oi"))).To(BeTrue())
-
-				Consistently(svrRcvdMsgs).ShouldNot(Receive())
 			})
 		})
 
@@ -183,7 +182,7 @@ var _ = Describe("Connection", func() {
 				Expect(err).ToNot(HaveOccurred())
 				err = <-listenErrs
 				Expect(err.Error()).To(MatchRegexp("meh"))
-			}, 5)
+			})
 
 			When("the error is a normal close", func() {
 				It("does not enqueue the error", func() {
@@ -233,10 +232,12 @@ var _ = Describe("Connection", func() {
 		When("the connection errors on close", func() {
 			BeforeEach(func() {
 				checkSvrClose = false
+				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
+				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				connection.UnderlyingConn().Close()
 			})
 
 			It("returns an error", func() {
-				connection.UnderlyingConn().Close()
 				Expect(connection.Close().Error()).To(MatchRegexp("use of closed network connection"))
 			})
 		})

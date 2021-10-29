@@ -50,6 +50,7 @@ type Connection interface {
 	ext.Conn
 	CloseWithMsg(closeCode int, msg string) error
 	Closed() bool
+	ConnState() ConnState
 	Listen() error
 	ReadHandler() ReadHandler
 	SetReadHandler(rh ReadHandler)
@@ -122,6 +123,13 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	return wsc, nil
 }
 
+func (wsc *connection) ConnState() ConnState {
+	wsc.stateLock.RLock()
+	defer wsc.stateLock.RUnlock()
+
+	return wsc.connState
+}
+
 func (wsc *connection) hasConnState(cs ConnState) bool {
 	wsc.stateLock.RLock()
 	defer wsc.stateLock.RUnlock()
@@ -177,8 +185,8 @@ func (wsc *connection) HandleClose(_ Connection, code int, text string) error {
 	if !wsc.hasConnState(ConnStateCloseSent) {
 		log.Println(wsc.id, "finalizing handshake", code, text)
 
-		// respond with close; Gorilla doesn't return the error when sending
-		// the close response, not sure why
+		// respond with close; Gorilla doesn't return the error from close response,
+		// not sure why
 		err = wsc.Close()
 	}
 
@@ -264,6 +272,7 @@ func (wsc *connection) Listen() error {
 
 	go func() {
 		defer func() {
+			wsc.unsetConnState(ConnStateListening)
 			wsc.closedSig <- struct{}{}
 			log.Println(wsc.id, "exit ReadMessage loop")
 		}()
@@ -292,32 +301,10 @@ func (wsc *connection) Listen() error {
 			}
 		}
 
-		wsc.unsetConnState(ConnStateListening)
 		close(nextMsg)
 	}()
 
 	var err error
-
-	// READLOOP:
-	// 	for {
-	// 		select {
-	// 		case msg, ok := <-nextMsg:
-	// 			if msg != nil {
-	// 				if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
-	// 					log.Printf("%s readhandler err2: %+v", wsc.id, msg.err)
-	// 					// enqueue error only if it is something other than a normal close
-	// 					if websocket.IsUnexpectedCloseError(rerr, websocket.CloseNormalClosure) {
-	// 						log.Println(wsc.id, "unexpected error:", rerr)
-	// 						err = rerr
-	// 					}
-	// 				}
-	// 			}
-	// 			if !ok {
-	// 				log.Println(wsc.id, "closed channel")
-	// 				break READLOOP
-	// 			}
-	// 		}
-	// 	}
 
 	for msg := range nextMsg {
 		log.Printf("%s readhandler: %+v", wsc.id, msg)
