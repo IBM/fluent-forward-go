@@ -269,7 +269,7 @@ func (wsc *connection) Listen() error {
 
 	wsc.setConnState(ConnStateListening)
 
-	nextMsg := make(chan *connMsg)
+	nextMsg := make(chan connMsg)
 
 	go func() {
 		defer func() {
@@ -279,7 +279,7 @@ func (wsc *connection) Listen() error {
 		}()
 
 		for {
-			msg := &connMsg{}
+			msg := connMsg{} // use object pool?
 			msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 
 			log.Printf("%s next message: %+v", wsc.id, msg)
