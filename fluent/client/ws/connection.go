@@ -278,8 +278,9 @@ func (wsc *connection) Listen() error {
 			log.Println(wsc.id, "exit ReadMessage loop")
 		}()
 
+		msg := connMsg{}
+
 		for {
-			msg := connMsg{} // use object pool?
 			msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 
 			log.Printf("%s next message: %+v", wsc.id, msg)
