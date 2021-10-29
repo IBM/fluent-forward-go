@@ -311,9 +311,8 @@ func (wsc *connection) Listen() error {
 
 		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
 			// enqueue error only if it is something other than a normal close
-			log.Printf("%s readhandler err: %+v", wsc.id, msg.err)
-
-			if websocket.IsUnexpectedCloseError(rerr, websocket.CloseNormalClosure) {
+			if !websocket.IsCloseError(rerr, websocket.CloseNormalClosure) {
+				log.Printf("%s readhandler err: %+v", wsc.id, msg.err)
 				err = rerr
 			}
 		}

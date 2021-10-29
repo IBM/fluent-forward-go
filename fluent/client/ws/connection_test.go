@@ -22,7 +22,7 @@ type message struct {
 
 var _ = Describe("Connection", func() {
 	var (
-		checkSvrClose                   bool
+		checkClose, checkSvrClose       bool
 		connection, svrConnection       ws.Connection
 		svr                             *httptest.Server
 		opts                            ws.ConnectionOptions
@@ -79,6 +79,7 @@ var _ = Describe("Connection", func() {
 		svrRcvdMsgs = make(chan message)
 		svr = httptest.NewServer(newHandler(svrRcvdMsgs))
 
+		checkClose = true
 		clientRcvdMsgs = make(chan message, 1)
 		opts = makeOpts(clientRcvdMsgs, "client")
 		opts.ID = "client"
@@ -113,7 +114,10 @@ var _ = Describe("Connection", func() {
 
 	AfterEach(func() {
 		if !connection.Closed() {
-			Expect(connection.Close()).ToNot(HaveOccurred())
+			err := connection.Close()
+			if checkClose {
+				Expect(err).ToNot(HaveOccurred())
+			}
 			Eventually(connection.Closed).Should(BeTrue())
 		}
 
@@ -176,19 +180,32 @@ var _ = Describe("Connection", func() {
 			})
 		})
 
-		When("an error occurs", func() {
-			It("enqueues the error", func() {
+		When("a network error occurs", func() {
+			BeforeEach(func() {
+				checkClose = false
+				checkSvrClose = false
+				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
+				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				connection.UnderlyingConn().Close()
+			})
+
+			It("enqueues a network error", func() {
+				err := <-listenErrs
+				Expect(err.Error()).To(MatchRegexp("use of closed network connection"))
+			})
+		})
+
+		When("a close error occurs", func() {
+			It("enqueues abnormal closures", func() {
 				err := svrConnection.CloseWithMsg(websocket.ClosePolicyViolation, "meh")
 				Expect(err).ToNot(HaveOccurred())
 				err = <-listenErrs
 				Expect(err.Error()).To(MatchRegexp("meh"))
 			})
 
-			When("the error is a normal close", func() {
-				It("does not enqueue the error", func() {
-					Expect(svrConnection.Close()).ToNot(HaveOccurred())
-					Consistently(listenErrs).ShouldNot(Receive())
-				})
+			It("does not enqueue normal closures", func() {
+				Expect(svrConnection.Close()).ToNot(HaveOccurred())
+				Consistently(listenErrs).ShouldNot(Receive())
 			})
 		})
 	})
