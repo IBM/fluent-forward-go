@@ -67,7 +67,7 @@ type connection struct {
 	id            string
 }
 
-func NewConnection(conn ext.Conn, opts *ConnectionOptions) (Connection, error) {
+func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	wsc := &connection{
 		Conn:      conn,
 		closedSig: make(chan struct{}),

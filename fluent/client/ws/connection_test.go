@@ -35,13 +35,13 @@ var _ = Describe("Connection", func() {
 		checkSvrClose               bool
 		connection, svrConnection   ws.Connection
 		svr                         *httptest.Server
-		opts                        *ws.ConnectionOptions
+		opts                        ws.ConnectionOptions
 		svrRcvdMsgs, clientRcvdMsgs chan message
 		listenErrs                  chan error
 	)
 
-	var makeOpts = func(msgChan chan message, name string) *ws.ConnectionOptions {
-		return &ws.ConnectionOptions{
+	var makeOpts = func(msgChan chan message, name string) ws.ConnectionOptions {
+		return ws.ConnectionOptions{
 			CloseDeadline: 500 * time.Millisecond,
 			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
 				msg := message{
