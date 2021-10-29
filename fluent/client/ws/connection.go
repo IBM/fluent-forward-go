@@ -27,8 +27,9 @@ type ConnectionOptions struct {
 	PongHandler   func(conn Connection, appData string) error
 	// TODO: should be a duration and added to `now` before every operation
 	ReadDeadline time.Time
-	// ReadHandler handles new messages received on the websocket. If the handler receives
-	// an error, the client MUST close the connection and return an error.
+	// ReadHandler handles new messages received on the websocket. The read loop
+	// will exit automatically if a close message or network error is received. In
+	// all other cases, the client MUST call `Close` to exit the read loop.
 	ReadHandler ReadHandler
 	// TODO: should be a duration and added to `now` before every operation
 	WriteDeadline time.Time
@@ -308,7 +309,8 @@ func (wsc *connection) Listen() error {
 
 	for msg := range nextMsg {
 		log.Printf("%s readhandler: %+v", wsc.id, msg)
-
+		// TODO error handling in this loop still needs work; there really isn't
+		// a need to pass a close message the to the read handler.
 		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
 			// enqueue error only if it is something other than a normal close
 			if !websocket.IsCloseError(rerr, websocket.CloseNormalClosure) {
