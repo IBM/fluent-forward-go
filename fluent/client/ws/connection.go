@@ -185,8 +185,6 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 
 	wsc.setConnState(ConnStateClosed)
 
-	// spec says that only server should close the network connection,
-	// but consensus is that it doesn't matter
 	if cerr := wsc.Conn.Close(); cerr != nil {
 		err = cerr
 	}
