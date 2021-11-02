@@ -55,7 +55,6 @@ var _ = Describe("Connection", func() {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
 			svrOpts := makeOpts(svrRcvdMsgs, "server")
-			svrOpts.ID = "server"
 
 			var upgrader websocket.Upgrader
 			wc, _ := upgrader.Upgrade(w, r, nil)
@@ -82,7 +81,6 @@ var _ = Describe("Connection", func() {
 		checkClose = true
 		clientRcvdMsgs = make(chan message, 1)
 		opts = makeOpts(clientRcvdMsgs, "client")
-		opts.ID = "client"
 
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 		conn, _, err := websocket.DefaultDialer.Dial(u, nil)

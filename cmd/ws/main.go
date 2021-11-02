@@ -34,11 +34,7 @@ func listen() *Listener {
 			msg := protocol.Message{}
 			msg.UnmarshalMsg(p)
 
-			log.Println("server got a message", msg)
-
-			if err != nil {
-				log.Println(conn.Close())
-			}
+			log.Println("server got a message", msg, err)
 
 			return err
 		},

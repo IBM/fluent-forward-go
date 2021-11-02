@@ -3,7 +3,6 @@ package ws
 import (
 	"errors"
 	"io"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -33,7 +32,6 @@ type ConnectionOptions struct {
 	ReadHandler ReadHandler
 	// TODO: should be a duration and added to `now` before every operation
 	WriteDeadline time.Time
-	ID            string
 }
 
 type ConnState uint8
@@ -66,7 +64,6 @@ type connection struct {
 	closedSig     chan struct{}
 	connState     ConnState
 	closeDeadline time.Duration
-	id            string
 }
 
 func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
@@ -77,7 +74,7 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	}
 
 	if opts.CloseHandler == nil {
-		opts.CloseHandler = wsc.HandleClose
+		opts.CloseHandler = wsc.handleClose
 	}
 
 	wsc.SetCloseHandler(func(code int, text string) error {
@@ -96,13 +93,6 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 		})
 	}
 
-	if opts.ReadHandler == nil {
-		// default handler ensure read buffer is emptied
-		opts.ReadHandler = func(c Connection, _ int, _ []byte, err error) error {
-			return err
-		}
-	}
-
 	wsc.SetReadHandler(opts.ReadHandler)
 
 	if opts.CloseDeadline == 0 {
@@ -118,8 +108,6 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	if err := wsc.SetWriteDeadline(opts.WriteDeadline); err != nil {
 		return nil, err
 	}
-
-	wsc.id = opts.ID
 
 	return wsc, nil
 }
@@ -169,45 +157,13 @@ func (wsc *connection) unsetConnState(cs ConnState) {
 	wsc.connState ^= cs
 }
 
-func (wsc *connection) HandleClose(_ Connection, code int, text string) error {
-	var err error
-
-	if wsc.hasConnState(ConnStateClosed) {
-		// already closed, nothing else to do
-		return nil
-	}
-
-	log.Println(wsc.id, "received close message", code, text)
-	wsc.setConnState(ConnStateCloseReceived)
-
-	// If the peer initiated the close, then this client must send a message
-	// confirming receipt. If this client sent the initial close message, then
-	// the closing handshake is complete and no further action is required.
-	if !wsc.hasConnState(ConnStateCloseSent) {
-		log.Println(wsc.id, "finalizing handshake", code, text)
-
-		// respond with close; Gorilla doesn't return the error from close response,
-		// not sure why
-		err = wsc.Close()
-	}
-
-	// sent a close and received one, all done
-	log.Println(wsc.id, "handshake finalized", err)
-
-	return err
-}
-
 // CloseWithMsg sends a close message to the peer
 func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	if wsc.hasConnState(ConnStateCloseSent) {
 		return errors.New("multiple close calls")
 	}
 
-	defer log.Println(wsc.id, "ws connection closed")
-
 	wsc.unsetConnState(ConnStateOpen)
-
-	log.Println(wsc.id, "sending close message")
 
 	err := wsc.WriteMessage(
 		websocket.CloseMessage,
@@ -218,25 +174,15 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 
 	wsc.setConnState(ConnStateCloseSent)
 
-	if err != nil && err != websocket.ErrCloseSent {
-		log.Println(wsc.id, "write close failed", err)
-	}
-
 	if err == nil && wsc.hasConnState(ConnStateListening) && !wsc.hasConnState(ConnStateCloseReceived) {
-		log.Println(wsc.id, "waiting for close response")
-
 		select {
 		case <-time.After(wsc.closeDeadline):
 			// sent a close, but never heard back, close anyway
-			log.Println(wsc.id, "close deadline expired")
-
 			err = errors.New("close deadline expired")
 		case <-wsc.closedSig:
-			log.Println(wsc.id, "received close sig")
 		}
 	}
 
-	log.Println(wsc.id, "closing ws connection")
 	wsc.setConnState(ConnStateClosed)
 
 	// spec says that only server should close the network connection,
@@ -254,6 +200,22 @@ func (wsc *connection) Close() error {
 
 func (wsc *connection) Closed() bool {
 	return !wsc.hasConnState(ConnStateOpen)
+}
+
+func (wsc *connection) handleClose(_ Connection, code int, text string) error {
+	wsc.setConnState(ConnStateCloseReceived)
+
+	var err error
+
+	// If the peer initiated the close, then this client must send a message
+	// confirming receipt. If this client sent the initial close message, then
+	// the closing handshake is complete and no further action is required.
+	if !wsc.hasConnState(ConnStateCloseSent) {
+		// respond with close
+		err = wsc.Close()
+	}
+
+	return err
 }
 
 type connMsg struct {
@@ -275,7 +237,6 @@ func (wsc *connection) Listen() error {
 		defer func() {
 			wsc.unsetConnState(ConnStateListening)
 			wsc.closedSig <- struct{}{}
-			log.Println(wsc.id, "exit ReadMessage loop")
 		}()
 
 		msg := connMsg{}
@@ -283,22 +244,17 @@ func (wsc *connection) Listen() error {
 		for {
 			msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 
-			log.Printf("%s next message: %+v", wsc.id, msg)
-
 			if msg.err == net.ErrClosed {
-				log.Println(wsc.id, "network connection closed", msg.err.Error())
 				break
 			}
 
 			nextMsg <- msg
 
-			if err, ok := msg.err.(net.Error); ok {
-				log.Println(wsc.id, "net error:", err.Error())
+			if _, ok := msg.err.(net.Error); ok {
 				break
 			}
 
 			if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed) {
-				log.Println(wsc.id, "breaking ReadMessage loop with connState: ", wsc.connState)
 				break
 			}
 		}
@@ -309,20 +265,22 @@ func (wsc *connection) Listen() error {
 	var err error
 
 	for msg := range nextMsg {
-		log.Printf("%s readhandler: %+v", wsc.id, msg)
-		// TODO error handling in this loop still needs work; there really isn't
-		// a need to pass a close message the to the read handler.
+		if wsc.readHandler == nil {
+			continue
+		}
+
+		// TODO error handling in this loop still needs work; passing a close message
+		// to the read handler may not be necessary
 		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
-			// enqueue error only if it is something other than a normal close
+			// set error only if it is something other than a normal close
 			if !websocket.IsCloseError(rerr, websocket.CloseNormalClosure) {
-				log.Printf("%s readhandler err: %+v", wsc.id, msg.err)
 				err = rerr
 			}
 		}
 	}
 
-	log.Println(wsc.id, "exit Listen with error val:", err)
-
+	// TODO return a default error, eg `ErrConnectionClosed`, in the same way
+	// http.Server.Listen and websocket.Close do
 	return err
 }
 

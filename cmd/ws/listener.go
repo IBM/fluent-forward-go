@@ -55,7 +55,6 @@ func (s *Listener) Connect(w http.ResponseWriter, r *http.Request) {
 			!websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 			log.Println("server listen error:", err)
 		}
-
 	}
 }
 
