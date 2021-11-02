@@ -93,6 +93,12 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 		})
 	}
 
+	if opts.ReadHandler == nil {
+		opts.ReadHandler = func(_ Connection, _ int, _ []byte, err error) error {
+			return err
+		}
+	}
+
 	wsc.SetReadHandler(opts.ReadHandler)
 
 	if opts.CloseDeadline == 0 {
@@ -242,13 +248,15 @@ func (wsc *connection) Listen() error {
 		for {
 			msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 
-			if msg.err == net.ErrClosed {
+			if wsc.hasConnState(ConnStateClosed) && errors.Is(msg.err, net.ErrClosed) {
+				// "healthy" close
 				break
 			}
 
 			nextMsg <- msg
 
-			if _, ok := msg.err.(net.Error); ok {
+			// exit on network errors
+			if _, ok := msg.err.(net.Error); ok || errors.Is(msg.err, net.ErrClosed) {
 				break
 			}
 
@@ -263,10 +271,6 @@ func (wsc *connection) Listen() error {
 	var err error
 
 	for msg := range nextMsg {
-		if wsc.readHandler == nil {
-			continue
-		}
-
 		// TODO error handling in this loop still needs work; passing a close message
 		// to the read handler may not be necessary
 		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {

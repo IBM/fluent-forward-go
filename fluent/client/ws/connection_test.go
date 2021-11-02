@@ -187,21 +187,21 @@ var _ = Describe("Connection", func() {
 				connection.UnderlyingConn().Close()
 			})
 
-			It("enqueues a network error", func() {
+			It("returns a network error", func() {
 				err := <-listenErrs
 				Expect(err.Error()).To(MatchRegexp("use of closed network connection"))
 			})
 		})
 
 		When("a close error occurs", func() {
-			It("enqueues abnormal closures", func() {
+			It("returns abnormal closures", func() {
 				err := svrConnection.CloseWithMsg(websocket.ClosePolicyViolation, "meh")
 				Expect(err).ToNot(HaveOccurred())
 				err = <-listenErrs
 				Expect(err.Error()).To(MatchRegexp("meh"))
 			})
 
-			It("does not enqueue normal closures", func() {
+			It("does not return normal closures", func() {
 				Expect(svrConnection.Close()).ToNot(HaveOccurred())
 				Consistently(listenErrs).ShouldNot(Receive())
 			})
