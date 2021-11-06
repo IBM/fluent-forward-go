@@ -58,6 +58,7 @@ type Connection interface {
 
 type connection struct {
 	ext.Conn
+	closeLock     sync.Mutex
 	writeLock     sync.Mutex
 	stateLock     sync.RWMutex
 	readHandler   ReadHandler
@@ -153,23 +154,29 @@ func (wsc *connection) setConnState(cs ConnState) {
 }
 
 func (wsc *connection) unsetConnState(cs ConnState) {
-	if !wsc.hasConnState(cs) {
-		return
-	}
-
 	wsc.stateLock.Lock()
 	defer wsc.stateLock.Unlock()
+
+	if wsc.connState&cs == 0 {
+		return
+	}
 
 	wsc.connState ^= cs
 }
 
 // CloseWithMsg sends a close message to the peer
 func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
+	wsc.closeLock.Lock()
+
 	if wsc.hasConnState(ConnStateCloseSent) {
+		wsc.closeLock.Unlock()
 		return errors.New("multiple close calls")
 	}
 
 	wsc.unsetConnState(ConnStateOpen)
+	wsc.setConnState(ConnStateCloseSent)
+
+	wsc.closeLock.Unlock()
 
 	err := wsc.WriteMessage(
 		websocket.CloseMessage,
@@ -178,9 +185,10 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 		),
 	)
 
-	wsc.setConnState(ConnStateCloseSent)
-
-	if err == nil && wsc.hasConnState(ConnStateListening) && !wsc.hasConnState(ConnStateCloseReceived) {
+	// if the close message was sent and the connection is listening for incoming
+	// messages, wait N seconds for a response.
+	if err == nil && wsc.hasConnState(ConnStateListening) &&
+		!wsc.hasConnState(ConnStateCloseReceived) {
 		select {
 		case <-time.After(wsc.closeDeadline):
 			// sent a close, but never heard back, close anyway
@@ -209,17 +217,15 @@ func (wsc *connection) Closed() bool {
 func (wsc *connection) handleClose(_ Connection, code int, text string) error {
 	wsc.setConnState(ConnStateCloseReceived)
 
-	var err error
-
 	// If the peer initiated the close, then this client must send a message
 	// confirming receipt. If this client sent the initial close message, then
 	// the closing handshake is complete and no further action is required.
 	if !wsc.hasConnState(ConnStateCloseSent) {
-		// respond with close
-		err = wsc.Close()
+		// respond with close message
+		return wsc.Close()
 	}
 
-	return err
+	return nil
 }
 
 type connMsg struct {
@@ -255,8 +261,8 @@ func (wsc *connection) Listen() error {
 
 			nextMsg <- msg
 
-			// exit on network errors
-			if _, ok := msg.err.(net.Error); ok || errors.Is(msg.err, net.ErrClosed) {
+			var err net.Error
+			if errors.As(msg.err, &err) || errors.Is(msg.err, net.ErrClosed) {
 				break
 			}
 

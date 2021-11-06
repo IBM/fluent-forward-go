@@ -26,7 +26,7 @@ func init() {
 //nolint
 func listen() *Listener {
 
-	log.Println("Starting server on port 808")
+	log.Println("Starting server on port 8083")
 
 	s := &http.Server{Addr: ":8083"}
 	wo := ws.ConnectionOptions{
