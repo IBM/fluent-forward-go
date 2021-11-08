@@ -239,6 +239,7 @@ func (wsc *connection) Listen() error {
 	wsc.listenLock.Lock()
 
 	if wsc.hasConnState(ConnStateListening) {
+		wsc.listenLock.Unlock()
 		return errors.New("already listening on this connection")
 	}
 

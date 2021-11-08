@@ -175,6 +175,7 @@ var _ = Describe("Connection", func() {
 		When("already listening", func() {
 			It("errors", func() {
 				Expect(connection.Listen().Error()).To(MatchRegexp("already listening on this connection"))
+				Expect(connection.Listen().Error()).To(MatchRegexp("already listening on this connection"))
 			})
 		})
 
