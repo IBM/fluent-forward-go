@@ -245,6 +245,7 @@ func (wsc *connection) Listen() error {
 
 	go func() {
 		defer func() {
+			close(nextMsg)
 			wsc.unsetConnState(ConnStateListening)
 			wsc.closedSig <- struct{}{}
 		}()
@@ -271,7 +272,6 @@ func (wsc *connection) Listen() error {
 			}
 		}
 
-		close(nextMsg)
 	}()
 
 	var err error
