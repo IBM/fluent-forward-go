@@ -59,6 +59,7 @@ type Connection interface {
 type connection struct {
 	ext.Conn
 	closeLock     sync.Mutex
+	listenLock    sync.Mutex
 	writeLock     sync.Mutex
 	stateLock     sync.RWMutex
 	readHandler   ReadHandler
@@ -235,11 +236,14 @@ type connMsg struct {
 }
 
 func (wsc *connection) Listen() error {
+	wsc.listenLock.Lock()
+
 	if wsc.hasConnState(ConnStateListening) {
 		return errors.New("already listening on this connection")
 	}
 
 	wsc.setConnState(ConnStateListening)
+	wsc.listenLock.Unlock()
 
 	nextMsg := make(chan connMsg)
 
@@ -271,7 +275,6 @@ func (wsc *connection) Listen() error {
 				break
 			}
 		}
-
 	}()
 
 	var err error
