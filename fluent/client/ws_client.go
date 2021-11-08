@@ -120,7 +120,8 @@ func (c *WSClient) getErr() error {
 	return c.err
 }
 
-func (c *WSClient) GetSession() *WSSession {
+// Session provides the web socket session instance
+func (c *WSClient) Session() *WSSession {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
 
@@ -221,7 +222,7 @@ func (c *WSClient) SendMessage(e msgp.Encodable) error {
 	}
 
 	// prevent this from raise conditions by copy the session pointer
-	session := c.GetSession()
+	session := c.Session()
 	if session == nil || session.Connection.Closed() {
 		return errors.New("no active session")
 	}
@@ -240,7 +241,7 @@ func (c *WSClient) SendRaw(m []byte) error {
 	}
 
 	// prevent this from raise conditions by copy the session pointer
-	session := c.GetSession()
+	session := c.Session()
 	if session == nil || session.Connection.Closed() {
 		return errors.New("no active session")
 	}

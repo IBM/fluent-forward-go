@@ -44,7 +44,7 @@ var _ = Describe("WSClient", func() {
 		session = &WSSession{Connection: conn}
 
 		Expect(factory.NewCallCount()).To(Equal(0))
-		Expect(client.GetSession()).To(BeNil())
+		Expect(client.Session()).To(BeNil())
 	})
 
 	JustBeforeEach(func() {
@@ -62,8 +62,8 @@ var _ = Describe("WSClient", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(factory.NewCallCount()).To(Equal(1))
 			Expect(factory.NewSessionCallCount()).To(Equal(1))
-			Expect(client.GetSession()).To(Equal(session))
-			Expect(client.GetSession().Connection).To(Equal(conn))
+			Expect(client.Session()).To(Equal(session))
+			Expect(client.Session().Connection).To(Equal(conn))
 		})
 
 		When("the factory returns an error", func() {
@@ -141,7 +141,7 @@ var _ = Describe("WSClient", func() {
 			Expect(conn.CloseCallCount()).To(Equal(1))
 
 			Expect(factory.NewSessionCallCount()).To(Equal(2))
-			Expect(client.GetSession().Connection).ToNot(BeNil())
+			Expect(client.Session().Connection).ToNot(BeNil())
 		})
 	})
 
