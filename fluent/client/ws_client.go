@@ -163,7 +163,7 @@ func (c *WSClient) Connect() error {
 
 // Disconnect ends the current Session and terminates its websocket connection.
 func (c *WSClient) Disconnect() (err error) {
-	if c.Session != nil {
+	if c.Session != nil && !c.Session.Connection.Closed() {
 		err = c.Session.Connection.Close()
 	}
 

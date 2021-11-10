@@ -26,20 +26,15 @@ func init() {
 //nolint
 func listen() *Listener {
 
-	log.Println("Starting server on port 8085")
+	log.Println("Starting server on port 8083")
 
-	s := &http.Server{Addr: ":8085"}
+	s := &http.Server{Addr: ":8083"}
 	wo := ws.ConnectionOptions{
 		ReadHandler: func(conn ws.Connection, _ int, p []byte, err error) error {
 			msg := protocol.Message{}
 			msg.UnmarshalMsg(p)
 
-			fmt.Println("Got a message", msg)
-
-			if err != nil {
-				log.Println(err)
-				log.Println(conn.Close())
-			}
+			log.Println("server got a message", msg, err)
 
 			return err
 		},
@@ -62,12 +57,9 @@ func main() {
 	c := &client.WSClient{
 		ServerAddress: client.ServerAddress{
 			Hostname: "ws://127.0.0.1",
-			Port:     8085,
+			Port:     8083,
 		},
 	}
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
 
 	wsSvr := listen()
 
@@ -95,15 +87,35 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Messages sent")
+	msg = protocol.Message{
+		Tag:       tagVar,
+		Timestamp: time.Now().UTC().Unix(),
+		Record: map[string]interface{}{
+			"first": "Sir",
+			"last":  "Lancelot",
+			"enemy": "Himself",
+		},
+	}
 
-	<-interrupt
-
-	if err := c.Disconnect(); err != nil {
+	if err := c.SendMessage(&msg); err != nil {
 		log.Fatal(err)
 	}
 
-	wsSvr.Shutdown()
+	fmt.Println("Messages sent")
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	go func() {
+		if err := c.Disconnect(); err != nil {
+			log.Fatal(err)
+		}
+
+		wsSvr.Shutdown()
+		interrupt <- os.Interrupt
+	}()
+
+	<-interrupt
 
 	os.Exit(0)
 }

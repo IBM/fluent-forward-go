@@ -2,12 +2,13 @@ package ws_test
 
 import (
 	"bytes"
-	"errors"
-	"sync/atomic"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"time"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
-	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext/extfakes"
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,212 +22,239 @@ type message struct {
 
 var _ = Describe("Connection", func() {
 	var (
-		fakeConn           *extfakes.FakeConn
-		opts               ws.ConnectionOptions
-		readMsgs           chan message
-		rhCallCt, rmCallCt int32
-		onFail             func(err error)
+		checkClose, checkSvrClose       bool
+		connection, svrConnection       ws.Connection
+		svr                             *httptest.Server
+		opts                            ws.ConnectionOptions
+		svrRcvdMsgs, clientRcvdMsgs     chan message
+		listenErrs                      chan error
+		exitConnState, svrExitConnState ws.ConnState
 	)
 
-	BeforeEach(func() {
-		rmCallCt = 0
-		rhCallCt = 0
-		readMsgs = make(chan message, 1)
-		fakeConn = &extfakes.FakeConn{}
-
-		fakeConn.ReadMessageStub = func() (int, []byte, error) {
-			atomic.AddInt32(&rmCallCt, 1)
-			m, ok := <-readMsgs
-			if !ok {
-				return m.mt, m.msg, errors.New("connection")
-			}
-			return m.mt, m.msg, m.err
-		}
-
-		opts = ws.ConnectionOptions{
+	var makeOpts = func(msgChan chan message, name string) ws.ConnectionOptions {
+		return ws.ConnectionOptions{
+			CloseDeadline: 500 * time.Millisecond,
 			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
-				atomic.AddInt32(&rhCallCt, 1)
-				if err != nil {
-					conn.Close()
+				msg := message{
+					mt:  msgType,
+					msg: p,
+					err: err,
 				}
+				msgChan <- msg
+
+				if err != nil {
+					log.Println(name, "ReadHandler received error:", err)
+				}
+
 				return err
 			},
 		}
+	}
 
-		onFail = nil
+	newHandler := func(svrRcvdMsgs chan message) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer GinkgoRecover()
+			svrOpts := makeOpts(svrRcvdMsgs, "server")
+
+			var upgrader websocket.Upgrader
+			wc, _ := upgrader.Upgrade(w, r, nil)
+
+			var err error
+			svrConnection, err = ws.NewConnection(wc, svrOpts)
+			if err != nil {
+				return
+			}
+
+			Expect(svrConnection.Listen()).ToNot(HaveOccurred())
+			log.Println("exit server handler")
+		})
+	}
+
+	BeforeEach(func() {
+		exitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
+		svrExitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
+
+		checkSvrClose = true
+		svrRcvdMsgs = make(chan message)
+		svr = httptest.NewServer(newHandler(svrRcvdMsgs))
+
+		checkClose = true
+		clientRcvdMsgs = make(chan message, 1)
+		opts = makeOpts(clientRcvdMsgs, "client")
+
+		u := "ws" + strings.TrimPrefix(svr.URL, "http")
+		conn, _, err := websocket.DefaultDialer.Dial(u, nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		connection, err = ws.NewConnection(conn, opts)
+		Expect(err).ToNot(HaveOccurred())
+
+	})
+
+	JustBeforeEach(func() {
+		listenErrs = make(chan error)
+
+		go func() {
+			defer GinkgoRecover()
+
+			Expect(svrConnection.ConnState()).To(Equal(ws.ConnStateOpen | ws.ConnStateListening))
+			Expect(connection.ConnState()).To(Equal(ws.ConnStateOpen))
+
+			if err := connection.Listen(); err != nil {
+				listenErrs <- err
+			}
+		}()
+
+		// wait for Listen loop to start
+		time.Sleep(10 * time.Millisecond)
+		Expect(connection.Closed()).To(BeFalse())
 	})
 
 	AfterEach(func() {
-		close(readMsgs)
+		if !connection.Closed() {
+			err := connection.Close()
+			if checkClose {
+				Expect(err).ToNot(HaveOccurred())
+			}
+			Eventually(connection.Closed).Should(BeTrue())
+		}
+
+		if !svrConnection.Closed() {
+			err := svrConnection.Close()
+			if checkSvrClose {
+				Expect(err).ToNot(HaveOccurred())
+			}
+			Eventually(svrConnection.Closed).Should(BeTrue())
+		}
+
+		svr.Close()
+
+		Expect(connection.ConnState()).To(Equal(exitConnState))
+		Expect(svrConnection.ConnState()).To(Equal(svrExitConnState))
 	})
 
-	Describe("NewConnection", func() {
-		It("works", func() {
-			c, err := ws.NewConnection(fakeConn, ws.ConnectionOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(c).ToNot(BeNil())
-			// TODO: test options are set correctly
+	Describe("WriteMessage", func() {
+		When("everything is copacetic", func() {
+			It("writes messages to the connection", func() {
+				err := connection.WriteMessage(1, []byte("oi"))
+				Expect(err).ToNot(HaveOccurred())
+				err = connection.WriteMessage(1, []byte("koi"))
+				Expect(err).ToNot(HaveOccurred())
+
+				m := <-svrRcvdMsgs
+				Expect(m.msg).To(Equal([]byte("oi")))
+				m = <-svrRcvdMsgs
+				Expect(m.msg).To(Equal([]byte("koi")))
+
+				Consistently(svrRcvdMsgs).ShouldNot(Receive())
+			})
+		})
+
+		When("an error occurs", func() {
+			It("returns an error", func() {
+				Expect(connection.Close()).ToNot(HaveOccurred())
+				Expect(connection.WriteMessage(1, nil).Error()).To(MatchRegexp("close sent"))
+			})
 		})
 	})
 
-	Describe("Connection", func() {
-		var (
-			connection ws.Connection
-			doClose    bool
-		)
+	Describe("Listen", func() {
+		When("everything is copacetic", func() {
+			It("reads a message from the connection and calls the read handler", func() {
+				Expect(len(svrRcvdMsgs)).To(Equal(0))
 
-		BeforeEach(func() {
-			doClose = true
-			connection, _ = ws.NewConnection(fakeConn, opts)
+				err := connection.WriteMessage(1, []byte("oi"))
+				Expect(err).ToNot(HaveOccurred())
+
+				m := <-svrRcvdMsgs
+				Expect(m.err).ToNot(HaveOccurred())
+				Expect(bytes.Equal(m.msg, []byte("oi"))).To(BeTrue())
+			})
 		})
 
+		When("already listening", func() {
+			It("errors", func() {
+				Expect(connection.Listen().Error()).To(MatchRegexp("already listening on this connection"))
+				Expect(connection.Listen().Error()).To(MatchRegexp("already listening on this connection"))
+			})
+		})
+
+		When("a network error occurs", func() {
+			BeforeEach(func() {
+				checkClose = false
+				checkSvrClose = false
+				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
+				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				connection.UnderlyingConn().Close()
+			})
+
+			It("returns a network error", func() {
+				err := <-listenErrs
+				Expect(err.Error()).To(MatchRegexp("use of closed network connection"))
+			})
+		})
+
+		When("a close error occurs", func() {
+			It("returns abnormal closures", func() {
+				err := svrConnection.CloseWithMsg(websocket.ClosePolicyViolation, "meh")
+				Expect(err).ToNot(HaveOccurred())
+				err = <-listenErrs
+				Expect(err.Error()).To(MatchRegexp("meh"))
+			})
+
+			It("does not return normal closures", func() {
+				Expect(svrConnection.Close()).ToNot(HaveOccurred())
+				Consistently(listenErrs).ShouldNot(Receive())
+			})
+		})
+	})
+
+	Describe("CloseWithMsg", func() {
+		When("everything is copacetic", func() {
+			It("sends a signal", func() {
+				Expect(connection.CloseWithMsg(1000, "oi")).ToNot(HaveOccurred())
+				Expect(connection.Closed()).To(BeTrue())
+
+				closeMsg := <-svrRcvdMsgs
+				Expect(closeMsg.err.Error()).To(MatchRegexp("oi"))
+			})
+		})
+	})
+
+	Describe("Close and Closed", func() {
 		JustBeforeEach(func() {
-			startSig := make(chan struct{}, 1)
-
-			go func() {
-				defer GinkgoRecover()
-				startSig <- struct{}{}
-				if err := connection.Listen(); err != nil {
-					if onFail == nil {
-						defer GinkgoRecover()
-						Fail(err.Error())
-					}
-					onFail(err)
-				}
-			}()
-
-			// wait for Listen loop to start
-			<-startSig
-			time.Sleep(time.Millisecond)
+			Expect(connection.Closed()).To(BeFalse())
 		})
 
 		AfterEach(func() {
-			if doClose {
+			Expect(connection.Closed()).To(BeTrue())
+		})
+
+		When("everything is copacetic", func() {
+			It("signals close", func() {
 				Expect(connection.Close()).ToNot(HaveOccurred())
-				Eventually(connection.Closed).Should(BeTrue())
-			}
-		})
-
-		Describe("WriteMessage", func() {
-			When("everything is copacetic", func() {
-				It("writes messages to the connection", func() {
-					err := connection.WriteMessage(1, []byte("oi"))
-					Expect(err).ToNot(HaveOccurred())
-					err = connection.WriteMessage(1, []byte("koi"))
-					Expect(err).ToNot(HaveOccurred())
-
-					Eventually(fakeConn.WriteMessageCallCount).Should(Equal(2))
-					Consistently(fakeConn.WriteMessageCallCount).Should(BeNumerically("<", 3))
-
-					mt, bmsg := fakeConn.WriteMessageArgsForCall(0)
-					Expect(mt).To(Equal(1))
-					Expect(bmsg).To(Equal([]byte("oi")))
-
-					mt, bmsg = fakeConn.WriteMessageArgsForCall(1)
-					Expect(mt).To(Equal(1))
-					Expect(bmsg).To(Equal([]byte("koi")))
-				})
-			})
-
-			When("an error occurs", func() {
-				BeforeEach(func() {
-					fakeConn.WriteMessageReturns(errors.New("BOOM"))
-				})
-
-				It("returns an error", func() {
-					Expect(connection.WriteMessage(1, []byte("oi"))).To(HaveOccurred())
-					Expect(fakeConn.WriteMessageCallCount()).To(Equal(1))
-				})
+				closeMsg := <-svrRcvdMsgs
+				Expect(closeMsg.err.Error()).To(MatchRegexp("closing connection"))
 			})
 		})
 
-		Describe("ReadMessage", func() {
-			When("everything is copacetic", func() {
-				It("reads a message from the connection and calls the read handler", func() {
-					readMsgs <- message{1, []byte("oi"), nil}
-					var gt int32
-					Eventually(func() int32 { return rhCallCt }).Should(BeNumerically(">", gt))
-					Eventually(func() int32 { return rmCallCt }).Should(BeNumerically(">", gt))
-				})
-			})
-
-			When("an error occurs", func() {
-				var callCt int
-				BeforeEach(func() {
-					callCt = 0
-					fakeConn.ReadMessageReturns(1, nil, &websocket.CloseError{})
-					onFail = func(e error) {
-						defer GinkgoRecover()
-						callCt++
-						if e == nil {
-							Fail("the BOOMing, where is it?")
-						}
-					}
-				})
-
-				It("enqueues the error", func() {
-					Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically(">=", 1))
-					Eventually(func() int { return callCt }).Should(BeNumerically("==", 1))
-				})
-
-				When("the error is a normal close", func() {
-					BeforeEach(func() {
-						fakeConn.ReadMessageReturns(1, nil, &websocket.CloseError{Code: websocket.CloseNormalClosure})
-					})
-
-					It("does not enqueue the error", func() {
-						Eventually(func() int { return int(rhCallCt) }).Should(BeNumerically(">=", 1))
-						Consistently(func() int { return callCt }).Should(BeNumerically("==", 0))
-					})
-				})
+		When("called multiple times", func() {
+			It("errors", func() {
+				Expect(connection.Close()).ToNot(HaveOccurred())
+				Expect(connection.Close().Error()).To(MatchRegexp("multiple close calls"))
 			})
 		})
 
-		Describe("CloseWithMsg", func() {
-			When("everything is copacetic", func() {
-				It("sends a signal", func() {
-					Expect(connection.CloseWithMsg(1, "a")).ToNot(HaveOccurred())
-					a, b := fakeConn.WriteMessageArgsForCall(0)
-					Expect(a).To(Equal(8))
-					msg := websocket.FormatCloseMessage(1, "a")
-					Expect(bytes.Equal(b, msg)).To(BeTrue())
-				})
-			})
-		})
-
-		Describe("Close", func() {
+		When("the connection errors on close", func() {
 			BeforeEach(func() {
-				doClose = false
+				checkSvrClose = false
+				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
+				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				connection.UnderlyingConn().Close()
 			})
 
-			When("everything is copacetic", func() {
-				It("signals close", func() {
-					Expect(connection.Close()).ToNot(HaveOccurred())
-					a, b := fakeConn.WriteMessageArgsForCall(0)
-					Expect(a).To(Equal(8))
-					msg := websocket.FormatCloseMessage(
-						websocket.CloseNormalClosure, "so long and thanks for all the fish",
-					)
-					Expect(bytes.Equal(b, msg)).To(BeTrue())
-				})
-			})
-
-			When("called multiple times", func() {
-				It("doesn't error", func() {
-					Expect(connection.Close()).ToNot(HaveOccurred())
-					Expect(connection.Close()).ToNot(HaveOccurred())
-				})
-			})
-
-			When("the connection errors on close", func() {
-				BeforeEach(func() {
-					fakeConn.WriteMessageReturns(errors.New("BOOM"))
-					fakeConn.CloseReturns(errors.New("BOOM"))
-				})
-
-				It("returns an error", func() {
-					Expect(connection.Close()).To(HaveOccurred())
-				})
+			It("returns an error", func() {
+				Expect(connection.Close().Error()).To(MatchRegexp("use of closed network connection"))
 			})
 		})
 	})
