@@ -144,7 +144,7 @@ func (c *WSClient) Connect() error {
 }
 
 // connect is for internal use and should be called within
-// the scope of an aquired 'c.sessionLock.Lock()'
+// the scope of an acquired 'c.sessionLock.Lock()'
 //
 // extracted for internal re-use.
 func (c *WSClient) connect() error {
