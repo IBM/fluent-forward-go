@@ -100,8 +100,9 @@ type WSClient struct {
 	ServerAddress
 	AuthInfo          *IAMAuthInfo
 	ConnectionOptions ws.ConnectionOptions
-	Session           *WSSession
+	session           *WSSession
 	errLock           sync.RWMutex
+	sessionLock       sync.RWMutex
 	err               error
 }
 
@@ -119,15 +120,34 @@ func (c *WSClient) getErr() error {
 	return c.err
 }
 
+// Session provides the web socket session instance
+func (c *WSClient) Session() *WSSession {
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	return c.session
+}
+
 // Connect initializes the Session and Connection objects by opening
 // a websocket connection. If AuthInfo is not nil, the token it returns
 // will be passed via the "Authentication" header during the initial
 // HTTP call.
 func (c *WSClient) Connect() error {
-	if c.Session != nil {
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
+
+	if c.session != nil {
 		return errors.New("a session is already active")
 	}
 
+	return c.connect()
+}
+
+// connect is for internal use and should be called within
+// the scope of an acquired 'c.sessionLock.Lock()'
+//
+// extracted for internal re-use.
+func (c *WSClient) connect() error {
 	if c.ConnectionFactory == nil {
 		c.ConnectionFactory = &DefaultWSConnectionFactory{
 			ServerAddress: c.ServerAddress,
@@ -145,7 +165,7 @@ func (c *WSClient) Connect() error {
 		return err
 	}
 
-	c.Session = c.ConnectionFactory.NewSession(connection)
+	c.session = c.ConnectionFactory.NewSession(connection)
 
 	go func() {
 		// Starts the async read. If there is a read error, it is set so that
@@ -153,7 +173,7 @@ func (c *WSClient) Connect() error {
 		// sufficient for most cases where the client cares only about sending.
 		// If the client really cares about handling reads, they will define a
 		// custom ReadHandler that will receive the error synchronously.
-		if err := c.Session.Connection.Listen(); err != nil {
+		if err := c.session.Connection.Listen(); err != nil {
 			c.setErr(err)
 		}
 	}()
@@ -163,19 +183,31 @@ func (c *WSClient) Connect() error {
 
 // Disconnect ends the current Session and terminates its websocket connection.
 func (c *WSClient) Disconnect() (err error) {
-	if c.Session != nil {
-		err = c.Session.Connection.Close()
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
+
+	if c.session != nil && !c.session.Connection.Closed() {
+		err = c.session.Connection.Close()
 	}
 
-	c.Session = nil
+	c.session = nil
 
 	return
 }
 
 // Reconnect terminates the existing Session and creates a new one.
 func (c *WSClient) Reconnect() (err error) {
-	if err = c.Disconnect(); err == nil {
-		err = c.Connect()
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
+
+	if c.session != nil && !c.session.Connection.Closed() {
+		if err = c.session.Connection.Close(); err == nil {
+			err = c.connect()
+		}
+	}
+
+	if err != nil {
+		c.session = nil
 	}
 
 	c.setErr(err)
@@ -192,12 +224,14 @@ func (c *WSClient) SendMessage(e msgp.Encodable) error {
 		return err // TODO: wrap this
 	}
 
-	if c.Session == nil || c.Session.Connection.Closed() {
+	// prevent this from raise conditions by copy the session pointer
+	session := c.Session()
+	if session == nil || session.Connection.Closed() {
 		return errors.New("no active session")
 	}
 
 	// msgp.Encode makes use of object pool to decrease allocations
-	return msgp.Encode(c.Session.Connection, e)
+	return msgp.Encode(session.Connection, e)
 }
 
 // SendRaw sends an array of bytes across the wire.
@@ -209,11 +243,13 @@ func (c *WSClient) SendRaw(m []byte) error {
 		return err // TODO: wrap this
 	}
 
-	if c.Session == nil || c.Session.Connection.Closed() {
+	// prevent this from raise conditions by copy the session pointer
+	session := c.Session()
+	if session == nil || session.Connection.Closed() {
 		return errors.New("no active session")
 	}
 
-	_, err := c.Session.Connection.Write(m)
+	_, err := session.Connection.Write(m)
 
 	return err
 }
