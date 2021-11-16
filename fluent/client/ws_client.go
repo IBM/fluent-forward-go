@@ -186,10 +186,11 @@ func (c *WSClient) Disconnect() (err error) {
 	c.sessionLock.Lock()
 	defer c.sessionLock.Unlock()
 
-	if c.session != nil {
+	if c.session != nil && !c.Session.Connection.Closed() {
 		err = c.session.Connection.Close()
-		c.session = nil
 	}
+  
+  c.session = nil
 
 	return
 }
@@ -199,12 +200,14 @@ func (c *WSClient) Reconnect() (err error) {
 	c.sessionLock.Lock()
 	defer c.sessionLock.Unlock()
 
-	if c.session != nil {
-		if err = c.session.Connection.Close(); err == nil {
-			err = c.connect()
-		} else {
-			c.session = nil
-		}
+  if c.session != nil && !c.Session.Connection.Closed() {
+    if err = c.session.Connection.Close(); err == nil {
+      err = c.connect()
+    }
+	}
+  
+  if err != nil {
+    c.session = nil
 	}
 
 	c.setErr(err)

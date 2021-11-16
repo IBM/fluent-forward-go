@@ -54,6 +54,16 @@ type FakeConnection struct {
 	closedReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	ConnStateStub        func() ws.ConnState
+	connStateMutex       sync.RWMutex
+	connStateArgsForCall []struct {
+	}
+	connStateReturns struct {
+		result1 ws.ConnState
+	}
+	connStateReturnsOnCall map[int]struct {
+		result1 ws.ConnState
+	}
 	EnableWriteCompressionStub        func(bool)
 	enableWriteCompressionMutex       sync.RWMutex
 	enableWriteCompressionArgsForCall []struct {
@@ -509,6 +519,59 @@ func (fake *FakeConnection) ClosedReturnsOnCall(i int, result1 bool) {
 	}
 	fake.closedReturnsOnCall[i] = struct {
 		result1 bool
+	}{result1}
+}
+
+func (fake *FakeConnection) ConnState() ws.ConnState {
+	fake.connStateMutex.Lock()
+	ret, specificReturn := fake.connStateReturnsOnCall[len(fake.connStateArgsForCall)]
+	fake.connStateArgsForCall = append(fake.connStateArgsForCall, struct {
+	}{})
+	stub := fake.ConnStateStub
+	fakeReturns := fake.connStateReturns
+	fake.recordInvocation("ConnState", []interface{}{})
+	fake.connStateMutex.Unlock()
+	if stub != nil {
+		return stub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeConnection) ConnStateCallCount() int {
+	fake.connStateMutex.RLock()
+	defer fake.connStateMutex.RUnlock()
+	return len(fake.connStateArgsForCall)
+}
+
+func (fake *FakeConnection) ConnStateCalls(stub func() ws.ConnState) {
+	fake.connStateMutex.Lock()
+	defer fake.connStateMutex.Unlock()
+	fake.ConnStateStub = stub
+}
+
+func (fake *FakeConnection) ConnStateReturns(result1 ws.ConnState) {
+	fake.connStateMutex.Lock()
+	defer fake.connStateMutex.Unlock()
+	fake.ConnStateStub = nil
+	fake.connStateReturns = struct {
+		result1 ws.ConnState
+	}{result1}
+}
+
+func (fake *FakeConnection) ConnStateReturnsOnCall(i int, result1 ws.ConnState) {
+	fake.connStateMutex.Lock()
+	defer fake.connStateMutex.Unlock()
+	fake.ConnStateStub = nil
+	if fake.connStateReturnsOnCall == nil {
+		fake.connStateReturnsOnCall = make(map[int]struct {
+			result1 ws.ConnState
+		})
+	}
+	fake.connStateReturnsOnCall[i] = struct {
+		result1 ws.ConnState
 	}{result1}
 }
 
@@ -1769,6 +1832,8 @@ func (fake *FakeConnection) Invocations() map[string][][]interface{} {
 	defer fake.closeWithMsgMutex.RUnlock()
 	fake.closedMutex.RLock()
 	defer fake.closedMutex.RUnlock()
+	fake.connStateMutex.RLock()
+	defer fake.connStateMutex.RUnlock()
 	fake.enableWriteCompressionMutex.RLock()
 	defer fake.enableWriteCompressionMutex.RUnlock()
 	fake.listenMutex.RLock()
