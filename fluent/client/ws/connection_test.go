@@ -2,6 +2,7 @@ package ws_test
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 type message struct {
@@ -29,9 +31,13 @@ var _ = Describe("Connection", func() {
 		svrRcvdMsgs, clientRcvdMsgs     chan message
 		listenErrs                      chan error
 		exitConnState, svrExitConnState ws.ConnState
+		logBuffer                       *gbytes.Buffer
 	)
 
-	var makeOpts = func(msgChan chan message, name string) ws.ConnectionOptions {
+	var makeOpts = func(logBuffer *gbytes.Buffer, msgChan chan message, name string) ws.ConnectionOptions {
+		logFlags := log.Lshortfile | log.LUTC | log.Lmicroseconds
+		logger := log.New(logBuffer, name+"> ", logFlags)
+
 		return ws.ConnectionOptions{
 			CloseDeadline: 500 * time.Millisecond,
 			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
@@ -43,18 +49,19 @@ var _ = Describe("Connection", func() {
 				msgChan <- msg
 
 				if err != nil {
-					log.Println(name, "ReadHandler received error:", err)
+					logger.Println("ReadHandler received error:", err)
 				}
 
 				return err
 			},
+			Logger: logger,
 		}
 	}
 
-	newHandler := func(svrRcvdMsgs chan message) http.Handler {
+	newHandler := func(logBuffer *gbytes.Buffer, svrRcvdMsgs chan message) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
-			svrOpts := makeOpts(svrRcvdMsgs, "server")
+			svrOpts := makeOpts(logBuffer, svrRcvdMsgs, "server")
 
 			var upgrader websocket.Upgrader
 			wc, _ := upgrader.Upgrade(w, r, nil)
@@ -71,16 +78,18 @@ var _ = Describe("Connection", func() {
 	}
 
 	BeforeEach(func() {
+		logBuffer = gbytes.NewBuffer()
+
 		exitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
 		svrExitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
 
 		checkSvrClose = true
 		svrRcvdMsgs = make(chan message)
-		svr = httptest.NewServer(newHandler(svrRcvdMsgs))
+		svr = httptest.NewServer(newHandler(logBuffer, svrRcvdMsgs))
 
 		checkClose = true
 		clientRcvdMsgs = make(chan message, 1)
-		opts = makeOpts(clientRcvdMsgs, "client")
+		opts = makeOpts(logBuffer, clientRcvdMsgs, "client")
 
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 		conn, _, err := websocket.DefaultDialer.Dial(u, nil)
@@ -111,6 +120,11 @@ var _ = Describe("Connection", func() {
 	})
 
 	AfterEach(func() {
+		defer func() {
+			fmt.Print(string(logBuffer.Contents()))
+			logBuffer.Close()
+		}()
+
 		if !connection.Closed() {
 			err := connection.Close()
 			if checkClose {
