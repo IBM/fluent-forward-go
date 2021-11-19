@@ -22,12 +22,6 @@ type Logger interface {
 	Printf(format string, v ...interface{})
 }
 
-type DebugOptions struct {
-	// DefaultLogPrefix defines an optional prefix for the default debug logger.
-	DefaultLogPrefix string
-	Logger           Logger
-}
-
 type ReadHandler func(conn Connection, messageType int, p []byte, err error) error
 
 type ConnectionOptions struct {
