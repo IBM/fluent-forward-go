@@ -22,6 +22,12 @@ type Logger interface {
 	Printf(format string, v ...interface{})
 }
 
+type noopLogger struct{}
+
+func (l *noopLogger) Println(v ...interface{}) {}
+
+func (l *noopLogger) Printf(format string, v ...interface{}) {}
+
 type ReadHandler func(conn Connection, messageType int, p []byte, err error) error
 
 type ConnectionOptions struct {
@@ -65,7 +71,6 @@ type Connection interface {
 
 type connection struct {
 	ext.Conn
-	log           bool
 	logger        Logger
 	closeLock     sync.Mutex
 	listenLock    sync.Mutex
@@ -82,11 +87,11 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 		Conn:      conn,
 		closedSig: make(chan struct{}),
 		connState: ConnStateOpen,
-		log:       opts.Logger != nil,
+		logger:    opts.Logger,
 	}
 
-	if wsc.log {
-		wsc.logger = opts.Logger
+	if wsc.logger == nil {
+		wsc.logger = &noopLogger{}
 	}
 
 	if opts.CloseHandler == nil {
@@ -193,9 +198,7 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 
 	wsc.closeLock.Unlock()
 
-	if wsc.log {
-		wsc.logger.Printf("sending close message: code %d; msg '%s'", closeCode, msg)
-	}
+	wsc.logger.Printf("sending close message: code %d; msg '%s'", closeCode, msg)
 
 	err := wsc.WriteMessage(
 		websocket.CloseMessage,
@@ -208,9 +211,8 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	// messages, wait N seconds for a response.
 	if err == nil && wsc.hasConnState(ConnStateListening) &&
 		!wsc.hasConnState(ConnStateCloseReceived) {
-		if wsc.log {
-			wsc.logger.Println("awaiting peer response")
-		}
+
+		wsc.logger.Println("awaiting peer response")
 
 		select {
 		case <-time.After(wsc.closeDeadline):
@@ -222,9 +224,7 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 
 	wsc.setConnState(ConnStateClosed)
 
-	if wsc.log {
-		wsc.logger.Println("closing the connection")
-	}
+	wsc.logger.Println("closing the connection")
 
 	if cerr := wsc.Conn.Close(); cerr != nil {
 		err = cerr
@@ -244,17 +244,13 @@ func (wsc *connection) Closed() bool {
 func (wsc *connection) handleClose(_ Connection, code int, msg string) error {
 	wsc.setConnState(ConnStateCloseReceived)
 
-	if wsc.log {
-		wsc.logger.Printf("close received: code %d; msg '%s'", code, msg)
-	}
+	wsc.logger.Printf("close received: code %d; msg '%s'", code, msg)
 
 	// If the peer initiated the close, then this client must send a message
 	// confirming receipt. If this client sent the initial close message, then
 	// the closing handshake is complete and no further action is required.
 	if !wsc.hasConnState(ConnStateCloseSent) {
-		if wsc.log {
-			wsc.logger.Println("responding to close message")
-		}
+		wsc.logger.Println("responding to close message")
 
 		// respond with close message
 		return wsc.Close()
@@ -271,9 +267,7 @@ type connMsg struct {
 
 func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
 	defer func() {
-		if wsc.log {
-			wsc.logger.Println("exiting read loop")
-		}
+		wsc.logger.Println("exiting read loop")
 
 		close(nextMsg)
 		wsc.unsetConnState(ConnStateListening)
@@ -285,15 +279,13 @@ func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
 	for {
 		msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 
-		if wsc.log && msg.err != nil {
+		if msg.err != nil {
 			wsc.logger.Println("error received: ", msg.err.Error())
 		}
 
 		if wsc.hasConnState(ConnStateClosed) && errors.Is(msg.err, net.ErrClosed) {
 			// "healthy" close
-			if wsc.log {
-				wsc.logger.Println("connection closed and terminated")
-			}
+			wsc.logger.Println("connection closed and terminated")
 
 			break
 		}
@@ -322,9 +314,7 @@ func (wsc *connection) Listen() error {
 	wsc.setConnState(ConnStateListening)
 	wsc.listenLock.Unlock()
 
-	if wsc.log {
-		wsc.logger.Println("listening")
-	}
+	wsc.logger.Println("listening")
 
 	nextMsg := make(chan connMsg)
 
@@ -335,7 +325,7 @@ func (wsc *connection) Listen() error {
 	for msg := range nextMsg {
 		// TODO error handling in this loop still needs work
 		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
-			if wsc.log && msg.err != nil {
+			if msg.err != nil {
 				wsc.logger.Println("handler returned error: ", msg.err.Error())
 			}
 
