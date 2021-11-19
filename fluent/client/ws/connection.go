@@ -275,6 +275,48 @@ type connMsg struct {
 	err     error
 }
 
+func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
+	defer func() {
+		if wsc.log {
+			wsc.logger.Println("exiting read loop")
+		}
+
+		close(nextMsg)
+		wsc.unsetConnState(ConnStateListening)
+		wsc.closedSig <- struct{}{}
+	}()
+
+	msg := connMsg{}
+
+	for {
+		msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
+
+		if wsc.log && msg.err != nil {
+			wsc.logger.Println("error received: ", msg.err.Error())
+		}
+
+		if wsc.hasConnState(ConnStateClosed) && errors.Is(msg.err, net.ErrClosed) {
+			// "healthy" close
+			if wsc.log {
+				wsc.logger.Println("connection closed and terminated")
+			}
+
+			break
+		}
+
+		nextMsg <- msg
+
+		var err net.Error
+		if errors.As(msg.err, &err) || errors.Is(msg.err, net.ErrClosed) {
+			break
+		}
+
+		if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed) {
+			break
+		}
+	}
+}
+
 func (wsc *connection) Listen() error {
 	wsc.listenLock.Lock()
 
@@ -292,47 +334,7 @@ func (wsc *connection) Listen() error {
 
 	nextMsg := make(chan connMsg)
 
-	go func() {
-		defer func() {
-			if wsc.log {
-				wsc.logger.Println("exiting read loop")
-			}
-
-			close(nextMsg)
-			wsc.unsetConnState(ConnStateListening)
-			wsc.closedSig <- struct{}{}
-		}()
-
-		msg := connMsg{}
-
-		for {
-			msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
-
-			if wsc.log && msg.err != nil {
-				wsc.logger.Println("error received: ", msg.err.Error())
-			}
-
-			if wsc.hasConnState(ConnStateClosed) && errors.Is(msg.err, net.ErrClosed) {
-				// "healthy" close
-				if wsc.log {
-					wsc.logger.Println("connection closed and terminated")
-				}
-
-				break
-			}
-
-			nextMsg <- msg
-
-			var err net.Error
-			if errors.As(msg.err, &err) || errors.Is(msg.err, net.ErrClosed) {
-				break
-			}
-
-			if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed) {
-				break
-			}
-		}
-	}()
+	go wsc.runReadLoop(nextMsg)
 
 	var err error
 
