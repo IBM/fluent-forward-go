@@ -211,7 +211,6 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	// messages, wait N seconds for a response.
 	if err == nil && wsc.hasConnState(ConnStateListening) &&
 		!wsc.hasConnState(ConnStateCloseReceived) {
-
 		wsc.logger.Println("awaiting peer response")
 
 		select {
