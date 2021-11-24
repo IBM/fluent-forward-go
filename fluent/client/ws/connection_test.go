@@ -41,15 +41,15 @@ var _ = Describe("Connection", func() {
 		return ws.ConnectionOptions{
 			CloseDeadline: 500 * time.Millisecond,
 			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
-				msg := message{
+				msgChan <- message{
 					mt:  msgType,
 					msg: p,
 					err: err,
 				}
-				msgChan <- msg
 
 				if err != nil {
 					logger.Println("ReadHandler received error:", err)
+					_ = conn.Close()
 				}
 
 				return err
@@ -72,7 +72,7 @@ var _ = Describe("Connection", func() {
 				return
 			}
 
-			Expect(svrConnection.Listen()).ToNot(HaveOccurred())
+			svrConnection.Listen()
 			log.Println("exit server handler")
 		})
 	}
@@ -84,13 +84,15 @@ var _ = Describe("Connection", func() {
 		svrExitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
 
 		checkSvrClose = true
-		svrRcvdMsgs = make(chan message)
+		svrRcvdMsgs = make(chan message, 1)
 		svr = httptest.NewServer(newHandler(logBuffer, svrRcvdMsgs))
 
 		checkClose = true
 		clientRcvdMsgs = make(chan message, 1)
 		opts = makeOpts(logBuffer, clientRcvdMsgs, "client")
+	})
 
+	JustBeforeEach(func() {
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 		conn, _, err := websocket.DefaultDialer.Dial(u, nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -98,9 +100,6 @@ var _ = Describe("Connection", func() {
 		connection, err = ws.NewConnection(conn, opts)
 		Expect(err).ToNot(HaveOccurred())
 
-	})
-
-	JustBeforeEach(func() {
 		listenErrs = make(chan error)
 
 		go func() {
@@ -143,8 +142,23 @@ var _ = Describe("Connection", func() {
 
 		svr.Close()
 
-		Expect(connection.ConnState()).To(Equal(exitConnState))
-		Expect(svrConnection.ConnState()).To(Equal(svrExitConnState))
+		Eventually(connection.ConnState).Should(Equal(exitConnState))
+		Eventually(svrConnection.ConnState).Should(Equal(svrExitConnState))
+	})
+
+	Describe("NewConnection", func() {
+		BeforeEach(func() {
+			opts.ReadHandler = nil
+		})
+
+		When("no ReadHandler is set", func() {
+			It("sets a default handler that handles the closing handshake", func() {
+				Expect(connection.Close()).ToNot(HaveOccurred())
+				closeMsg := <-svrRcvdMsgs
+				Expect(closeMsg.err.Error()).To(MatchRegexp("closing connection"))
+				Eventually(logBuffer.Contents).Should(MatchRegexp("Default ReadHandler error.+closing connection"))
+			})
+		})
 	})
 
 	Describe("WriteMessage", func() {
@@ -194,11 +208,11 @@ var _ = Describe("Connection", func() {
 		})
 
 		When("a network error occurs", func() {
-			BeforeEach(func() {
+			JustBeforeEach(func() {
 				checkClose = false
 				checkSvrClose = false
-				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
-				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				exitConnState = ws.ConnStateClosed | ws.ConnStateError
+				svrExitConnState = exitConnState
 				connection.UnderlyingConn().Close()
 			})
 
@@ -260,10 +274,10 @@ var _ = Describe("Connection", func() {
 		})
 
 		When("the connection errors on close", func() {
-			BeforeEach(func() {
+			JustBeforeEach(func() {
 				checkSvrClose = false
-				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
-				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				exitConnState = ws.ConnStateClosed | ws.ConnStateError
+				svrExitConnState = exitConnState
 				connection.UnderlyingConn().Close()
 			})
 

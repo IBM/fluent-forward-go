@@ -37,9 +37,9 @@ type ConnectionOptions struct {
 	PongHandler   func(conn Connection, appData string) error
 	// TODO: should be a duration and added to `now` before every operation
 	ReadDeadline time.Time
-	// ReadHandler handles new messages received on the websocket. The read loop
-	// will exit automatically if a close message or network error is received. In
-	// all other cases, the client MUST call `Close` to exit the read loop.
+	// ReadHandler handles new messages received on the websocket. If an error
+	// is received the client MUST call `Close`. Any error returned by
+	// ReadHandler will be retured by `Listen`.
 	ReadHandler ReadHandler
 	// TODO: should be a duration and added to `now` before every operation
 	WriteDeadline time.Time
@@ -55,6 +55,7 @@ const (
 	ConnStateCloseReceived
 	ConnStateCloseSent
 	ConnStateClosed
+	ConnStateError
 )
 
 //counterfeiter:generate . Connection
@@ -115,7 +116,13 @@ func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	}
 
 	if opts.ReadHandler == nil {
-		opts.ReadHandler = func(_ Connection, _ int, _ []byte, err error) error {
+		opts.ReadHandler = func(c Connection, _ int, _ []byte, err error) error {
+			if err != nil {
+				wsc.logger.Println("Default ReadHandler error:", err)
+
+				_ = c.Close()
+			}
+
 			return err
 		}
 	}
@@ -184,20 +191,7 @@ func (wsc *connection) unsetConnState(cs ConnState) {
 	wsc.connState ^= cs
 }
 
-// CloseWithMsg sends a close message to the peer
-func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
-	wsc.closeLock.Lock()
-
-	if wsc.hasConnState(ConnStateCloseSent) {
-		wsc.closeLock.Unlock()
-		return errors.New("multiple close calls")
-	}
-
-	wsc.unsetConnState(ConnStateOpen)
-	wsc.setConnState(ConnStateCloseSent)
-
-	wsc.closeLock.Unlock()
-
+func (wsc *connection) tryDoCloseHandshake(closeCode int, msg string) error {
 	wsc.logger.Printf("sending close message: code %d; msg '%s'", closeCode, msg)
 
 	err := wsc.WriteMessage(
@@ -221,6 +215,27 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 		}
 	}
 
+	return err
+}
+
+// CloseWithMsg sends a close message to the peer
+func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
+	wsc.closeLock.Lock()
+	defer wsc.closeLock.Unlock()
+
+	if wsc.hasAnyConnState(ConnStateCloseSent, ConnStateClosed) {
+		return errors.New("multiple close calls")
+	}
+
+	wsc.unsetConnState(ConnStateOpen)
+
+	var err error
+
+	if !wsc.hasConnState(ConnStateError) {
+		wsc.setConnState(ConnStateCloseSent)
+		err = wsc.tryDoCloseHandshake(closeCode, msg)
+	}
+
 	wsc.setConnState(ConnStateClosed)
 
 	wsc.logger.Println("closing the connection")
@@ -241,19 +256,8 @@ func (wsc *connection) Closed() bool {
 }
 
 func (wsc *connection) handleClose(_ Connection, code int, msg string) error {
-	wsc.setConnState(ConnStateCloseReceived)
-
 	wsc.logger.Printf("close received: code %d; msg '%s'", code, msg)
-
-	// If the peer initiated the close, then this client must send a message
-	// confirming receipt. If this client sent the initial close message, then
-	// the closing handshake is complete and no further action is required.
-	if !wsc.hasConnState(ConnStateCloseSent) {
-		wsc.logger.Println("responding to close message")
-
-		// respond with close message
-		return wsc.Close()
-	}
+	wsc.setConnState(ConnStateCloseReceived)
 
 	return nil
 }
@@ -279,24 +283,21 @@ func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
 		msg.mt, msg.message, msg.err = wsc.Conn.ReadMessage()
 
 		if msg.err != nil {
-			wsc.logger.Println("error received: ", msg.err.Error())
-		}
+			if wsc.hasConnState(ConnStateClosed) && errors.Is(msg.err, net.ErrClosed) {
+				// healthy close
+				break
+			}
 
-		if wsc.hasConnState(ConnStateClosed) && errors.Is(msg.err, net.ErrClosed) {
-			// "healthy" close
-			wsc.logger.Println("connection closed and terminated")
-
-			break
+			var err net.Error
+			if errors.As(msg.err, &err) || errors.Is(msg.err, net.ErrClosed) ||
+				websocket.IsCloseError(msg.err, websocket.CloseAbnormalClosure) {
+				wsc.setConnState(ConnStateError)
+			}
 		}
 
 		nextMsg <- msg
 
-		var err net.Error
-		if errors.As(msg.err, &err) || errors.Is(msg.err, net.ErrClosed) {
-			break
-		}
-
-		if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed) {
+		if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed, ConnStateError) {
 			break
 		}
 	}
