@@ -38,8 +38,8 @@ type ConnectionOptions struct {
 	// TODO: should be a duration and added to `now` before every operation
 	ReadDeadline time.Time
 	// ReadHandler handles new messages received on the websocket. If an error
-	// is received the client MUST call `Close`. Any error returned by
-	// ReadHandler will be retured by `Listen`.
+	// is received the client MUST call `Close`. An error returned by ReadHandler
+	// will be retured by `Listen`.
 	ReadHandler ReadHandler
 	// TODO: should be a duration and added to `now` before every operation
 	WriteDeadline time.Time
@@ -195,6 +195,8 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	if !wsc.hasConnState(ConnStateError) {
 		wsc.logger.Printf("sending close message: code %d; msg '%s'", closeCode, msg)
 
+		// TODO: currently only the tests check this state to confirm handshake;
+		// need to refactor it out
 		wsc.setConnState(ConnStateCloseSent)
 
 		err = wsc.WriteMessage(
@@ -239,6 +241,9 @@ func (wsc *connection) Closed() bool {
 
 func (wsc *connection) handleClose(_ Connection, code int, msg string) error {
 	wsc.logger.Printf("close received: code %d; msg '%s'", code, msg)
+
+	// TODO: currently only the tests check this state to confirm handshake;
+	// need to refactor it out
 	wsc.setConnState(ConnStateCloseReceived)
 
 	return nil
@@ -293,8 +298,8 @@ func (wsc *connection) Listen() error {
 		return errors.New("already listening on this connection")
 	}
 
-	wsc.setConnState(ConnStateListening)
 	wsc.logger.Println("listening")
+	wsc.setConnState(ConnStateListening)
 	wsc.listenLock.Unlock()
 
 	nextMsg := make(chan connMsg)
@@ -303,7 +308,6 @@ func (wsc *connection) Listen() error {
 	var err error
 
 	for msg := range nextMsg {
-		// TODO error handling in this loop still needs work
 		if rerr := wsc.readHandler(wsc, msg.mt, msg.message, msg.err); rerr != nil {
 			if msg.err != nil {
 				wsc.logger.Println("handler returned error: ", msg.err.Error())
@@ -316,8 +320,6 @@ func (wsc *connection) Listen() error {
 		}
 	}
 
-	// TODO return a default error, eg `ErrConnectionClosed`, in the same way
-	// http.Server.Listen and websocket.Close do
 	return err
 }
 
