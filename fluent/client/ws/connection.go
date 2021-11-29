@@ -160,19 +160,6 @@ func (wsc *connection) hasConnState(cs ConnState) bool {
 	return wsc.connState&cs != 0
 }
 
-func (wsc *connection) hasAnyConnState(cs ...ConnState) bool {
-	wsc.stateLock.RLock()
-	defer wsc.stateLock.RUnlock()
-
-	for i := 0; i < len(cs); i++ {
-		if wsc.connState&cs[i] != 0 {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (wsc *connection) setConnState(cs ConnState) {
 	wsc.stateLock.Lock()
 	defer wsc.stateLock.Unlock()
@@ -191,49 +178,44 @@ func (wsc *connection) unsetConnState(cs ConnState) {
 	wsc.connState ^= cs
 }
 
-func (wsc *connection) tryDoCloseHandshake(closeCode int, msg string) error {
-	wsc.logger.Printf("sending close message: code %d; msg '%s'", closeCode, msg)
-
-	err := wsc.WriteMessage(
-		websocket.CloseMessage,
-		websocket.FormatCloseMessage(
-			closeCode, msg,
-		),
-	)
-
-	// if the close message was sent and the connection is listening for incoming
-	// messages, wait N seconds for a response.
-	if err == nil && wsc.hasConnState(ConnStateListening) &&
-		!wsc.hasConnState(ConnStateCloseReceived) {
-		wsc.logger.Println("awaiting peer response")
-
-		select {
-		case <-time.After(wsc.closeDeadline):
-			// sent a close, but never heard back, close anyway
-			err = errors.New("close deadline expired")
-		case <-wsc.closedSig:
-		}
-	}
-
-	return err
-}
-
 // CloseWithMsg sends a close message to the peer
 func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 	wsc.closeLock.Lock()
-	defer wsc.closeLock.Unlock()
 
-	if wsc.hasAnyConnState(ConnStateCloseSent, ConnStateClosed) {
+	if wsc.Closed() {
+		wsc.closeLock.Unlock()
 		return errors.New("multiple close calls")
 	}
 
 	wsc.unsetConnState(ConnStateOpen)
+	wsc.closeLock.Unlock()
 
 	var err error
 
 	if !wsc.hasConnState(ConnStateError) {
+		wsc.logger.Printf("sending close message: code %d; msg '%s'", closeCode, msg)
+
 		wsc.setConnState(ConnStateCloseSent)
-		err = wsc.tryDoCloseHandshake(closeCode, msg)
+
+		err = wsc.WriteMessage(
+			websocket.CloseMessage,
+			websocket.FormatCloseMessage(
+				closeCode, msg,
+			),
+		)
+
+		// if the close message was sent and the connection is listening for incoming
+		// messages, wait N seconds for a response.
+		if err == nil && wsc.hasConnState(ConnStateListening) {
+			wsc.logger.Println("awaiting peer response")
+
+			select {
+			case <-time.After(wsc.closeDeadline):
+				// sent a close, but never heard back, close anyway
+				err = errors.New("close deadline expired")
+			case <-wsc.closedSig:
+			}
+		}
 	}
 
 	wsc.setConnState(ConnStateClosed)
@@ -297,7 +279,7 @@ func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
 
 		nextMsg <- msg
 
-		if wsc.hasAnyConnState(ConnStateCloseReceived, ConnStateClosed, ConnStateError) {
+		if msg.err != nil {
 			break
 		}
 	}
@@ -312,12 +294,10 @@ func (wsc *connection) Listen() error {
 	}
 
 	wsc.setConnState(ConnStateListening)
+	wsc.logger.Println("listening")
 	wsc.listenLock.Unlock()
 
-	wsc.logger.Println("listening")
-
 	nextMsg := make(chan connMsg)
-
 	go wsc.runReadLoop(nextMsg)
 
 	var err error
