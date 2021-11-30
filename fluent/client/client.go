@@ -54,6 +54,7 @@ func (sa *ServerAddress) String() string {
 	if len(sa.URLPath) != 0 {
 		return fmt.Sprintf("%s:%d%s", sa.Hostname, sa.Port, sa.URLPath)
 	}
+
 	return fmt.Sprintf("%s:%d", sa.Hostname, sa.Port)
 }
 
