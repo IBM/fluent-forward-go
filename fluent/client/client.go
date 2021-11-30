@@ -43,12 +43,17 @@ type Client struct {
 	Hostname string
 }
 
+// ServerAddress holds details about URLs of the server to connect
 type ServerAddress struct {
-	Hostname string
-	Port     int
+	Hostname string // Hostname of the server to connect
+	Port     int    // Port of the server
+	URLPath  string // Optional Path to connect on server, it should start with trailing slash e.g. /events/ingest
 }
 
-func (sa ServerAddress) String() string {
+func (sa *ServerAddress) String() string {
+	if len(sa.URLPath) != 0 {
+		return fmt.Sprintf("%s:%d%s", sa.Hostname, sa.Port, sa.URLPath)
+	}
 	return fmt.Sprintf("%s:%d", sa.Hostname, sa.Port)
 }
 
