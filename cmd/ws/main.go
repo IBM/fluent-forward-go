@@ -58,7 +58,7 @@ func main() {
 		ServerAddress: client.ServerAddress{
 			Hostname: "ws://127.0.0.1",
 			Port:     8083,
-			URLPath:  "/events/ingest", // This path is optional
+			Path:     "/events/ingest", // This path is optional
 		},
 	}
 
