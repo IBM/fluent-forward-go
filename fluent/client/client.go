@@ -3,7 +3,6 @@ package client
 import (
 	"errors"
 	"fmt"
-	"path"
 
 	"crypto/rand"
 	"net"
@@ -44,22 +43,13 @@ type Client struct {
 	Hostname string
 }
 
-// ServerAddress holds details about URLs of the server to connect
 type ServerAddress struct {
-	Hostname string // Hostname of the server to connect
-	Port     int    // Port of the server
-	Path     string // Optional Path to connect on server
+	Hostname string
+	Port     int
 }
 
 func (sa ServerAddress) String() string {
-	hn := sa.Hostname
-
-	// Port isn't required for websockets
-	if sa.Port != 0 {
-		hn = fmt.Sprintf("%s:%d", hn, sa.Port)
-	}
-
-	return path.Join(hn, sa.Path)
+	return fmt.Sprintf("%s:%d", sa.Hostname, sa.Port)
 }
 
 type AuthInfo struct {
