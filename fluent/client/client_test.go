@@ -2,13 +2,8 @@ package client_test
 
 import (
 	"errors"
-
-	// "fmt"
-	// "io"
 	"math/rand"
 	"net"
-
-	// // "os"
 	"time"
 
 	. "github.com/IBM/fluent-forward-go/fluent/client"
