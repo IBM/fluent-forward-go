@@ -143,6 +143,17 @@ var _ = Describe("WSClient", func() {
 			Expect(factory.NewSessionCallCount()).To(Equal(2))
 			Expect(client.Session().Connection).ToNot(BeNil())
 		})
+
+		It("works if no active session", func() {
+			Expect(client.Disconnect()).ToNot(HaveOccurred())
+			Expect(conn.CloseCallCount()).To(Equal(1))
+
+			Expect(client.Reconnect()).ToNot(HaveOccurred())
+			Expect(conn.CloseCallCount()).To(Equal(1))
+
+			Expect(factory.NewSessionCallCount()).To(Equal(2))
+			Expect(client.Session().Connection).ToNot(BeNil())
+		})
 	})
 
 	Describe("SendMessage", func() {
