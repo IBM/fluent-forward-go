@@ -69,10 +69,10 @@ func (s *Listener) ListenAndServe() error {
 	once.Do(func() {
 		// TODO comment explaining this weirdness
 		router = mux.NewRouter()
-		http.Handle("/", router)
+		http.Handle("/events/ingest", router)
 	})
 
-	router.HandleFunc("/", s.Connect)
+	router.HandleFunc("/events/ingest", s.Connect)
 
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
