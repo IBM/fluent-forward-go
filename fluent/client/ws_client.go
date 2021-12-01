@@ -201,12 +201,10 @@ func (c *WSClient) Reconnect() (err error) {
 	defer c.sessionLock.Unlock()
 
 	if c.session != nil && !c.session.Connection.Closed() {
-		if err = c.session.Connection.Close(); err == nil {
-			err = c.connect()
-		}
+		_ = c.session.Connection.Close()
 	}
 
-	if err != nil {
+	if err = c.connect(); err != nil {
 		c.session = nil
 	}
 
