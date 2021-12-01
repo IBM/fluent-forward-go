@@ -57,14 +57,14 @@ func NewIAMAuthInfo(token string) *IAMAuthInfo {
 
 // WSSession represents a single websocket connection.
 type WSSession struct {
-	ServerAddress
+	URL        string
 	Connection ws.Connection
 }
 
 // DefaultWSConnectionFactory is used by the client if no other
 // ConnectionFactory is provided.
 type DefaultWSConnectionFactory struct {
-	ServerAddress
+	URL      string
 	AuthInfo *IAMAuthInfo
 }
 
@@ -78,7 +78,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
 	}
 
-	conn, resp, err := dialer.Dial(wcf.ServerAddress.String(), header)
+	conn, resp, err := dialer.Dial(wcf.URL, header)
 	if resp != nil && resp.Body != nil {
 		// TODO: dump response, which is second return value from Dial
 		resp.Body.Close()
@@ -89,15 +89,15 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 
 func (wcf *DefaultWSConnectionFactory) NewSession(connection ws.Connection) *WSSession {
 	return &WSSession{
-		ServerAddress: wcf.ServerAddress,
-		Connection:    connection,
+		URL:        wcf.URL,
+		Connection: connection,
 	}
 }
 
 // WSClient manages the lifetime of a single websocket connection.
 type WSClient struct {
 	ConnectionFactory WSConnectionFactory
-	ServerAddress
+	URL               string
 	AuthInfo          *IAMAuthInfo
 	ConnectionOptions ws.ConnectionOptions
 	session           *WSSession
@@ -150,8 +150,8 @@ func (c *WSClient) Connect() error {
 func (c *WSClient) connect() error {
 	if c.ConnectionFactory == nil {
 		c.ConnectionFactory = &DefaultWSConnectionFactory{
-			ServerAddress: c.ServerAddress,
-			AuthInfo:      c.AuthInfo,
+			URL:      c.URL,
+			AuthInfo: c.AuthInfo,
 		}
 	}
 

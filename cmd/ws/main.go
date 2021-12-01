@@ -55,10 +55,7 @@ func main() {
 	flag.Parse()
 
 	c := &client.WSClient{
-		ServerAddress: client.ServerAddress{
-			Hostname: "ws://127.0.0.1",
-			Port:     8083,
-		},
+		URL: "ws://127.0.0.1:8083",
 	}
 
 	wsSvr := listen()
