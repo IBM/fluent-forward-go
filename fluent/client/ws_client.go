@@ -71,7 +71,7 @@ type DefaultWSConnectionFactory struct {
 func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	var (
 		dialer websocket.Dialer
-		header http.Header
+		header = http.Header{}
 	)
 
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {

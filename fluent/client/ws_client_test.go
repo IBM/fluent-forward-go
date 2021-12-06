@@ -3,15 +3,21 @@ package client_test
 import (
 	"bytes"
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 
 	"time"
 
+	"github.com/IBM/fluent-forward-go/fluent/client"
 	. "github.com/IBM/fluent-forward-go/fluent/client"
 	"github.com/IBM/fluent-forward-go/fluent/client/clientfakes"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext/extfakes"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/wsfakes"
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
+	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -22,6 +28,63 @@ var _ = Describe("IAMAuthInfo", func() {
 		Expect(iai.IAMToken()).To(Equal("a"))
 		iai.SetIAMToken("b")
 		Expect(iai.IAMToken()).To(Equal("b"))
+	})
+})
+
+var _ = Describe("DefaultWSConnectionFactory", func() {
+	var (
+		svr   *httptest.Server
+		happy chan struct{}
+	)
+
+	newHandler := func(happy chan struct{}) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer GinkgoRecover()
+			svrOpts := ws.ConnectionOptions{}
+
+			var upgrader websocket.Upgrader
+			wc, _ := upgrader.Upgrade(w, r, nil)
+
+			header := r.Header.Get(client.AuthorizationHeader)
+			Expect(header).To(Equal("oi"))
+
+			svrConnection, err := ws.NewConnection(wc, svrOpts)
+			if err != nil {
+				Fail("broke")
+			}
+
+			happy <- struct{}{}
+
+			svrConnection.Close()
+		})
+	}
+
+	BeforeEach(func() {
+		happy = make(chan struct{})
+		svr = httptest.NewServer(newHandler(happy))
+		go func() {
+			defer GinkgoRecover()
+			Expect(svr.Config.ListenAndServe()).ToNot(HaveOccurred())
+		}()
+		time.Sleep(500 * time.Millisecond)
+	})
+
+	AfterEach(func() {
+		svr.Close()
+	})
+
+	It("sends auth headers", func() {
+		u := "ws" + strings.TrimPrefix(svr.URL, "http")
+
+		cli := client.WSClient{
+			URL:      u,
+			AuthInfo: &client.IAMAuthInfo{},
+		}
+
+		cli.AuthInfo.SetIAMToken("oi")
+		Expect(cli.Connect()).ToNot(HaveOccurred())
+		Eventually(happy).Should(Receive())
+		Expect(cli.Disconnect()).ToNot(HaveOccurred())
 	})
 })
 
