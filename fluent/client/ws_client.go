@@ -168,6 +168,16 @@ func (c *WSClient) connect() error {
 	c.session = c.ConnectionFactory.NewSession(connection)
 
 	go func() {
+		// There is a race condition where session is set to nil before
+		// Listen is called. This check resolves segfaults during tests,
+		// but there's still a gap where session can be nullified before
+		// Listen is invoked. The odds of that happening outside of tests
+		// is extremely small; e.g., who will call Dis/Reconnect immediately
+		// after calling Connect?
+		if c.Session() == nil {
+			return
+		}
+
 		// Starts the async read. If there is a read error, it is set so that
 		// it is returned the next time SendMessage is called. That should be
 		// sufficient for most cases where the client cares only about sending.

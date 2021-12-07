@@ -142,7 +142,9 @@ var _ = Describe("Connection", func() {
 
 		svr.Close()
 
-		Eventually(connection.ConnState).Should(Equal(exitConnState))
+		if checkClose {
+			Eventually(connection.ConnState).Should(Equal(exitConnState))
+		}
 		if checkSvrClose {
 			Eventually(svrConnection.ConnState).Should(Equal(svrExitConnState))
 		}
@@ -286,10 +288,16 @@ var _ = Describe("Connection", func() {
 			})
 
 			JustBeforeEach(func() {
+				checkClose = false
 				checkSvrClose = false
 				exitConnState = ws.ConnStateClosed | ws.ConnStateError
 				svrExitConnState = exitConnState
 				connection.UnderlyingConn().Close()
+			})
+
+			AfterEach(func() {
+				Expect(connection.ConnState() & exitConnState).To(BeNumerically(">", 1))
+				Expect(connection.ConnState() & svrExitConnState).To(BeNumerically(">", 1))
 			})
 
 			It("returns an error", func() {
