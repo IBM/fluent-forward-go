@@ -278,6 +278,8 @@ func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
 			var err net.Error
 			if errors.As(msg.err, &err) || errors.Is(msg.err, net.ErrClosed) ||
 				websocket.IsCloseError(msg.err, websocket.CloseAbnormalClosure) {
+				// mark the connection with error state so Close doesn't attempt to
+				// send closing message to peer
 				wsc.setConnState(ConnStateError)
 			}
 		}
