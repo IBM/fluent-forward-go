@@ -28,7 +28,7 @@ var _ = Describe("Connection", func() {
 		connection, svrConnection       ws.Connection
 		svr                             *httptest.Server
 		opts                            ws.ConnectionOptions
-		svrRcvdMsgs, clientRcvdMsgs     chan message
+		svrRcvdMsgs                     chan message
 		listenErrs                      chan error
 		exitConnState, svrExitConnState ws.ConnState
 		logBuffer                       *gbytes.Buffer
@@ -41,15 +41,17 @@ var _ = Describe("Connection", func() {
 		return ws.ConnectionOptions{
 			CloseDeadline: 500 * time.Millisecond,
 			ReadHandler: func(conn ws.Connection, msgType int, p []byte, err error) error {
-				msg := message{
-					mt:  msgType,
-					msg: p,
-					err: err,
+				if msgChan != nil {
+					msgChan <- message{
+						mt:  msgType,
+						msg: p,
+						err: err,
+					}
 				}
-				msgChan <- msg
 
 				if err != nil {
 					logger.Println("ReadHandler received error:", err)
+					_ = conn.Close()
 				}
 
 				return err
@@ -72,7 +74,7 @@ var _ = Describe("Connection", func() {
 				return
 			}
 
-			Expect(svrConnection.Listen()).ToNot(HaveOccurred())
+			svrConnection.Listen()
 			log.Println("exit server handler")
 		})
 	}
@@ -84,13 +86,14 @@ var _ = Describe("Connection", func() {
 		svrExitConnState = ws.ConnStateCloseReceived | ws.ConnStateCloseSent | ws.ConnStateClosed
 
 		checkSvrClose = true
-		svrRcvdMsgs = make(chan message)
+		svrRcvdMsgs = make(chan message, 1)
 		svr = httptest.NewServer(newHandler(logBuffer, svrRcvdMsgs))
 
 		checkClose = true
-		clientRcvdMsgs = make(chan message, 1)
-		opts = makeOpts(logBuffer, clientRcvdMsgs, "client")
+		opts = makeOpts(logBuffer, nil, "client")
+	})
 
+	JustBeforeEach(func() {
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 		conn, _, err := websocket.DefaultDialer.Dial(u, nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -98,15 +101,11 @@ var _ = Describe("Connection", func() {
 		connection, err = ws.NewConnection(conn, opts)
 		Expect(err).ToNot(HaveOccurred())
 
-	})
-
-	JustBeforeEach(func() {
-		listenErrs = make(chan error)
+		listenErrs = make(chan error, 1)
 
 		go func() {
 			defer GinkgoRecover()
 
-			Expect(svrConnection.ConnState()).To(Equal(ws.ConnStateOpen | ws.ConnStateListening))
 			Expect(connection.ConnState()).To(Equal(ws.ConnStateOpen))
 
 			if err := connection.Listen(); err != nil {
@@ -143,8 +142,27 @@ var _ = Describe("Connection", func() {
 
 		svr.Close()
 
-		Expect(connection.ConnState()).To(Equal(exitConnState))
-		Expect(svrConnection.ConnState()).To(Equal(svrExitConnState))
+		if checkClose {
+			Eventually(connection.ConnState).Should(Equal(exitConnState))
+		}
+		if checkSvrClose {
+			Eventually(svrConnection.ConnState).Should(Equal(svrExitConnState))
+		}
+	})
+
+	Describe("NewConnection", func() {
+		BeforeEach(func() {
+			opts.ReadHandler = nil
+		})
+
+		When("no ReadHandler is set", func() {
+			It("sets a default handler that handles the closing handshake", func() {
+				Expect(connection.Close()).ToNot(HaveOccurred())
+				closeMsg := <-svrRcvdMsgs
+				Expect(closeMsg.err.Error()).To(MatchRegexp("closing connection"))
+				Eventually(logBuffer.Contents).Should(MatchRegexp("Default ReadHandler error.+closing connection"))
+			})
+		})
 	})
 
 	Describe("WriteMessage", func() {
@@ -194,11 +212,11 @@ var _ = Describe("Connection", func() {
 		})
 
 		When("a network error occurs", func() {
-			BeforeEach(func() {
+			JustBeforeEach(func() {
 				checkClose = false
 				checkSvrClose = false
-				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
-				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				exitConnState = ws.ConnStateClosed | ws.ConnStateError
+				svrExitConnState = exitConnState
 				connection.UnderlyingConn().Close()
 			})
 
@@ -261,10 +279,25 @@ var _ = Describe("Connection", func() {
 
 		When("the connection errors on close", func() {
 			BeforeEach(func() {
+				opts.ReadHandler = func(conn ws.Connection, msgType int, p []byte, err error) error {
+					// This is kinda cheating, but there is a race condition where the default test
+					// read handler occasionally calls Close before the test does. In that case,
+					// `Close` returns the "multiple close calls" error.
+					return nil
+				}
+			})
+
+			JustBeforeEach(func() {
+				checkClose = false
 				checkSvrClose = false
-				exitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed
-				svrExitConnState = ws.ConnStateCloseSent | ws.ConnStateClosed | ws.ConnStateListening
+				exitConnState = ws.ConnStateClosed | ws.ConnStateError
+				svrExitConnState = exitConnState
 				connection.UnderlyingConn().Close()
+			})
+
+			AfterEach(func() {
+				Expect(connection.ConnState() & exitConnState).To(BeNumerically(">", 1))
+				Expect(connection.ConnState() & svrExitConnState).To(BeNumerically(">", 1))
 			})
 
 			It("returns an error", func() {
