@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -26,22 +27,45 @@ const (
 )
 
 var (
-	compressorPool sync.Pool
+	compressorPool  sync.Pool
+	chunkReaderPool sync.Pool
 )
 
 func init() {
+	uuid.EnableRandPool()
+
 	msgp.RegisterExtension(extensionType, func() msgp.Extension {
 		return new(EventTime)
 	})
 
 	compressorPool.New = func() interface{} {
-		return NewGzipCompressor()
+		return &GzipCompressor{}
 	}
+
+	chunkReaderPool.New = func() interface{} {
+		return &ChunkReader{}
+	}
+}
+
+// ChunkEncoder wraps methods to encode a message and generate
+// "chunk" IDs for use with Fluent's chunk-ack protocol. See
+// https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#response
+// for more information.
+type ChunkEncoder interface {
+	Chunk() (string, error)
+	EncodeMsg(*msgp.Writer) error
 }
 
 // EventTime is the fluent-forward representation of a timestamp
 type EventTime struct {
 	time.Time
+}
+
+// EventTimeNow returns an EventTime set to time.Now().UTC().
+func EventTimeNow() EventTime {
+	return EventTime{
+		Time: time.Now().UTC(),
+	}
 }
 
 func (et *EventTime) ExtensionType() int8 {
@@ -152,4 +176,28 @@ type MessageOptions struct {
 	Size       *int   `msg:"size,omitempty"`
 	Chunk      string `msg:"chunk,omitempty"`
 	Compressed string `msg:"compressed,omitempty"`
+}
+
+type AckMessage struct {
+	Ack string `msg:"ack"`
+}
+
+// RawMessage is a ChunkEncoder wrapper for []byte.
+//msgp:encode ignore RawMessage
+type RawMessage []byte
+
+func (rm RawMessage) EncodeMsg(w *msgp.Writer) error {
+	if len(rm) == 0 {
+		return w.WriteNil()
+	}
+
+	_, err := w.Write([]byte(rm))
+
+	return err
+}
+
+// Chunk searches the message for the chunk ID. In the case of RawMessage,
+// Chunk is read-only. It returns an error if the chunk is not found.
+func (rm RawMessage) Chunk() (string, error) {
+	return GetChunk([]byte(rm))
 }

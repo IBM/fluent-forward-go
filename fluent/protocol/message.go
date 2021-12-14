@@ -107,6 +107,21 @@ func (msg *Message) Msgsize() (s int) {
 	return
 }
 
+func (msg *Message) Chunk() (string, error) {
+	if msg.Options == nil {
+		msg.Options = &MessageOptions{}
+	}
+
+	if msg.Options.Chunk != "" {
+		return msg.Options.Chunk, nil
+	}
+
+	chunk, err := makeChunkID()
+	msg.Options.Chunk = chunk
+
+	return chunk, err
+}
+
 // MessageExt
 //msgp:tuple MessageExt
 //msgp:decode ignore MessageExt
@@ -204,4 +219,19 @@ func (msg *MessageExt) Msgsize() (s int) {
 	}
 
 	return
+}
+
+func (msg *MessageExt) Chunk() (string, error) {
+	if msg.Options == nil {
+		msg.Options = &MessageOptions{}
+	}
+
+	if msg.Options.Chunk != "" {
+		return msg.Options.Chunk, nil
+	}
+
+	chunk, err := makeChunkID()
+	msg.Options.Chunk = chunk
+
+	return chunk, err
 }

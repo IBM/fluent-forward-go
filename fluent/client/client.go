@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"crypto/rand"
 	"net"
@@ -25,7 +26,7 @@ type MessageClient interface {
 	Connect() error
 	Disconnect() (err error)
 	Reconnect() error
-	SendMessage(e msgp.Encodable) error
+	SendMessage(e protocol.ChunkEncoder) error
 	SendRaw(raw []byte) error
 }
 
@@ -37,10 +38,12 @@ type ConnectionFactory interface {
 
 type Client struct {
 	ConnectionFactory
-	Timeout  time.Duration
-	Session  *Session
-	AuthInfo AuthInfo
-	Hostname string
+	RequireAck bool
+	Timeout    time.Duration
+	Session    *Session
+	AuthInfo   AuthInfo
+	Hostname   string
+	ackMutex   sync.Mutex
 }
 
 type ServerAddress struct {
@@ -116,9 +119,28 @@ func (c *Client) Disconnect() (err error) {
 	return
 }
 
-// SendMessage sends a single msgp.Encodable across the wire.  If the session
+func (c *Client) checkAck(chunk string) error {
+	if c.Timeout != 0 {
+		if err := c.Session.Connection.SetReadDeadline(time.Now().Add(c.Timeout)); err != nil {
+			return err
+		}
+	}
+
+	var ack protocol.AckMessage
+	if err := msgp.Decode(c.Session.Connection, &ack); err != nil {
+		return err
+	}
+
+	if ack.Ack != chunk {
+		return fmt.Errorf("Expected chunk %s, but got %s", chunk, ack.Ack)
+	}
+
+	return nil
+}
+
+// SendMessage sends a single protocol.ChunkEncoder across the wire.  If the session
 // is not yet in transport phase, an error is returned, and no message is sent.
-func (c *Client) SendMessage(e msgp.Encodable) error {
+func (c *Client) SendMessage(e protocol.ChunkEncoder) error {
 	if c.Session == nil {
 		return errors.New("no active session")
 	}
@@ -127,33 +149,33 @@ func (c *Client) SendMessage(e msgp.Encodable) error {
 		return errors.New("session handshake not completed")
 	}
 
-	return c.sendMessage(e)
-}
+	var (
+		chunk string
+		err   error
+	)
 
-// Private sender, bypasses transport phase checks.
-func (c *Client) sendMessage(e msgp.Encodable) (err error) {
-	if c.Session != nil {
-		// msgp.Encode makes use of object pool to decrease allocations
-		return msgp.Encode(c.Session.Connection, e)
+	if c.RequireAck {
+		if chunk, err = e.Chunk(); err != nil {
+			return err
+		}
+
+		c.ackMutex.Lock()
+		defer c.ackMutex.Unlock()
 	}
 
-	return
+	err = msgp.Encode(c.Session.Connection, e)
+	if err != nil || !c.RequireAck {
+		return err
+	}
+
+	return c.checkAck(chunk)
 }
 
-// SendRaw sends bytes across the wire.  If the session
-// is not yet in transport phase, an error is returned, and no message is sent.
+// SendRaw sends bytes across the wire. If the session
+// is not yet in transport phase, an error is returned,
+// and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
-	if c.Session == nil {
-		return errors.New("no active session")
-	}
-
-	if !c.Session.TransportPhase {
-		return errors.New("session handshake not completed")
-	}
-
-	_, err := c.Session.Connection.Write(m)
-
-	return err
+	return c.SendMessage(protocol.RawMessage(m))
 }
 
 // Handshake initiates handshake mode.  Users must call this before attempting
@@ -187,7 +209,7 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	err = c.sendMessage(ping)
+	err = msgp.Encode(c.Session.Connection, ping)
 	if err != nil {
 		return err
 	}

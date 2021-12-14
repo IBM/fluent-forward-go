@@ -142,17 +142,25 @@ func (msg *PackedForwardMessage) Msgsize() (s int) {
 	return
 }
 
+func (msg *PackedForwardMessage) Chunk() (string, error) {
+	if msg.Options == nil {
+		msg.Options = &MessageOptions{}
+	}
+
+	if msg.Options.Chunk != "" {
+		return msg.Options.Chunk, nil
+	}
+
+	chunk, err := makeChunkID()
+	msg.Options.Chunk = chunk
+
+	return chunk, err
+}
+
 //msgp:ignore GzipCompressor
 type GzipCompressor struct {
 	Buffer     *bytes.Buffer
 	GzipWriter *gzip.Writer
-}
-
-func NewGzipCompressor() *GzipCompressor {
-	buf := new(bytes.Buffer)
-	zw := gzip.NewWriter(buf)
-
-	return &GzipCompressor{buf, zw}
 }
 
 // Write writes to the compression stream.
@@ -169,6 +177,13 @@ func (mc *GzipCompressor) Write(bits []byte) error {
 // Reset resets the buffer to be empty, but it retains the
 // underlying storage for use by future writes.
 func (mc *GzipCompressor) Reset() {
+	if mc.Buffer == nil {
+		mc.Buffer = new(bytes.Buffer)
+		mc.GzipWriter = gzip.NewWriter(mc.Buffer)
+
+		return
+	}
+
 	mc.Buffer.Reset()
 	mc.GzipWriter.Reset(mc.Buffer)
 }
@@ -199,8 +214,9 @@ func NewCompressedPackedForwardMessageFromBytes(
 	tag string, entries []byte,
 ) (*PackedForwardMessage, error) {
 	mc := compressorPool.Get().(*GzipCompressor)
+	mc.Reset()
+
 	defer func() {
-		mc.Reset()
 		compressorPool.Put(mc)
 	}()
 

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/IBM/fluent-forward-go/fluent/client"
-	"github.com/tinylib/msgp/msgp"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 type FakeMessageClient struct {
@@ -39,10 +39,10 @@ type FakeMessageClient struct {
 	reconnectReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SendMessageStub        func(msgp.Encodable) error
+	SendMessageStub        func(protocol.ChunkEncoder) error
 	sendMessageMutex       sync.RWMutex
 	sendMessageArgsForCall []struct {
-		arg1 msgp.Encodable
+		arg1 protocol.ChunkEncoder
 	}
 	sendMessageReturns struct {
 		result1 error
@@ -224,11 +224,11 @@ func (fake *FakeMessageClient) ReconnectReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeMessageClient) SendMessage(arg1 msgp.Encodable) error {
+func (fake *FakeMessageClient) SendMessage(arg1 protocol.ChunkEncoder) error {
 	fake.sendMessageMutex.Lock()
 	ret, specificReturn := fake.sendMessageReturnsOnCall[len(fake.sendMessageArgsForCall)]
 	fake.sendMessageArgsForCall = append(fake.sendMessageArgsForCall, struct {
-		arg1 msgp.Encodable
+		arg1 protocol.ChunkEncoder
 	}{arg1})
 	stub := fake.SendMessageStub
 	fakeReturns := fake.sendMessageReturns
@@ -249,13 +249,13 @@ func (fake *FakeMessageClient) SendMessageCallCount() int {
 	return len(fake.sendMessageArgsForCall)
 }
 
-func (fake *FakeMessageClient) SendMessageCalls(stub func(msgp.Encodable) error) {
+func (fake *FakeMessageClient) SendMessageCalls(stub func(protocol.ChunkEncoder) error) {
 	fake.sendMessageMutex.Lock()
 	defer fake.sendMessageMutex.Unlock()
 	fake.SendMessageStub = stub
 }
 
-func (fake *FakeMessageClient) SendMessageArgsForCall(i int) msgp.Encodable {
+func (fake *FakeMessageClient) SendMessageArgsForCall(i int) protocol.ChunkEncoder {
 	fake.sendMessageMutex.RLock()
 	defer fake.sendMessageMutex.RUnlock()
 	argsForCall := fake.sendMessageArgsForCall[i]

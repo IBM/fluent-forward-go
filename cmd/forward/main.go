@@ -23,6 +23,8 @@ func main() {
 	flag.Parse()
 
 	c := &client.Client{
+		RequireAck: true,
+		Timeout:    3 * time.Second,
 		ConnectionFactory: &client.TCPConnectionFactory{
 			Target: client.ServerAddress{
 				Hostname: "localhost",
@@ -89,26 +91,31 @@ func main() {
 
 	err = c.SendMessage(&msg)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	err = c.SendMessage(&mne)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	err = c.SendMessage(&fwd)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	err = c.SendMessage(packedFwd)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	err = c.SendMessage(compressed)
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 

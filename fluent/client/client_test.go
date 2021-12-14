@@ -131,6 +131,84 @@ var _ = Describe("Client", func() {
 
 			// TODO: We need a test that no message is sent
 		})
+
+		Context("RequireAck is true", func() {
+			var (
+				serverSide   net.Conn
+				serverWriter *msgp.Writer
+				serverReader *msgp.Reader
+				msg          protocol.MessageExt
+			)
+
+			BeforeEach(func() {
+				clientSide, serverSide = net.Pipe()
+				msg = protocol.MessageExt{
+					Tag: "foo.bar",
+				}
+				serverWriter = msgp.NewWriter(serverSide)
+				serverReader = msgp.NewReader(serverSide)
+			})
+
+			JustBeforeEach(func() {
+				client.RequireAck = true
+				err := client.Connect()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("chunks the message and waits for the ack", func() {
+				done := make(chan bool)
+				Expect(msg.Options).To(BeNil())
+				go func() {
+					defer GinkgoRecover()
+					defer func() { done <- true }()
+					err := client.SendMessage(&msg)
+					Expect(err).ToNot(HaveOccurred())
+				}()
+
+				rcvd := &protocol.MessageExt{}
+				err := rcvd.DecodeMsg(serverReader)
+				Expect(err).ToNot(HaveOccurred())
+
+				chunk := rcvd.Options.Chunk
+				Expect(chunk).ToNot(BeEmpty())
+				Expect(chunk).To(Equal(msg.Options.Chunk))
+
+				ack := &protocol.AckMessage{Ack: chunk}
+				err = ack.EncodeMsg(serverWriter)
+				Expect(err).ToNot(HaveOccurred())
+				serverWriter.Flush()
+
+				<-done
+			})
+
+			It("returns an error when the ack is bad", func() {
+				done := make(chan bool)
+				Expect(msg.Options).To(BeNil())
+				go func() {
+					defer GinkgoRecover()
+					defer func() { done <- true }()
+					err := client.SendMessage(&msg)
+					Expect(err.Error()).To(ContainSubstring("Expected chunk"))
+				}()
+
+				rcvd := &protocol.MessageExt{}
+				serverSide.SetReadDeadline(time.Now().Add(time.Second))
+				err := rcvd.DecodeMsg(serverReader)
+				Expect(err).ToNot(HaveOccurred())
+
+				chunk := rcvd.Options.Chunk
+				Expect(chunk).ToNot(BeEmpty())
+				Expect(chunk).To(Equal(msg.Options.Chunk))
+
+				ack := &protocol.AckMessage{Ack: ""}
+				err = ack.EncodeMsg(serverWriter)
+				Expect(err).ToNot(HaveOccurred())
+				serverWriter.Flush()
+
+				<-done
+			})
+		})
+
 	})
 
 	Describe("SendRaw", func() {
