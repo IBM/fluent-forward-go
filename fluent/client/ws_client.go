@@ -95,6 +95,13 @@ func (wcf *DefaultWSConnectionFactory) NewSession(connection ws.Connection) *WSS
 	}
 }
 
+type WSConnectionOptions struct {
+	ws.ConnectionOptions
+	Factory  WSConnectionFactory
+	AuthInfo *IAMAuthInfo
+	URL      string
+}
+
 // WSClient manages the lifetime of a single websocket connection.
 type WSClient struct {
 	ConnectionFactory WSConnectionFactory
@@ -105,6 +112,19 @@ type WSClient struct {
 	errLock           sync.RWMutex
 	sessionLock       sync.RWMutex
 	err               error
+}
+
+func NewWS(opts WSConnectionOptions) *WSClient {
+	if opts.AuthInfo == nil {
+		opts.AuthInfo = &IAMAuthInfo{}
+	}
+
+	return &WSClient{
+		ConnectionOptions: opts.ConnectionOptions,
+		ConnectionFactory: opts.Factory,
+		URL:               opts.URL,
+		AuthInfo:          opts.AuthInfo,
+	}
 }
 
 func (c *WSClient) setErr(err error) {

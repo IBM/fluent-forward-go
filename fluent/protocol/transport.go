@@ -47,15 +47,6 @@ func init() {
 	}
 }
 
-// ChunkEncoder wraps methods to encode a message and generate
-// "chunk" IDs for use with Fluent's chunk-ack protocol. See
-// https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#response
-// for more information.
-type ChunkEncoder interface {
-	Chunk() (string, error)
-	EncodeMsg(*msgp.Writer) error
-}
-
 // EventTime is the fluent-forward representation of a timestamp
 type EventTime struct {
 	time.Time

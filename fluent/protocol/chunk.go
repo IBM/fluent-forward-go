@@ -10,6 +10,15 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
+// ChunkEncoder wraps methods to encode a message and generate
+// "chunk" IDs for use with Fluent's chunk-ack protocol. See
+// https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#response
+// for more information.
+type ChunkEncoder interface {
+	Chunk() (string, error)
+	EncodeMsg(*msgp.Writer) error
+}
+
 func makeChunkID() (string, error) {
 	b, err := uuid.New().MarshalBinary()
 	if err != nil {

@@ -39,69 +39,56 @@ func main() {
 		os.Exit(-1)
 	}
 
-	msg := protocol.Message{
-		Tag:       tagVar,
-		Timestamp: time.Now().UTC().Unix(),
-		Record: map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
+	record := map[string]interface{}{
+		"first": "Sir",
+		"last":  "Gawain",
+		"enemy": "Green Knight",
+		"equipment": []string{
+			"sword",
+			"lance",
+			"full plate",
 		},
-		Options: &protocol.MessageOptions{},
 	}
 
-	mne := protocol.MessageExt{
-		Tag:       tagVar,
-		Timestamp: protocol.EventTime{Time: time.Now().UTC()},
-		Record: map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		},
-		Options: &protocol.MessageOptions{},
-	}
-
-	fwd := protocol.ForwardMessage{
-		Tag: tagVar,
-		Entries: []protocol.EntryExt{
-			{
-				Timestamp: protocol.EventTime{Time: time.Now().UTC()},
-				Record: map[string]interface{}{
-					"first": "Edgar",
-					"last":  "Winter",
-					"enemy": "wimpy music",
-				},
-			},
-			{
-				Timestamp: protocol.EventTime{Time: time.Now().UTC()},
-				Record: map[string]interface{}{
-					"first": "George",
-					"last":  "Clinton",
-					"enemy": "Sir Nose D Voidoffunk",
-				},
+	entries := []protocol.EntryExt{
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record: map[string]interface{}{
+				"first": "Edgar",
+				"last":  "Winter",
+				"enemy": "wimpy music",
 			},
 		},
-		Options: &protocol.MessageOptions{},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record: map[string]interface{}{
+				"first": "George",
+				"last":  "Clinton",
+				"enemy": "Sir Nose D Voidoffunk",
+			},
+		},
 	}
 
-	packedFwd := protocol.NewPackedForwardMessage(tagVar+".packed", fwd.Entries)
-
+	msg := protocol.NewMessage(tagVar, record)
+	mne := protocol.NewMessageExt(tagVar, record)
+	fwd := protocol.NewForwardMessage(tagVar, entries)
+	packedFwd := protocol.NewPackedForwardMessage(tagVar+".packed", entries)
 	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
 		fwd.Entries)
 
-	err = c.SendMessage(&msg)
+	err = c.SendMessage(msg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.SendMessage(&mne)
+	err = c.SendMessage(mne)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.SendMessage(&fwd)
+	err = c.SendMessage(fwd)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -114,6 +101,16 @@ func main() {
 	}
 
 	err = c.SendMessage(compressed)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	compressed.Chunk()
+	b, _ := compressed.MarshalMsg(nil)
+	rm := protocol.RawMessage(b)
+
+	err = c.SendMessage(rm)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

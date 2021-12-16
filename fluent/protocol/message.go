@@ -1,6 +1,8 @@
 package protocol
 
 import (
+	"time"
+
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -19,6 +21,22 @@ type Message struct {
 	Record    Record
 	// Options - used to control server behavior.
 	Options *MessageOptions
+}
+
+// NewMessage creates a Message from the supplied
+// tag and record. It will set Timestamp to
+// time.Now().UTC().Unix().
+func NewMessage(
+	tag string,
+	record Record,
+) *Message {
+	msg := &Message{
+		Tag:       tag,
+		Timestamp: time.Now().UTC().Unix(),
+		Record:    record,
+	}
+
+	return msg
 }
 
 func (msg *Message) DecodeMsg(dc *msgp.Reader) error {
@@ -133,6 +151,22 @@ type MessageExt struct {
 	Timestamp EventTime `msg:"eventTime,extension"`
 	Record    Record
 	Options   *MessageOptions
+}
+
+// NewMessage creates a Message from the supplied
+// tag and record. It will set Timestamp to
+// time.Now().UTC().Unix().
+func NewMessageExt(
+	tag string,
+	record Record,
+) *MessageExt {
+	msg := &MessageExt{
+		Tag:       tag,
+		Timestamp: EventTimeNow(),
+		Record:    record,
+	}
+
+	return msg
 }
 
 func (msg *MessageExt) DecodeMsg(dc *msgp.Reader) error {

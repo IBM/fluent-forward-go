@@ -23,10 +23,13 @@ var _ = Describe("Client", func() {
 
 	BeforeEach(func() {
 		factory = &clientfakes.FakeConnectionFactory{}
-		client = &Client{
-			ConnectionFactory: factory,
-			Timeout:           2 * time.Second,
+
+		opts := ConnectionOptions{
+			Factory:           factory,
+			ConnectionTimeout: 2 * time.Second,
 		}
+
+		client = New(opts)
 
 		clientSide, _ = net.Pipe()
 
@@ -84,7 +87,7 @@ var _ = Describe("Client", func() {
 			clientSide, serverSide = net.Pipe()
 			msg = protocol.MessageExt{
 				Tag:       "foo.bar",
-				Timestamp: protocol.EventTime{time.Now()}, //nolint
+				Timestamp: protocol.EventTimeNow(), //nolint
 				Record: map[string]interface{}{
 					"first": "Eddie",
 					"last":  "Van Halen",
