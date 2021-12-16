@@ -20,6 +20,7 @@ var _ = Describe("ForwardMessage", func() {
 	BeforeEach(func() {
 		bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
 		Expect(err).ToNot(HaveOccurred())
+		fwdmsg = &ForwardMessage{}
 		_, err = fwdmsg.UnmarshalMsg(bits)
 		Expect(err).NotTo(HaveOccurred())
 		entries := []EntryExt{
@@ -40,7 +41,7 @@ var _ = Describe("ForwardMessage", func() {
 		}
 
 		fwdmsg = NewForwardMessage("foo", entries)
-		Expect(fwdmsg.Options.Size).To(Equal(len(entries)))
+		Expect(*fwdmsg.Options.Size).To(Equal(len(entries)))
 	})
 
 	Describe("Unmarshaling", func() {
