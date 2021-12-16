@@ -160,3 +160,18 @@ func (fm *ForwardMessage) Msgsize() (s int) {
 
 	return
 }
+
+func (fm *ForwardMessage) Chunk() (string, error) {
+	if fm.Options == nil {
+		fm.Options = &MessageOptions{}
+	}
+
+	if fm.Options.Chunk != "" {
+		return fm.Options.Chunk, nil
+	}
+
+	chunk, err := makeChunkID()
+	fm.Options.Chunk = chunk
+
+	return chunk, err
+}

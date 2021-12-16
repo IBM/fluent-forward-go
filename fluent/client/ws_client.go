@@ -7,6 +7,7 @@ import (
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 	"github.com/gorilla/websocket"
 
 	"github.com/tinylib/msgp/msgp"
@@ -224,7 +225,7 @@ func (c *WSClient) Reconnect() (err error) {
 }
 
 // SendMessage sends a single msgp.Encodable across the wire.
-func (c *WSClient) SendMessage(e msgp.Encodable) error {
+func (c *WSClient) SendMessage(e protocol.ChunkEncoder) error {
 	// Check for an async connection error and return it here.
 	// In most cases, the client will not care about reading from
 	// the connection, so checking for the error here is sufficient.

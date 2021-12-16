@@ -7,6 +7,109 @@ import (
 )
 
 // DecodeMsg implements msgp.Decodable
+func (z *AckMessage) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ack":
+			z.Ack, err = dc.ReadString()
+			if err != nil {
+				err = msgp.WrapError(err, "Ack")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z AckMessage) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 1
+	// write "ack"
+	err = en.Append(0x81, 0xa3, 0x61, 0x63, 0x6b)
+	if err != nil {
+		return
+	}
+	err = en.WriteString(z.Ack)
+	if err != nil {
+		err = msgp.WrapError(err, "Ack")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z AckMessage) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 1
+	// string "ack"
+	o = append(o, 0x81, 0xa3, 0x61, 0x63, 0x6b)
+	o = msgp.AppendString(o, z.Ack)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *AckMessage) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "ack":
+			z.Ack, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Ack")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z AckMessage) Msgsize() (s int) {
+	s = 1 + 4 + msgp.StringPrefixSize + len(z.Ack)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
 func (z *Entry) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadArrayHeader()
@@ -882,6 +985,48 @@ func (z *MessageOptions) Msgsize() (s int) {
 		s += msgp.IntSize
 	}
 	s += 6 + msgp.StringPrefixSize + len(z.Chunk) + 11 + msgp.StringPrefixSize + len(z.Compressed)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *RawMessage) DecodeMsg(dc *msgp.Reader) (err error) {
+	{
+		var zb0001 []byte
+		zb0001, err = dc.ReadBytes([]byte((*z)))
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		(*z) = RawMessage(zb0001)
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z RawMessage) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	o = msgp.AppendBytes(o, []byte(z))
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *RawMessage) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	{
+		var zb0001 []byte
+		zb0001, bts, err = msgp.ReadBytesBytes(bts, []byte((*z)))
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		(*z) = RawMessage(zb0001)
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z RawMessage) Msgsize() (s int) {
+	s = msgp.BytesPrefixSize + len([]byte(z))
 	return
 }
 

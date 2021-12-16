@@ -9,3 +9,8 @@ vendor/
 # Local History for Visual Studio Code
 .history/
 test.message*
+foo*
+bar*
+myapp*
+*.out
+*.test
