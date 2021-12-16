@@ -106,7 +106,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	compressed.Chunk()
+	_, _ = compressed.Chunk()
 	b, _ := compressed.MarshalMsg(nil)
 	rm := protocol.RawMessage(b)
 

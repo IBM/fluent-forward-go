@@ -1,4 +1,4 @@
-package fluent_forward_go
+package main
 
 //go test -benchmem -run=^$ -bench ^Benchmark.*$ github.com/IBM/fluent-forward-go/cmd/bm/fluent_logger_golang
 
