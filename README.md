@@ -52,6 +52,8 @@ if err := c.SendMessage(msg); err != nil {
 
 ### Send a byte-encoded message
 
+`fluent-forward-go` also supports `ack` for byte-encoded messages so long as the `chunk` option was set before encoding.
+
 ```go
 raw := protocol.RawMessage(myMessageBytes)
 if err := c.SendMessage(raw); err != nil {
@@ -61,7 +63,7 @@ if err := c.SendMessage(raw); err != nil {
 
 ### Message confirmation
 
-The client supports `ack` confirmations as specified by the Fluent protocol. When enabled `SendMessag` returns once the acknowledgement is received or the specified timeout is reached.
+The client supports `ack` confirmations as specified by the Fluent protocol. When enabled, `SendMessage` returns once the acknowledgement is received or the timeout is reached.
 
 Note: For types other than `RawMessage`, the `SendMessage` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
 
