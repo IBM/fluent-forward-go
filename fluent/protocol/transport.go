@@ -104,7 +104,9 @@ type Record map[string]interface{}
 type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp EventTime `msg:"eventTime,extension"`
-	// Record is the actual event record - key-value pairs, keys are strings.
+	// Record is the actual event record. The object must be a map or
+	// struct. Objects that implement the msgp.Encodable interface will
+	// be the most performant.
 	Record interface{}
 }
 
