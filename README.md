@@ -59,9 +59,11 @@ if err := c.SendMessage(raw); err != nil {
 }
 ```
 
-### Wait for `ack`
+### Message confirmation
 
-NOTE: For types other than `RawMessage`, the `SendMessage` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
+The client supports `ack` confirmations as specified by the Fluent protocol. When enabled `SendMessag` returns once the acknowledgement is received or the specified timeout is reached.
+
+Note: For types other than `RawMessage`, the `SendMessage` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
 
 ```go
 c.RequireAck = true
@@ -78,10 +80,10 @@ You can read more about the benchmarks [here](cmd/bm/README.md).
 
 ### SendMessage
 
-Run on `localhost`
+Run on `localhost`. Does not include message creation.
 
 ```shell
-Benchmark_Fluent_Forward_Go_SendOnly-8            100000             15726 ns/op               0 B/op          0 allocs/op
+Benchmark_Fluent_Forward_Go_SendOnly-8    100000    15726 ns/op    0 B/op    0 allocs/op
 ```
 
 ### Comparisons with `fluent-logger-golang`
@@ -94,24 +96,24 @@ The differences in execution times can vary from one test run to another. The di
 
 ```shell
 # Best of 10
-Benchmark_Fluent_Forward_Go_SingleMessage-8       100000             17063 ns/op             400 B/op          3 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000             19639 ns/op            1216 B/op         16 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessage-8       100000    17063 ns/op     400 B/op     3 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000    19639 ns/op    1216 B/op    16 allocs/op
 
 # Worst of 10
-Benchmark_Fluent_Forward_Go_SingleMessage-8       100000             19191 ns/op             400 B/op          3 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000             21201 ns/op            1216 B/op         16 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessage-8       100000    19191 ns/op     400 B/op      3 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000    21201 ns/op    1216 B/op     16 allocs/op
 ```
 
 #### Create and send single message with `ack`
 
 ```shell
 # Best of 10
-Benchmark_Fluent_Forward_Go_SingleMessageAck-8              5000           1013919 ns/op             538 B/op          8 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-8           5000           1089037 ns/op            4721 B/op         28 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessageAck-8       5000    1013919 ns/op     538 B/op     8 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-8    5000    1089037 ns/op    4721 B/op    28 allocs/op
 
 # Worst of 10
-Benchmark_Fluent_Forward_Go_SingleMessageAck-8              5000           1125134 ns/op             538 B/op          8 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-8           5000           1493819 ns/op            4721 B/op         28 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessageAck-8       5000    1125134 ns/op     538 B/op     8 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-8    5000    1493819 ns/op    4721 B/op    28 allocs/op
 ```
 
 ## Developing
