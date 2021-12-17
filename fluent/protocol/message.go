@@ -18,14 +18,17 @@ type Message struct {
 	// Tag is a dot-delimited string used to categorize events
 	Tag       string
 	Timestamp int64
-	Record    Record
+	Record    interface{}
 	// Options - used to control server behavior.
 	Options *MessageOptions
 }
 
 // NewMessage creates a Message from the supplied
-// tag and record. It will set Timestamp to
-// time.Now().UTC().Unix().
+// tag and record. The record object must be a map or
+// struct. Objects that implement the msgp.Encodable
+// interface will be the most performant. Timestamp is
+// set to time.Now().UTC() and marshaled with second
+// precision.
 func NewMessage(
 	tag string,
 	record Record,
@@ -53,8 +56,7 @@ func (msg *Message) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Timestamp")
 	}
 
-	msg.Record = Record{}
-	if err = msg.Record.DecodeMsg(dc); err != nil {
+	if msg.Record, err = dc.ReadIntf(); err != nil {
 		return msgp.WrapError(err, "Record")
 	}
 
@@ -95,8 +97,7 @@ func (msg *Message) UnmarshalMsg(bits []byte) ([]byte, error) {
 		return bits, msgp.WrapError(err, "Timestamp")
 	}
 
-	msg.Record = Record{}
-	if bits, err = msg.Record.UnmarshalMsg(bits); err != nil {
+	if msg.Record, bits, err = msgp.ReadIntfBytes(bits); err != nil {
 		return bits, msgp.WrapError(err, "Record")
 	}
 
@@ -117,12 +118,12 @@ func (msg *Message) UnmarshalMsg(bits []byte) ([]byte, error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (msg *Message) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msgp.Int64Size + msg.Record.Msgsize()
+	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msgp.Int64Size + msgp.GuessSize(msg.Record)
 	if msg.Options != nil {
 		s += msg.Options.Msgsize()
 	}
 
-	return
+	return s
 }
 
 func (msg *Message) Chunk() (string, error) {
@@ -149,13 +150,16 @@ func (msg *Message) Chunk() (string, error) {
 type MessageExt struct {
 	Tag       string
 	Timestamp EventTime `msg:"eventTime,extension"`
-	Record    Record
+	Record    interface{}
 	Options   *MessageOptions
 }
 
-// NewMessage creates a Message from the supplied
-// tag and record. It will set Timestamp to
-// time.Now().UTC().Unix().
+// NewMessageExt creates a MessageExt from the supplied
+// tag and record. The record object must be a map or
+// struct. Objects that implement the msgp.Encodable
+// interface will be the most performant. Timestamp is
+// set to time.Now().UTC() and marshaled with subsecond
+// precision.
 func NewMessageExt(
 	tag string,
 	record Record,
@@ -183,8 +187,7 @@ func (msg *MessageExt) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Timestamp")
 	}
 
-	msg.Record = Record{}
-	if err = msg.Record.DecodeMsg(dc); err != nil {
+	if msg.Record, err = dc.ReadIntf(); err != nil {
 		return msgp.WrapError(err, "Record")
 	}
 
@@ -225,8 +228,7 @@ func (msg *MessageExt) UnmarshalMsg(bits []byte) ([]byte, error) {
 		return bits, msgp.WrapError(err, "Timestamp")
 	}
 
-	msg.Record = Record{}
-	if bits, err = msg.Record.UnmarshalMsg(bits); err != nil {
+	if msg.Record, bits, err = msgp.ReadIntfBytes(bits); err != nil {
 		return bits, msgp.WrapError(err, "Record")
 	}
 
@@ -247,9 +249,9 @@ func (msg *MessageExt) UnmarshalMsg(bits []byte) ([]byte, error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (msg *MessageExt) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msgp.ExtensionPrefixSize + msg.Timestamp.Len() + msg.Record.Msgsize()
+	s = 1 + msgp.StringPrefixSize + len(msg.Tag) + msgp.ExtensionPrefixSize + msg.Timestamp.Len() + msgp.GuessSize(msg.Record)
 	if msg.Options != nil {
-		s += msgp.NilSize
+		s += msg.Options.Msgsize()
 	}
 
 	return
