@@ -1,6 +1,6 @@
 # fluent-forward-go
 
-`fluent-forward-go` is a fast, memory-efficient implementation of the [Fluent Forward protocol v1](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1). It allows you to send events to [Fluentd](https://www.fluentd.org/), [Fluent Bit](https://fluentbit.io/), and other endpoints supporting the Fluent protocol. It also includes a websocket client for high-speed proxying of Fluent events over ports `80` and `443`.
+`fluent-forward-go` is a fast, memory-efficient implementation of the [Fluent Forward protocol v1](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1). It allows you to send events to [Fluentd](https://www.fluentd.org/), [Fluent Bit](https://fluentbit.io/), and other endpoints supporting the Fluent protocol. It also includes a websocket client for high-speed proxying of Fluent events over ports such as `80` and `443`.
 
 Features include:
 
@@ -10,7 +10,6 @@ Features include:
 - ability to send byte-encoded messages
 - `ack` support
 - a websocket client for proxying Fluent messages
-- tested code
 
 TODOs:
 

@@ -13,15 +13,9 @@ import (
 func Benchmark_Fluent_Forward_Go_SendOnly(b *testing.B) {
 	tagVar := "bar"
 
-	c := &client.Client{
-		Timeout: 3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -51,15 +45,9 @@ func Benchmark_Fluent_Forward_Go_SendOnly(b *testing.B) {
 func Benchmark_Fluent_Forward_Go_SingleMessage(b *testing.B) {
 	tagVar := "bar"
 
-	c := &client.Client{
-		Timeout: 3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -88,16 +76,10 @@ func Benchmark_Fluent_Forward_Go_SingleMessage(b *testing.B) {
 func Benchmark_Fluent_Forward_Go_SingleMessageAck(b *testing.B) {
 	tagVar := "foo"
 
-	c := &client.Client{
-		RequireAck: true,
-		Timeout:    3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		RequireAck:        true,
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -110,16 +92,13 @@ func Benchmark_Fluent_Forward_Go_SingleMessageAck(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mne := protocol.MessageExt{
-			Tag:       tagVar,
-			Timestamp: protocol.EventTimeNow(),
-			Record: map[string]interface{}{
-				"first": "Sir",
-				"last":  "Gawain",
-				"enemy": "Green Knight",
-			},
+		record := map[string]interface{}{
+			"first": "Sir",
+			"last":  "Gawain",
+			"enemy": "Green Knight",
 		}
-		err = c.SendMessage(&mne)
+		mne := protocol.NewMessage(tagVar, record)
+		err = c.SendMessage(mne)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -129,15 +108,9 @@ func Benchmark_Fluent_Forward_Go_SingleMessageAck(b *testing.B) {
 func Benchmark_Fluent_Forward_Go_Bytes(b *testing.B) {
 	tagVar := "foo"
 
-	c := &client.Client{
-		Timeout: 3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -146,15 +119,12 @@ func Benchmark_Fluent_Forward_Go_Bytes(b *testing.B) {
 
 	defer c.Disconnect()
 
-	mne := protocol.MessageExt{
-		Tag:       tagVar,
-		Timestamp: protocol.EventTimeNow(),
-		Record: map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		},
+	record := map[string]interface{}{
+		"first": "Sir",
+		"last":  "Gawain",
+		"enemy": "Green Knight",
 	}
+	mne := protocol.NewMessage(tagVar, record)
 
 	bits, _ := mne.MarshalMsg(nil)
 
@@ -172,16 +142,10 @@ func Benchmark_Fluent_Forward_Go_Bytes(b *testing.B) {
 func Benchmark_Fluent_Forward_Go_BytesAck(b *testing.B) {
 	tagVar := "foo"
 
-	c := &client.Client{
-		RequireAck: true,
-		Timeout:    3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		RequireAck:        true,
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -190,15 +154,12 @@ func Benchmark_Fluent_Forward_Go_BytesAck(b *testing.B) {
 
 	defer c.Disconnect()
 
-	mne := protocol.MessageExt{
-		Tag:       tagVar,
-		Timestamp: protocol.EventTimeNow(),
-		Record: map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		},
+	record := map[string]interface{}{
+		"first": "Sir",
+		"last":  "Gawain",
+		"enemy": "Green Knight",
 	}
+	mne := protocol.NewMessage(tagVar, record)
 
 	mne.Chunk()
 	bits, _ := mne.MarshalMsg(nil)
@@ -217,15 +178,9 @@ func Benchmark_Fluent_Forward_Go_BytesAck(b *testing.B) {
 func Benchmark_Fluent_Forward_Go_RawMessage(b *testing.B) {
 	tagVar := "foo"
 
-	c := &client.Client{
-		Timeout: 3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -234,15 +189,12 @@ func Benchmark_Fluent_Forward_Go_RawMessage(b *testing.B) {
 
 	defer c.Disconnect()
 
-	mne := protocol.MessageExt{
-		Tag:       tagVar,
-		Timestamp: protocol.EventTimeNow(),
-		Record: map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		},
+	record := map[string]interface{}{
+		"first": "Sir",
+		"last":  "Gawain",
+		"enemy": "Green Knight",
 	}
+	mne := protocol.NewMessage(tagVar, record)
 
 	bits, _ := mne.MarshalMsg(nil)
 	rbits := protocol.RawMessage(bits)
@@ -261,16 +213,10 @@ func Benchmark_Fluent_Forward_Go_RawMessage(b *testing.B) {
 func Benchmark_Fluent_Forward_Go_RawMessageAck(b *testing.B) {
 	tagVar := "foo"
 
-	c := &client.Client{
-		RequireAck: true,
-		Timeout:    3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	c := client.New(client.ConnectionOptions{
+		RequireAck:        true,
+		ConnectionTimeout: 3 * time.Second,
+	})
 
 	err := c.Connect()
 	if err != nil {
@@ -279,15 +225,12 @@ func Benchmark_Fluent_Forward_Go_RawMessageAck(b *testing.B) {
 
 	defer c.Disconnect()
 
-	mne := protocol.MessageExt{
-		Tag:       tagVar,
-		Timestamp: protocol.EventTimeNow(),
-		Record: map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		},
+	record := map[string]interface{}{
+		"first": "Sir",
+		"last":  "Gawain",
+		"enemy": "Green Knight",
 	}
+	mne := protocol.NewMessage(tagVar, record)
 
 	mne.Chunk()
 	bits, _ := mne.MarshalMsg(nil)
