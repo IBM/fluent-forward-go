@@ -1,23 +1,138 @@
 # fluent-forward-go
-Golang client-side implementation of the fluent Forward protocol
 
-This library implements the [fluent Forward protocol v1](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1) in golang.  It provides only a client-side implementation.
+`fluent-forward-go` is a fast, memory-efficient implementation of the [Fluent Forward protocol v1](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1). It allows you to send events to [Fluentd](https://www.fluentd.org/), [Fluent Bit](https://fluentbit.io/), and other endpoints supporting the Fluent protocol. It also includes a websocket client for high-speed proxying of Fluent events over ports such as `80` and `443`.
 
-It also provides a client for sending fluent messages over a websocket connection.
+Features include:
 
-# Installation instructions
+- shared-key authentication
+- support for all [Fluent message modes](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#message-modes)
+- [`gzip` compression](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#compressedpackedforward-mode)
+- ability to send byte-encoded messages
+- `ack` support
+- a websocket client for proxying Fluent messages
+
+TODOs:
+
+- TLS support
+
+## Installation
+
+```shell
+go get github.com/IBM/fluent-forward-go
+```
+
+## Examples
+
+### Create a simple tcp client pointing to `localhost:24224`
+
+```go
+c := client.New(client.ConnectionOptions{})
+if err := c.Connect(); err != nil {
+  // ...
+}
+
+defer c.Disconnect()
+```
+
+### Send a new log message
+
+```go
+record := map[string]interface{}{
+  "first": "Sir",
+  "last":  "Gawain",
+  "equipment": []string{
+    "sword",
+  },
+}
+msg := protocol.NewMessage("tag", record)
+if err := c.SendMessage(msg); err != nil {
+  // ...
+}
+```
+
+### Send a byte-encoded message
+
+```go
+raw := protocol.RawMessage(myMessageBytes)
+if err := c.SendMessage(raw); err != nil {
+  // ...
+}
+```
+
+### Message confirmation
+
+The client supports `ack` confirmations as specified by the Fluent protocol. When enabled `SendMessag` returns once the acknowledgement is received or the specified timeout is reached.
+
+Note: For types other than `RawMessage`, the `SendMessage` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
+
+```go
+c.RequireAck = true
+if err := c.SendMessage(myMsg); err != nil {
+  // ...
+}
+```
+
+## Performance
+
+**tl;dr** `fluent-forward-go` is fast and lean
+
+You can read more about the benchmarks [here](cmd/bm/README.md).
+
+### SendMessage
+
+Run on `localhost`. Does not include message creation.
+
+```shell
+Benchmark_Fluent_Forward_Go_SendOnly-8    100000    15726 ns/op    0 B/op    0 allocs/op
+```
+
+### Comparisons with `fluent-logger-golang`
+
+The benchmarks below compare `fluent-forward-go` with the official package, [`fluent-logger-golang`](https://github.com/fluent/fluent-logger-golang).
+
+The differences in execution times can vary from one test run to another. The differences in memory allocations, however, are constant.
+
+#### Create and send single message
+
+```shell
+# Best of 10
+Benchmark_Fluent_Forward_Go_SingleMessage-8       100000    17063 ns/op     400 B/op     3 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000    19639 ns/op    1216 B/op    16 allocs/op
+
+# Worst of 10
+Benchmark_Fluent_Forward_Go_SingleMessage-8       100000    19191 ns/op     400 B/op      3 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000    21201 ns/op    1216 B/op     16 allocs/op
+```
+
+#### Create and send single message with `ack`
+
+```shell
+# Best of 10
+Benchmark_Fluent_Forward_Go_SingleMessageAck-8       5000    1013919 ns/op     538 B/op     8 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-8    5000    1089037 ns/op    4721 B/op    28 allocs/op
+
+# Worst of 10
+Benchmark_Fluent_Forward_Go_SingleMessageAck-8       5000    1125134 ns/op     538 B/op     8 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-8    5000    1493819 ns/op    4721 B/op    28 allocs/op
+```
+
+## Developing
+
+### Installation instructions
+
 Before running the generate tool, you must have msgp installed.  To install run:
 
-```
+```shell
 go get github.com/tinylib/msgp
 ```
 
-Afterwards you will be able to generate the msgp packets with:
-```
+Afterwards, generate the msgp packets with:
+
+```shell
 go generate ./...
 ```
 
-# Testing
+### Testing
 
 To test against fluent-bit, start up fluent-bit in a docker container with:
 

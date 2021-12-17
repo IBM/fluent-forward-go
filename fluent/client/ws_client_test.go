@@ -11,6 +11,7 @@ import (
 
 	"github.com/IBM/fluent-forward-go/fluent/client"
 	. "github.com/IBM/fluent-forward-go/fluent/client"
+	fclient "github.com/IBM/fluent-forward-go/fluent/client"
 	"github.com/IBM/fluent-forward-go/fluent/client/clientfakes"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
@@ -45,7 +46,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 			var upgrader websocket.Upgrader
 			wc, _ := upgrader.Upgrade(w, r, nil)
 
-			header := r.Header.Get(client.AuthorizationHeader)
+			header := r.Header.Get(fclient.AuthorizationHeader)
 			Expect(header).To(Equal("oi"))
 
 			svrConnection, err := ws.NewConnection(wc, svrOpts)
@@ -76,10 +77,9 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 	It("sends auth headers", func() {
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 
-		cli := client.WSClient{
-			URL:      u,
-			AuthInfo: &client.IAMAuthInfo{},
-		}
+		cli := fclient.NewWS(client.WSConnectionOptions{
+			URL: u,
+		})
 
 		cli.AuthInfo.SetIAMToken("oi")
 		Expect(cli.Connect()).ToNot(HaveOccurred())
@@ -99,9 +99,9 @@ var _ = Describe("WSClient", func() {
 
 	BeforeEach(func() {
 		factory = &clientfakes.FakeWSConnectionFactory{}
-		client = &WSClient{
-			ConnectionFactory: factory,
-		}
+		client = fclient.NewWS(fclient.WSConnectionOptions{
+			Factory: factory,
+		})
 		clientSide = &extfakes.FakeConn{}
 		conn = &wsfakes.FakeConnection{}
 		session = &WSSession{Connection: conn}

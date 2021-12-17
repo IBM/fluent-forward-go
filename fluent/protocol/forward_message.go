@@ -24,6 +24,27 @@ type ForwardMessage struct {
 	Options *MessageOptions
 }
 
+// NewForwardMessage creates a ForwardMessage from the supplied
+// tag, EntryList, and MessageOptions. this function will set
+// Options.Size to the length of the entry list.
+func NewForwardMessage(
+	tag string,
+	entries EntryList,
+) *ForwardMessage {
+	lenEntries := len(entries)
+
+	pfm := &ForwardMessage{
+		Tag:     tag,
+		Entries: entries,
+	}
+
+	pfm.Options = &MessageOptions{
+		Size: &lenEntries,
+	}
+
+	return pfm
+}
+
 func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
 	size := 2
 	if fm.Options != nil {

@@ -46,6 +46,18 @@ type Client struct {
 	ackMutex   sync.Mutex
 }
 
+type ConnectionOptions struct {
+	Factory           ConnectionFactory
+	RequireAck        bool
+	ConnectionTimeout time.Duration
+	// TODO:
+	// ReadTimeout       time.Duration
+	// WriteTimeout      time.Duration
+	AuthInfo AuthInfo
+	Hostname string
+	Port     int
+}
+
 type ServerAddress struct {
 	Hostname string
 	Port     int
@@ -65,6 +77,38 @@ type Session struct {
 	ServerAddress
 	Connection     net.Conn
 	TransportPhase bool
+}
+
+func New(opts ConnectionOptions) *Client {
+	factory := opts.Factory
+	if factory == nil {
+		if opts.Hostname == "" {
+			opts.Hostname = "localhost"
+		}
+
+		if opts.Port == 0 {
+			opts.Port = 24224
+		}
+
+		factory = &TCPConnectionFactory{
+			Target: ServerAddress{
+				Hostname: opts.Hostname,
+				Port:     opts.Port,
+			},
+		}
+	}
+
+	if opts.ConnectionTimeout == 0 {
+		opts.ConnectionTimeout = DefaultConnectionTimeout
+	}
+
+	return &Client{
+		ConnectionFactory: factory,
+		AuthInfo:          opts.AuthInfo,
+		Hostname:          opts.Hostname,
+		RequireAck:        opts.RequireAck,
+		Timeout:           opts.ConnectionTimeout,
+	}
 }
 
 // Connect initializes the Session and Connection objects by opening
@@ -88,22 +132,7 @@ func (c *Client) Connect() error {
 }
 
 func (c *Client) Reconnect() error {
-	// var t time.Duration
-	// if c.Timeout != 0 {
-	// 	t = c.Timeout
-	// } else {
-	// 	t = DEFAULT_CONNECTION_TIMEOUT
-	// }
-	//
-	// if c.Session != nil {
-	// 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", c.Session.Hostname,
-	// 		c.Session.Port), t)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	c.Session.Connection = conn
-	// }
-	return nil
+	panic("not implemented yet")
 }
 
 // Disconnect terminates a client connection

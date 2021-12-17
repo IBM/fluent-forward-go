@@ -43,7 +43,7 @@ type PackedForwardMessage struct {
 
 // NewPackedForwardMessage creates a PackedForwardMessage from the supplied
 // tag, EntryList, and MessageOptions.  Regardless of the options supplied,
-// this function will set opts[OPT_SIZE] to the length of the entry list.
+// this function will set Options.Size to the length of the entry list.
 func NewPackedForwardMessage(
 	tag string,
 	entries EntryList,
@@ -60,7 +60,7 @@ func NewPackedForwardMessage(
 
 // NewPackedForwardMessageFromBytes creates a PackedForwardMessage from the
 // supplied tag, bytes, and MessageOptions. This function does not set
-// opts[OPT_SIZE] to the length of the entry list.
+// Options.Size to the length of the entry list.
 func NewPackedForwardMessageFromBytes(
 	tag string,
 	entries []byte,

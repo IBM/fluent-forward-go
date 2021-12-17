@@ -14,37 +14,38 @@ import (
 
 var _ = Describe("ForwardMessage", func() {
 	var (
-		fwdmsg ForwardMessage
+		fwdmsg *ForwardMessage
 	)
 
 	BeforeEach(func() {
 		bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
 		Expect(err).ToNot(HaveOccurred())
+		fwdmsg = &ForwardMessage{}
 		_, err = fwdmsg.UnmarshalMsg(bits)
 		Expect(err).NotTo(HaveOccurred())
-		fwdmsg = ForwardMessage{
-			Tag: "foo",
-			Entries: []EntryExt{
-				{
-					Timestamp: EventTime{time.Now()},
-					Record: map[string]interface{}{
-						"foo":    "bar",
-						"george": "jungle",
-					},
+		entries := []EntryExt{
+			{
+				Timestamp: EventTime{time.Now()},
+				Record: map[string]interface{}{
+					"foo":    "bar",
+					"george": "jungle",
 				},
-				{
-					Timestamp: EventTime{time.Now()},
-					Record: map[string]interface{}{
-						"foo":    "kablooie",
-						"george": "frank",
-					},
+			},
+			{
+				Timestamp: EventTime{time.Now()},
+				Record: map[string]interface{}{
+					"foo":    "kablooie",
+					"george": "frank",
 				},
 			},
 		}
+
+		fwdmsg = NewForwardMessage("foo", entries)
+		Expect(*fwdmsg.Options.Size).To(Equal(len(entries)))
 	})
 
 	Describe("Unmarshaling", func() {
-		testMarshalling := func(msg ForwardMessage, opts *MessageOptions) {
+		testMarshalling := func(msg *ForwardMessage, opts *MessageOptions) {
 			msg.Options = opts
 			b, err := msg.MarshalMsg(nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -72,7 +73,7 @@ var _ = Describe("ForwardMessage", func() {
 			testMarshalling(fwdmsg, &MessageOptions{})
 		})
 
-		testEncodingDecoding := func(msg ForwardMessage, opts *MessageOptions) {
+		testEncodingDecoding := func(msg *ForwardMessage, opts *MessageOptions) {
 			var buf bytes.Buffer
 			en := msgp.NewWriter(&buf)
 
