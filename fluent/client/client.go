@@ -132,11 +132,7 @@ func (c *Client) Connect() error {
 }
 
 func (c *Client) Reconnect() error {
-	if c.Session != nil {
-		_ = c.Disconnect()
-	}
-
-	return c.Connect()
+	panic("not implemented yet")
 }
 
 // Disconnect terminates a client connection

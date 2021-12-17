@@ -8,15 +8,13 @@ Features include:
 - support for all [Fluent message modes](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#message-modes)
 - [`gzip` compression](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#compressedpackedforward-mode)
 - ability to send byte-encoded messages
-- `ack` support, including for byte-encoded messages
-- flexible logging with `map[string]interface{}`
+- `ack` support
 - a websocket client for proxying Fluent messages
-- thorough testing
+- tested code
 
 TODOs:
 
 - TLS support
-- Pipelining
 
 ## Installation
 
@@ -69,18 +67,6 @@ NOTE: For types other than `RawMessage`, the `SendMessage` function sets the "ch
 ```go
 c.RequireAck = true
 if err := c.SendMessage(myMsg); err != nil {
-  // ...
-}
-```
-
-#### Handle a `SendMessage` error
-
-```go
-if err := c.SendMessage(msg); err != nil {
-  if err = c.Reconnect(); err != nil {
-    // ...
-  }
-  err = c.SendMessage(msg)
   // ...
 }
 ```
