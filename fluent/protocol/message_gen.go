@@ -23,7 +23,7 @@ func (z *Message) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Timestamp")
 		return
 	}
-	err = z.Record.EncodeMsg(en)
+	err = en.WriteIntf(z.Record)
 	if err != nil {
 		err = msgp.WrapError(err, "Record")
 		return
@@ -50,7 +50,7 @@ func (z *Message) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0x94)
 	o = msgp.AppendString(o, z.Tag)
 	o = msgp.AppendInt64(o, z.Timestamp)
-	o, err = z.Record.MarshalMsg(o)
+	o, err = msgp.AppendIntf(o, z.Record)
 	if err != nil {
 		err = msgp.WrapError(err, "Record")
 		return
@@ -84,7 +84,7 @@ func (z *MessageExt) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Timestamp")
 		return
 	}
-	err = z.Record.EncodeMsg(en)
+	err = en.WriteIntf(z.Record)
 	if err != nil {
 		err = msgp.WrapError(err, "Record")
 		return
@@ -115,7 +115,7 @@ func (z *MessageExt) MarshalMsg(b []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "Timestamp")
 		return
 	}
-	o, err = z.Record.MarshalMsg(o)
+	o, err = msgp.AppendIntf(o, z.Record)
 	if err != nil {
 		err = msgp.WrapError(err, "Record")
 		return

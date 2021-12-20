@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/binary"
 	"errors"
+	"reflect"
 	"sync"
 	"time"
 
@@ -103,8 +104,10 @@ type Record map[string]interface{}
 type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp EventTime `msg:"eventTime,extension"`
-	// Record is the actual event record - key-value pairs, keys are strings.
-	Record Record
+	// Record is the actual event record. The object must be a map or
+	// struct. Objects that implement the msgp.Encodable interface will
+	// be the most performant.
+	Record interface{}
 }
 
 type EntryList []EntryExt
@@ -130,20 +133,8 @@ func (e EntryList) Equal(e2 EntryList) bool {
 		for _, eb := range second {
 			if ea.Timestamp.Equal(eb.Timestamp.Time) {
 				// Timestamps equal, check the record
-				if len(ea.Record) == len(eb.Record) {
-					// This only works if we have the same number of kv pairs in each record
-					for k, v := range ea.Record {
-						if eb.Record[k] == v {
-							// KV match, so delete key from each record
-							delete(ea.Record, k)
-							delete(eb.Record, k)
-						}
-					}
-
-					if len(ea.Record) == 0 && len(eb.Record) == 0 {
-						// No more keys left means everything matched
-						matches++
-					}
+				if reflect.DeepEqual(ea.Record, eb.Record) {
+					matches++
 				}
 			}
 		}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/rand"
 	"net"
+	"reflect"
 	"time"
 
 	. "github.com/IBM/fluent-forward-go/fluent/client"
@@ -119,8 +120,7 @@ var _ = Describe("Client", func() {
 			Expect(recvd.Tag).To(Equal(msg.Tag))
 			Expect(recvd.Options).To(Equal(msg.Options))
 			Expect(recvd.Timestamp.Equal(msg.Timestamp.Time)).To(BeTrue())
-			Expect(recvd.Record["first"]).To(Equal(msg.Record["first"]))
-			Expect(recvd.Record["last"]).To(Equal(msg.Record["last"]))
+			Expect(reflect.DeepEqual(recvd.Record, msg.Record)).To(BeTrue())
 		})
 
 		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {

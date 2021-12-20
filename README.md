@@ -1,6 +1,6 @@
 # fluent-forward-go
 
-`fluent-forward-go` is a fast, memory-efficient implementation of the [Fluent Forward protocol v1](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1). It allows you to send events to [Fluentd](https://www.fluentd.org/), [Fluent Bit](https://fluentbit.io/), and other endpoints supporting the Fluent protocol. It also includes a websocket client for high-speed proxying of Fluent events over ports such as `80` and `443`.
+`fluent-forward-go` is a fast, memory-efficient implementation of the [Fluent Forward v1 specification](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1). It allows you to send events to [Fluentd](https://www.fluentd.org/), [Fluent Bit](https://fluentbit.io/), and other endpoints supporting the Fluent protocol. It also includes a websocket client for high-speed proxying of Fluent events over ports such as `80` and `443`.
 
 Features include:
 
@@ -36,6 +36,8 @@ defer c.Disconnect()
 
 ### Send a new log message
 
+The `record` object must be a `map` or `struct`. Objects that implement the [`msgp.Encodable`](https://pkg.go.dev/github.com/tinylib/msgp/msgp#Encodable) interface will the be most performant.
+
 ```go
 record := map[string]interface{}{
   "first": "Sir",
@@ -51,8 +53,6 @@ if err := c.SendMessage(msg); err != nil {
 ```
 
 ### Send a byte-encoded message
-
-`fluent-forward-go` also supports `ack` for byte-encoded messages so long as the `chunk` option was set before encoding.
 
 ```go
 raw := protocol.RawMessage(myMessageBytes)
