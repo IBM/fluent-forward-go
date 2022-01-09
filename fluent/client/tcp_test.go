@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"fmt"
 	"net"
 
 	. "github.com/onsi/ginkgo"
@@ -16,21 +17,18 @@ var _ = Describe("Tcp", func() {
 			serverErr  error
 			hostname   string
 			port       int
-			factory    *TCPConnectionFactory
+			factory    *SocketFactory
 			clientConn net.Conn
 		)
 
 		BeforeEach(func() {
 			server, serverErr = net.Listen("tcp", ":0")
 			Expect(serverErr).NotTo(HaveOccurred())
-
 			port = server.Addr().(*net.TCPAddr).Port
 
-			factory = &TCPConnectionFactory{
-				Target: ServerAddress{
-					Hostname: hostname,
-					Port:     port,
-				},
+			factory = &SocketFactory{
+				Network: "tcp",
+				Address: fmt.Sprintf("%s:%d", hostname, port),
 			}
 		})
 

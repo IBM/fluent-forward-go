@@ -54,17 +54,6 @@ type ConnectionOptions struct {
 	// ReadTimeout       time.Duration
 	// WriteTimeout      time.Duration
 	AuthInfo AuthInfo
-	Hostname string
-	Port     int
-}
-
-type ServerAddress struct {
-	Hostname string
-	Port     int
-}
-
-func (sa ServerAddress) String() string {
-	return fmt.Sprintf("%s:%d", sa.Hostname, sa.Port)
 }
 
 type AuthInfo struct {
@@ -74,7 +63,6 @@ type AuthInfo struct {
 }
 
 type Session struct {
-	ServerAddress
 	Connection     net.Conn
 	TransportPhase bool
 }
@@ -82,19 +70,9 @@ type Session struct {
 func New(opts ConnectionOptions) *Client {
 	factory := opts.Factory
 	if factory == nil {
-		if opts.Hostname == "" {
-			opts.Hostname = "localhost"
-		}
-
-		if opts.Port == 0 {
-			opts.Port = 24224
-		}
-
-		factory = &TCPConnectionFactory{
-			Target: ServerAddress{
-				Hostname: opts.Hostname,
-				Port:     opts.Port,
-			},
+		factory = &SocketFactory{
+			Network: "tcp",
+			Address: "localhost:24224",
 		}
 	}
 
@@ -105,7 +83,6 @@ func New(opts ConnectionOptions) *Client {
 	return &Client{
 		ConnectionFactory: factory,
 		AuthInfo:          opts.AuthInfo,
-		Hostname:          opts.Hostname,
 		RequireAck:        opts.RequireAck,
 		Timeout:           opts.ConnectionTimeout,
 	}

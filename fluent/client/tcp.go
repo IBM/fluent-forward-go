@@ -1,23 +1,24 @@
 package client
 
 import (
-	"fmt"
 	"net"
 )
 
-type TCPConnectionFactory struct {
-	Target ServerAddress
+// SocketFactory is a light wrapper for net.Dial. It can be used to
+// connect to network types described in the net.Dial documentation.
+type SocketFactory struct {
+	Network string
+	Address string
 }
 
-func (f *TCPConnectionFactory) New() (net.Conn, error) {
-	return net.Dial("tcp", fmt.Sprintf("%s:%d", f.Target.Hostname, f.Target.Port))
+func (f *SocketFactory) New() (net.Conn, error) {
+	return net.Dial(f.Network, f.Address)
 }
 
-func (f *TCPConnectionFactory) Session() (*Session, error) {
+func (f *SocketFactory) Session() (*Session, error) {
 	conn, _ := f.New()
 
 	return &Session{
-		ServerAddress: f.Target,
-		Connection:    conn,
+		Connection: conn,
 	}, nil
 }

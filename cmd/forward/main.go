@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/IBM/fluent-forward-go/fluent/client"
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
@@ -22,16 +21,9 @@ func init() {
 func main() {
 	flag.Parse()
 
-	c := &client.Client{
+	c := client.New(client.ConnectionOptions{
 		RequireAck: true,
-		Timeout:    3 * time.Second,
-		ConnectionFactory: &client.TCPConnectionFactory{
-			Target: client.ServerAddress{
-				Hostname: "localhost",
-				Port:     24224,
-			},
-		},
-	}
+	})
 
 	err := c.Connect()
 	if err != nil {
