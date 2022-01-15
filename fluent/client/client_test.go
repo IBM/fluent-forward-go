@@ -266,7 +266,7 @@ var _ = Describe("Client", func() {
 		})
 	})
 
-	XDescribe("Handshake", func() {
+	Describe("Handshake", func() {
 		var (
 			serverSide       net.Conn
 			serverWriter     *msgp.Writer
@@ -302,13 +302,17 @@ var _ = Describe("Client", func() {
 		})
 
 		It("Completes the handshake", func() {
+			hs := make(chan struct{})
 			go func() {
 				defer GinkgoRecover()
+				<-hs
 				err := client.Handshake()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(client.Session.TransportPhase).To(BeTrue())
+				hs <- struct{}{}
 			}()
 
+			hs <- struct{}{}
 			err := helo.EncodeMsg(serverWriter)
 			Expect(err).NotTo(HaveOccurred())
 			serverWriter.Flush()
@@ -325,6 +329,7 @@ var _ = Describe("Client", func() {
 			err = pong.EncodeMsg(serverWriter)
 			Expect(err).NotTo(HaveOccurred())
 			serverWriter.Flush()
+			<-hs
 		})
 
 		Context("When the client is not currently connected", func() {

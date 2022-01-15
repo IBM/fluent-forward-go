@@ -147,51 +147,16 @@ func (el EntryList) MarshalPackedEntries() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// func (el *EntryList) UnmarshalMsg(bits []byte) ([]byte, error) {
-
-// 	sz, err := dc.ReadArrayHeader()
-// 	if err != nil {
-// 		return msgp.WrapError(err, "Array Header")
-// 	}
-
-// 	if fm.Tag, err = dc.ReadString(); err != nil {
-// 		return msgp.WrapError(err, "Tag")
-// 	}
-
-// 	fm.Entries = EntryList{}
-// 	if err = fm.Entries.DecodeMsg(dc); err != nil {
-// 		return msgp.WrapError(err, "Entries")
-// 	}
-
-// 	// has three elements only when options are included
-// 	if sz == 3 {
-// 		if t, err := dc.NextType(); t == msgp.NilType || err != nil {
-// 			if err != nil {
-// 				return msgp.WrapError(err, "Options")
-// 			}
-
-// 			return dc.ReadNil()
-// 		}
-
-// 		fm.Options = &MessageOptions{}
-// 		if err = fm.Options.DecodeMsg(dc); err != nil {
-// 			return msgp.WrapError(err, "Options")
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 // Equal compares two EntryList objects and returns true if they have
 // exactly the same elements, false otherwise.
-func (e EntryList) Equal(e2 EntryList) bool {
-	if len(e) != len(e2) {
+func (el EntryList) Equal(e2 EntryList) bool {
+	if len(el) != len(e2) {
 		return false
 	}
 
-	first := make(EntryList, len(e))
+	first := make(EntryList, len(el))
 
-	copy(first, e)
+	copy(first, el)
 
 	second := make(EntryList, len(e2))
 
@@ -210,7 +175,7 @@ func (e EntryList) Equal(e2 EntryList) bool {
 		}
 	}
 
-	return matches == len(e)
+	return matches == len(el)
 }
 
 // EntryExt is the basic representation of an individual event.  The timestamp
