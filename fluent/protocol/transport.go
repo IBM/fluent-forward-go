@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"reflect"
@@ -30,6 +31,7 @@ const (
 var (
 	compressorPool  sync.Pool
 	chunkReaderPool sync.Pool
+	bufferPool      sync.Pool
 )
 
 func init() {
@@ -40,11 +42,15 @@ func init() {
 	})
 
 	compressorPool.New = func() interface{} {
-		return &GzipCompressor{}
+		return new(GzipCompressor)
 	}
 
 	chunkReaderPool.New = func() interface{} {
-		return &ChunkReader{}
+		return new(ChunkReader)
+	}
+
+	bufferPool.New = func() interface{} {
+		return new(bytes.Buffer)
 	}
 }
 
@@ -109,6 +115,72 @@ type EntryExt struct {
 }
 
 type EntryList []EntryExt
+
+func (el *EntryList) UnmarshalPackedEntries(bits []byte) ([]byte, error) {
+	var (
+		entry EntryExt
+		err   error
+	)
+
+	*el = (*el)[:0]
+
+	for len(bits) > 0 {
+		if bits, err = entry.UnmarshalMsg(bits); err != nil {
+			break
+		}
+
+		*el = append(*el, entry)
+	}
+
+	return bits, err
+}
+
+func (el EntryList) MarshalPackedEntries() ([]byte, error) {
+	buf := bufferPool.Get().(*bytes.Buffer)
+
+	for _, e := range el {
+		if err := msgp.Encode(buf, e); err != nil {
+			return nil, err
+		}
+	}
+
+	return buf.Bytes(), nil
+}
+
+// func (el *EntryList) UnmarshalMsg(bits []byte) ([]byte, error) {
+
+// 	sz, err := dc.ReadArrayHeader()
+// 	if err != nil {
+// 		return msgp.WrapError(err, "Array Header")
+// 	}
+
+// 	if fm.Tag, err = dc.ReadString(); err != nil {
+// 		return msgp.WrapError(err, "Tag")
+// 	}
+
+// 	fm.Entries = EntryList{}
+// 	if err = fm.Entries.DecodeMsg(dc); err != nil {
+// 		return msgp.WrapError(err, "Entries")
+// 	}
+
+// 	// has three elements only when options are included
+// 	if sz == 3 {
+// 		if t, err := dc.NextType(); t == msgp.NilType || err != nil {
+// 			if err != nil {
+// 				return msgp.WrapError(err, "Options")
+// 			}
+
+// 			return dc.ReadNil()
+// 		}
+
+// 		fm.Options = &MessageOptions{}
+// 		if err = fm.Options.DecodeMsg(dc); err != nil {
+// 			return msgp.WrapError(err, "Options")
+// 		}
+// 	}
+
+// 	return nil
+// }
 
 // Equal compares two EntryList objects and returns true if they have
 // exactly the same elements, false otherwise.

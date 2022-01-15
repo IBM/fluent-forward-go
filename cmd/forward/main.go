@@ -72,7 +72,7 @@ func main() {
 	msg := protocol.NewMessage(tagVar, record)
 	mne := protocol.NewMessageExt(tagVar, record)
 	fwd := protocol.NewForwardMessage(tagVar, entries)
-	packedFwd := protocol.NewPackedForwardMessage(tagVar+".packed", entries)
+	packedFwd, _ := protocol.NewPackedForwardMessage(tagVar+".packed", entries)
 	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
 		fwd.Entries)
 

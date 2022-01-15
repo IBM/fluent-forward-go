@@ -152,26 +152,19 @@ var _ = Describe("Transport", func() {
 		})
 
 		It("Returns a PackedForwardMessage", func() {
-			msg := NewPackedForwardMessage(tag, entries)
+			msg, err := NewPackedForwardMessage(tag, entries)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(msg).NotTo(BeNil())
-		})
-
-		It("Includes the number of events as the `size` option", func() {
-			msg := NewPackedForwardMessage(tag, entries)
 			Expect(*msg.Options.Size).To(Equal(len(entries)))
 			Expect(msg.Options.Compressed).To(BeEmpty())
 		})
 
-		XIt("Correctly encodes the entries into a bytestream", func() {
-			// TODO: This test is wrong - it expects that the stream is a
-			// single array of EntryExt objects, but it's a stream of encoded
-			// EntryExt objects (NOT an array), and the test does not match
-			// up to that.
-			msg := NewPackedForwardMessage(tag, entries)
-			elist := make(EntryList, 2)
-			_, err := elist.UnmarshalMsg(msg.EventStream)
+		It("Correctly encodes the entries into a bytestream", func() {
+			msg, err := NewPackedForwardMessage(tag, entries)
 			Expect(err).NotTo(HaveOccurred())
-
+			elist := make(EntryList, 2)
+			_, err = elist.UnmarshalPackedEntries(msg.EventStream)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(elist.Equal(entries)).To(BeTrue())
 		})
 	})

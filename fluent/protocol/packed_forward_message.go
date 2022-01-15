@@ -9,20 +9,6 @@ import (
 
 //go:generate msgp
 
-func eventStream(entries EntryList) []byte {
-	var buf bytes.Buffer
-
-	w := msgp.NewWriter(&buf)
-	for _, e := range entries {
-		// TODO: capture and return error
-		_ = e.EncodeMsg(w)
-	}
-
-	w.Flush()
-
-	return buf.Bytes()
-}
-
 // PackedForwardMessage is just like ForwardMessage, except that the events
 // are carried as a msgpack binary stream
 //msgp:tuple PackedForwardMessage
@@ -47,15 +33,22 @@ type PackedForwardMessage struct {
 func NewPackedForwardMessage(
 	tag string,
 	entries EntryList,
-) *PackedForwardMessage {
+) (*PackedForwardMessage, error) {
+	el := EntryList(entries)
+
+	bits, err := el.MarshalPackedEntries()
+	if err != nil {
+		return nil, err
+	}
+
 	lenEntries := len(entries)
 
-	pfm := NewPackedForwardMessageFromBytes(tag, eventStream(entries))
+	pfm := NewPackedForwardMessageFromBytes(tag, bits)
 	pfm.Options = &MessageOptions{
 		Size: &lenEntries,
 	}
 
-	return pfm
+	return pfm, nil
 }
 
 // NewPackedForwardMessageFromBytes creates a PackedForwardMessage from the
@@ -198,9 +191,16 @@ func (mc *GzipCompressor) Bytes() []byte {
 func NewCompressedPackedForwardMessage(
 	tag string, entries []EntryExt,
 ) (*PackedForwardMessage, error) {
+	el := EntryList(entries)
+
+	bits, err := el.MarshalPackedEntries()
+	if err != nil {
+		return nil, err
+	}
+
 	lenEntries := len(entries)
 
-	msg, err := NewCompressedPackedForwardMessageFromBytes(tag, eventStream(entries))
+	msg, err := NewCompressedPackedForwardMessageFromBytes(tag, bits)
 	if err == nil {
 		msg.Options.Size = &lenEntries
 	}
