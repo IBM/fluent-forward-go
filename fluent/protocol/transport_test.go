@@ -116,26 +116,6 @@ var _ = Describe("Transport", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes.Equal(b, pfm.EventStream)).To(BeTrue())
 			})
-
-			Context("When the lists have different element counts", func() {
-				BeforeEach(func() {
-					e2 = e2[:1]
-				})
-
-				It("Returns false", func() {
-					Expect(e1.Equal(e2)).To(BeFalse())
-				})
-			})
-
-			Context("When the lists have differing elements", func() {
-				BeforeEach(func() {
-					e2[0].Timestamp = EventTime{et.Add(5 * time.Second)}
-				})
-
-				It("Returns false", func() {
-					Expect(e1.Equal(e2)).To(BeFalse())
-				})
-			})
 		})
 
 		Describe("Equal", func() {
