@@ -35,7 +35,7 @@ var _ = Describe("Client", func() {
 		clientSide, _ = net.Pipe()
 
 		Expect(factory.NewCallCount()).To(Equal(0))
-		Expect(client.Session).To(BeNil())
+		Expect(client.Session()).To(BeNil())
 	})
 
 	JustBeforeEach(func() {
@@ -56,8 +56,15 @@ var _ = Describe("Client", func() {
 		It("Stores the connection in the Session", func() {
 			err := client.Connect()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(client.Session).NotTo(BeNil())
-			Expect(client.Session.Connection).To(Equal(clientSide))
+			Expect(client.Session()).NotTo(BeNil())
+			Expect(client.Session().Connection).To(Equal(clientSide))
+		})
+
+		It("errors if session already exists", func() {
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
+			err = client.Connect()
+			Expect(err.Error()).To(Equal("a session is already active"))
 		})
 
 		Context("When the factory returns an error", func() {
@@ -75,6 +82,25 @@ var _ = Describe("Client", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(BeIdenticalTo(connectionError))
 			})
+		})
+	})
+
+	Describe("Reconnect", func() {
+		JustBeforeEach(func() {
+			err := client.Connect()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("calls Disconnect and creates a new Session", func() {
+			Expect(client.Reconnect()).ToNot(HaveOccurred())
+			Expect(factory.NewCallCount()).To(Equal(2))
+		})
+
+		It("works if no active session", func() {
+			Expect(client.Disconnect()).ToNot(HaveOccurred())
+
+			Expect(client.Reconnect()).ToNot(HaveOccurred())
+			Expect(factory.NewCallCount()).To(Equal(2))
 		})
 	})
 
@@ -125,7 +151,7 @@ var _ = Describe("Client", func() {
 
 		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
 			JustBeforeEach(func() {
-				client.Session.TransportPhase = false
+				client.Session().TransportPhase = false
 			})
 
 			It("Returns an error", func() {
@@ -154,8 +180,6 @@ var _ = Describe("Client", func() {
 
 			JustBeforeEach(func() {
 				client.RequireAck = true
-				err := client.Connect()
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("chunks the message and waits for the ack", func() {
@@ -255,7 +279,7 @@ var _ = Describe("Client", func() {
 
 		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
 			JustBeforeEach(func() {
-				client.Session.TransportPhase = false
+				client.Session().TransportPhase = false
 			})
 
 			It("Returns an error", func() {
@@ -308,7 +332,7 @@ var _ = Describe("Client", func() {
 				<-hs
 				err := client.Handshake()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.Session.TransportPhase).To(BeTrue())
+				Expect(client.Session().TransportPhase).To(BeTrue())
 				hs <- struct{}{}
 			}()
 
@@ -336,7 +360,7 @@ var _ = Describe("Client", func() {
 			JustBeforeEach(func() {
 				err := client.Disconnect()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.Session).To(BeNil())
+				Expect(client.Session()).To(BeNil())
 			})
 
 			It("Returns an error", func() {

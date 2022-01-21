@@ -38,12 +38,13 @@ type ConnectionFactory interface {
 
 type Client struct {
 	ConnectionFactory
-	RequireAck bool
-	Timeout    time.Duration
-	Session    *Session
-	AuthInfo   AuthInfo
-	Hostname   string
-	ackMutex   sync.Mutex
+	RequireAck  bool
+	Timeout     time.Duration
+	AuthInfo    AuthInfo
+	Hostname    string
+	session     *Session
+	ackLock     sync.Mutex
+	sessionLock sync.RWMutex
 }
 
 type ConnectionOptions struct {
@@ -90,50 +91,84 @@ func New(opts ConnectionOptions) *Client {
 
 // Connect initializes the Session and Connection objects by opening
 // a client connect to the target configured in the ConnectionFactory
-func (c *Client) Connect() error {
+func (c *Client) Session() *Session {
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	return c.session
+}
+
+func (c *Client) connect() error {
 	conn, err := c.New()
 	if err != nil {
 		return err
 	}
 
-	c.Session = &Session{
+	c.session = &Session{
 		Connection: conn,
 	}
 
 	// If no shared key, handshake mode is not required
 	if c.AuthInfo.SharedKey == nil {
-		c.Session.TransportPhase = true
+		c.session.TransportPhase = true
 	}
 
 	return nil
 }
 
-func (c *Client) Reconnect() error {
-	panic("not implemented yet")
+// Connect initializes the Session and Connection objects by opening
+// a client connect to the target configured in the ConnectionFactory
+func (c *Client) Connect() error {
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
+
+	if c.session != nil {
+		return errors.New("a session is already active")
+	}
+
+	return c.connect()
+}
+
+func (c *Client) disconnect() (err error) {
+	if c.session != nil && c.session.Connection != nil {
+		err = c.session.Connection.Close()
+	}
+
+	c.session = nil
+
+	return
 }
 
 // Disconnect terminates a client connection
-func (c *Client) Disconnect() (err error) {
-	if c.Session != nil {
-		if c.Session.Connection != nil {
-			err = c.Session.Connection.Close()
-		}
-	}
+func (c *Client) Disconnect() error {
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
 
-	c.Session = nil
+	return c.disconnect()
+}
+
+func (c *Client) Reconnect() (err error) {
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
+
+	_ = c.disconnect()
+
+	if err = c.connect(); err != nil {
+		c.session = nil
+	}
 
 	return
 }
 
 func (c *Client) checkAck(chunk string) error {
 	if c.Timeout != 0 {
-		if err := c.Session.Connection.SetReadDeadline(time.Now().Add(c.Timeout)); err != nil {
+		if err := c.session.Connection.SetReadDeadline(time.Now().Add(c.Timeout)); err != nil {
 			return err
 		}
 	}
 
 	var ack protocol.AckMessage
-	if err := msgp.Decode(c.Session.Connection, &ack); err != nil {
+	if err := msgp.Decode(c.session.Connection, &ack); err != nil {
 		return err
 	}
 
@@ -147,11 +182,14 @@ func (c *Client) checkAck(chunk string) error {
 // SendMessage sends a single protocol.ChunkEncoder across the wire.  If the session
 // is not yet in transport phase, an error is returned, and no message is sent.
 func (c *Client) SendMessage(e protocol.ChunkEncoder) error {
-	if c.Session == nil {
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	if c.session == nil {
 		return errors.New("no active session")
 	}
 
-	if !c.Session.TransportPhase {
+	if !c.session.TransportPhase {
 		return errors.New("session handshake not completed")
 	}
 
@@ -165,11 +203,11 @@ func (c *Client) SendMessage(e protocol.ChunkEncoder) error {
 			return err
 		}
 
-		c.ackMutex.Lock()
-		defer c.ackMutex.Unlock()
+		c.ackLock.Lock()
+		defer c.ackLock.Unlock()
 	}
 
-	err = msgp.Encode(c.Session.Connection, e)
+	err = msgp.Encode(c.session.Connection, e)
 	if err != nil || !c.RequireAck {
 		return err
 	}
@@ -190,13 +228,16 @@ func (c *Client) SendRaw(m []byte) error {
 // handshake puts the connection into message (or forward) mode, at which time
 // the client is free to send event messages.
 func (c *Client) Handshake() error {
-	if c.Session == nil || c.Session.Connection == nil {
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	if c.session == nil || c.session.Connection == nil {
 		return errors.New("not connected")
 	}
 
 	var helo protocol.Helo
 
-	r := msgp.NewReader(c.Session.Connection)
+	r := msgp.NewReader(c.session.Connection)
 	err := helo.DecodeMsg(r)
 
 	if err != nil {
@@ -215,7 +256,7 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	err = msgp.Encode(c.Session.Connection, ping)
+	err = msgp.Encode(c.session.Connection, ping)
 	if err != nil {
 		return err
 	}
@@ -232,7 +273,7 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	c.Session.TransportPhase = true
+	c.session.TransportPhase = true
 
 	return nil
 }

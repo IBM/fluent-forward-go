@@ -149,21 +149,6 @@ func (c *WSClient) Session() *WSSession {
 	return c.session
 }
 
-// Connect initializes the Session and Connection objects by opening
-// a websocket connection. If AuthInfo is not nil, the token it returns
-// will be passed via the "Authentication" header during the initial
-// HTTP call.
-func (c *WSClient) Connect() error {
-	c.sessionLock.Lock()
-	defer c.sessionLock.Unlock()
-
-	if c.session != nil {
-		return errors.New("a session is already active")
-	}
-
-	return c.connect()
-}
-
 // connect is for internal use and should be called within
 // the scope of an acquired 'c.sessionLock.Lock()'
 //
@@ -210,6 +195,21 @@ func (c *WSClient) connect() error {
 	}()
 
 	return nil
+}
+
+// Connect initializes the Session and Connection objects by opening
+// a websocket connection. If AuthInfo is not nil, the token it returns
+// will be passed via the "Authentication" header during the initial
+// HTTP call.
+func (c *WSClient) Connect() error {
+	c.sessionLock.Lock()
+	defer c.sessionLock.Unlock()
+
+	if c.session != nil {
+		return errors.New("a session is already active")
+	}
+
+	return c.connect()
 }
 
 // Disconnect ends the current Session and terminates its websocket connection.
