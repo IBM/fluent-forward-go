@@ -116,7 +116,7 @@ type EntryExt struct {
 
 type EntryList []EntryExt
 
-func (el *EntryList) UnmarshalPackedEntries(bits []byte) ([]byte, error) {
+func (el *EntryList) UnmarshalPacked(bits []byte) ([]byte, error) {
 	var (
 		entry EntryExt
 		err   error
@@ -135,7 +135,7 @@ func (el *EntryList) UnmarshalPackedEntries(bits []byte) ([]byte, error) {
 	return bits, err
 }
 
-func (el EntryList) MarshalPackedEntries() ([]byte, error) {
+func (el EntryList) MarshalPacked() ([]byte, error) {
 	buf := bufferPool.Get().(*bytes.Buffer)
 
 	for _, e := range el {

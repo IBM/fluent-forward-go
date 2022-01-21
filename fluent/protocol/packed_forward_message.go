@@ -36,7 +36,7 @@ func NewPackedForwardMessage(
 ) (*PackedForwardMessage, error) {
 	el := EntryList(entries)
 
-	bits, err := el.MarshalPackedEntries()
+	bits, err := el.MarshalPacked()
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +193,7 @@ func NewCompressedPackedForwardMessage(
 ) (*PackedForwardMessage, error) {
 	el := EntryList(entries)
 
-	bits, err := el.MarshalPackedEntries()
+	bits, err := el.MarshalPacked()
 	if err != nil {
 		return nil, err
 	}

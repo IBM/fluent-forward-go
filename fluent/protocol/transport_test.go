@@ -1,7 +1,9 @@
 package protocol_test
 
 import (
+	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -73,6 +75,67 @@ var _ = Describe("Transport", func() {
 					},
 				},
 			}
+		})
+
+		Describe("Un/MarshalPacked", func() {
+			var (
+				e2 EntryList
+			)
+
+			BeforeEach(func() {
+				e2 = EntryList{
+					{
+						Timestamp: EventTime{et},
+						Record: map[string]interface{}{
+							"foo":    "bar",
+							"george": "jungle",
+						},
+					},
+					{
+						Timestamp: EventTime{et},
+						Record: map[string]interface{}{
+							"foo":    "kablooie",
+							"george": "frank",
+						},
+					},
+				}
+			})
+
+			It("Can marshal and unmarshal packed entries", func() {
+				pfm, err := NewPackedForwardMessage("foo", e2)
+				Expect(err).ToNot(HaveOccurred())
+
+				el := EntryList{}
+				_, err = el.UnmarshalPacked(pfm.EventStream)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(el)).To(Equal(2))
+				Expect(reflect.DeepEqual(e2[0].Record, el[0].Record)).To(BeTrue())
+				Expect(reflect.DeepEqual(e2[1].Record, el[1].Record)).To(BeTrue())
+
+				b, err := el.MarshalPacked()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes.Equal(b, pfm.EventStream)).To(BeTrue())
+			})
+
+			Context("When the lists have different element counts", func() {
+				BeforeEach(func() {
+					e2 = e2[:1]
+				})
+
+				It("Returns false", func() {
+					Expect(e1.Equal(e2)).To(BeFalse())
+				})
+			})
+
+			Context("When the lists have differing elements", func() {
+				BeforeEach(func() {
+					e2[0].Timestamp = EventTime{et.Add(5 * time.Second)}
+				})
+
+				It("Returns false", func() {
+					Expect(e1.Equal(e2)).To(BeFalse())
+				})
+			})
 		})
 
 		Describe("Equal", func() {
@@ -163,7 +226,7 @@ var _ = Describe("Transport", func() {
 			msg, err := NewPackedForwardMessage(tag, entries)
 			Expect(err).NotTo(HaveOccurred())
 			elist := make(EntryList, 2)
-			_, err = elist.UnmarshalPackedEntries(msg.EventStream)
+			_, err = elist.UnmarshalPacked(msg.EventStream)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(elist.Equal(entries)).To(BeTrue())
 		})
