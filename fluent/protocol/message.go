@@ -31,7 +31,7 @@ type Message struct {
 // precision.
 func NewMessage(
 	tag string,
-	record interface{},
+	record Record,
 ) *Message {
 	msg := &Message{
 		Tag:       tag,
@@ -162,7 +162,7 @@ type MessageExt struct {
 // precision.
 func NewMessageExt(
 	tag string,
-	record interface{},
+	record Record,
 ) *MessageExt {
 	msg := &MessageExt{
 		Tag:       tag,

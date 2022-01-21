@@ -20,12 +20,12 @@ func TestMarshalNewMessage(t *testing.T) {
 	}
 	msg := NewMessage("tag", record)
 	assert.Equal(t, msg.Tag, "tag")
-	assert.Equal(t, msg.Record, record)
+	assert.Equal(t, msg.Record, Record(record))
 	assert.Greater(t, msg.Timestamp, int64(0))
 
 	msgext := NewMessageExt("tag", record)
 	assert.Equal(t, msgext.Tag, "tag")
-	assert.Equal(t, msgext.Record, record)
+	assert.Equal(t, msgext.Record, Record(record))
 	assert.Greater(t, msgext.Timestamp.Time.UTC().Nanosecond(), 0)
 }
 

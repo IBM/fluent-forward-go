@@ -102,6 +102,8 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	return nil
 }
 
+type Record map[string]interface{}
+
 // EntryExt is the basic representation of an individual event, but using the
 // msgpack extension format for the timestamp.
 //msgp:tuple EntryExt
@@ -186,7 +188,7 @@ type Entry struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp int64
 	// Record is the actual event record.
-	Record interface{}
+	Record Record
 }
 
 type MessageOptions struct {
