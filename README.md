@@ -4,6 +4,7 @@
 
 Features include:
 
+- tcp, unix socket, and TLS connections
 - shared-key authentication
 - support for all [Fluent message modes](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#message-modes)
 - [`gzip` compression](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#compressedpackedforward-mode)
@@ -11,9 +12,6 @@ Features include:
 - `ack` support
 - a websocket client for proxying Fluent messages
 
-TODOs:
-
-- TLS support
 
 ## Installation
 
@@ -23,14 +21,35 @@ go get github.com/IBM/fluent-forward-go
 
 ## Examples
 
-### Create a simple tcp client pointing to `localhost:24224`
+### Create a tcp client
 
 ```go
-c := client.New(client.ConnectionOptions{})
+c := client.New(client.ConnectionOptions{
+  Factory: &client.SocketFactory{
+    Network: "tcp",
+    Address: "localhost:24224",
+  },
+})
 if err := c.Connect(); err != nil {
   // ...
 }
+defer c.Disconnect()
+```
 
+### Create a TLS client
+
+```go
+keyPair, _ := tls.LoadX509KeyPair("server.crt", "server.key")
+c := client.New(client.ConnectionOptions{
+  Factory: &client.SocketFactory{
+    Network: "tcp",
+    Address: "localhost:24224",
+    TLSConfig: &tls.Config{Certificates: []tls.Certificate{keyPair}},
+  },
+})
+if err := c.Connect(); err != nil {
+  // ...
+}
 defer c.Disconnect()
 ```
 
