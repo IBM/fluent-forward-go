@@ -3,21 +3,9 @@ language: go
 go:
   - "1.16"
 
-env:
-  matrix:
-    - MAKE_TASK="lintall travis-lint gosec scan-nancy"
-
-# matrix:
-#   fast_finish: true
-#   allow_failures:
-#     - go: tip
-
 before_install:
   - pip --quiet install yamllint
   - go get github.com/sonatype-nexus-community/nancy
-
-# script:
-#   - make $MAKE_TASK
 
 cache:
   directories:
@@ -29,4 +17,4 @@ jobs:
     - stage: unit tests
       script:
         - test/run-tests.sh ; [[ "$?" == "0" ]] || (travis_terminate 1)
-      if: type = pull_request or type = push
+      if: type = pull_request
