@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"sync"
+	"crypto/tls"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
@@ -78,6 +79,8 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {
 		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
 	}
+
+	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	conn, resp, err := dialer.Dial(wcf.URL, header)
 	if resp != nil && resp.Body != nil {
