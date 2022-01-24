@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"reflect"
@@ -30,6 +31,7 @@ const (
 var (
 	compressorPool  sync.Pool
 	chunkReaderPool sync.Pool
+	bufferPool      sync.Pool
 )
 
 func init() {
@@ -40,11 +42,15 @@ func init() {
 	})
 
 	compressorPool.New = func() interface{} {
-		return &GzipCompressor{}
+		return new(GzipCompressor)
 	}
 
 	chunkReaderPool.New = func() interface{} {
-		return &ChunkReader{}
+		return new(ChunkReader)
+	}
+
+	bufferPool.New = func() interface{} {
+		return new(bytes.Buffer)
 	}
 }
 
@@ -110,16 +116,47 @@ type EntryExt struct {
 
 type EntryList []EntryExt
 
+func (el *EntryList) UnmarshalPacked(bits []byte) ([]byte, error) {
+	var (
+		entry EntryExt
+		err   error
+	)
+
+	*el = (*el)[:0]
+
+	for len(bits) > 0 {
+		if bits, err = entry.UnmarshalMsg(bits); err != nil {
+			break
+		}
+
+		*el = append(*el, entry)
+	}
+
+	return bits, err
+}
+
+func (el EntryList) MarshalPacked() ([]byte, error) {
+	buf := bufferPool.Get().(*bytes.Buffer)
+
+	for _, e := range el {
+		if err := msgp.Encode(buf, e); err != nil {
+			return nil, err
+		}
+	}
+
+	return buf.Bytes(), nil
+}
+
 // Equal compares two EntryList objects and returns true if they have
 // exactly the same elements, false otherwise.
-func (e EntryList) Equal(e2 EntryList) bool {
-	if len(e) != len(e2) {
+func (el EntryList) Equal(e2 EntryList) bool {
+	if len(el) != len(e2) {
 		return false
 	}
 
-	first := make(EntryList, len(e))
+	first := make(EntryList, len(el))
 
-	copy(first, e)
+	copy(first, el)
 
 	second := make(EntryList, len(e2))
 
@@ -138,7 +175,7 @@ func (e EntryList) Equal(e2 EntryList) bool {
 		}
 	}
 
-	return matches == len(e)
+	return matches == len(el)
 }
 
 // EntryExt is the basic representation of an individual event.  The timestamp

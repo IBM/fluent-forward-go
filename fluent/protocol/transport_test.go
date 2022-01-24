@@ -1,7 +1,9 @@
 package protocol_test
 
 import (
+	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -73,6 +75,47 @@ var _ = Describe("Transport", func() {
 					},
 				},
 			}
+		})
+
+		Describe("Un/MarshalPacked", func() {
+			var (
+				e2 EntryList
+			)
+
+			BeforeEach(func() {
+				e2 = EntryList{
+					{
+						Timestamp: EventTime{et},
+						Record: map[string]interface{}{
+							"foo":    "bar",
+							"george": "jungle",
+						},
+					},
+					{
+						Timestamp: EventTime{et},
+						Record: map[string]interface{}{
+							"foo":    "kablooie",
+							"george": "frank",
+						},
+					},
+				}
+			})
+
+			It("Can marshal and unmarshal packed entries", func() {
+				pfm, err := NewPackedForwardMessage("foo", e2)
+				Expect(err).ToNot(HaveOccurred())
+
+				el := EntryList{}
+				_, err = el.UnmarshalPacked(pfm.EventStream)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(el)).To(Equal(2))
+				Expect(reflect.DeepEqual(e2[0].Record, el[0].Record)).To(BeTrue())
+				Expect(reflect.DeepEqual(e2[1].Record, el[1].Record)).To(BeTrue())
+
+				b, err := el.MarshalPacked()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes.Equal(b, pfm.EventStream)).To(BeTrue())
+			})
 		})
 
 		Describe("Equal", func() {
@@ -152,26 +195,19 @@ var _ = Describe("Transport", func() {
 		})
 
 		It("Returns a PackedForwardMessage", func() {
-			msg := NewPackedForwardMessage(tag, entries)
+			msg, err := NewPackedForwardMessage(tag, entries)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(msg).NotTo(BeNil())
-		})
-
-		It("Includes the number of events as the `size` option", func() {
-			msg := NewPackedForwardMessage(tag, entries)
 			Expect(*msg.Options.Size).To(Equal(len(entries)))
 			Expect(msg.Options.Compressed).To(BeEmpty())
 		})
 
-		XIt("Correctly encodes the entries into a bytestream", func() {
-			// TODO: This test is wrong - it expects that the stream is a
-			// single array of EntryExt objects, but it's a stream of encoded
-			// EntryExt objects (NOT an array), and the test does not match
-			// up to that.
-			msg := NewPackedForwardMessage(tag, entries)
-			elist := make(EntryList, 2)
-			_, err := elist.UnmarshalMsg(msg.EventStream)
+		It("Correctly encodes the entries into a bytestream", func() {
+			msg, err := NewPackedForwardMessage(tag, entries)
 			Expect(err).NotTo(HaveOccurred())
-
+			elist := make(EntryList, 2)
+			_, err = elist.UnmarshalPacked(msg.EventStream)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(elist.Equal(entries)).To(BeTrue())
 		})
 	})
