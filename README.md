@@ -4,7 +4,7 @@
 
 Features include:
 
-- tcp, unix socket, and TLS connections
+- TCP, TLS, and unix socket support
 - shared-key authentication
 - support for all [Fluent message modes](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#message-modes)
 - [`gzip` compression](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#compressedpackedforward-mode)
@@ -21,11 +21,11 @@ go get github.com/IBM/fluent-forward-go
 
 ## Examples
 
-### Create a tcp client
+### Create a TCP client
 
 ```go
 c := client.New(client.ConnectionOptions{
-  Factory: &client.SocketFactory{
+  Factory: &client.SocketConnFactory{
     Network: "tcp",
     Address: "localhost:24224",
   },
@@ -41,7 +41,7 @@ defer c.Disconnect()
 ```go
 keyPair, _ := tls.LoadX509KeyPair("server.crt", "server.key")
 c := client.New(client.ConnectionOptions{
-  Factory: &client.SocketFactory{
+  Factory: &client.ConnFactory{
     Network: "tcp",
     Address: "localhost:24224",
     TLSConfig: &tls.Config{Certificates: []tls.Certificate{keyPair}},
@@ -59,11 +59,7 @@ The `record` object must be a `map` or `struct`. Objects that implement the [`ms
 
 ```go
 record := map[string]interface{}{
-  "first": "Sir",
-  "last":  "Gawain",
-  "equipment": []string{
-    "sword",
-  },
+  "Hello": "World",
 }
 msg := protocol.NewMessage("tag", record)
 if err := c.SendMessage(msg); err != nil {

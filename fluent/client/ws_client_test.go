@@ -2,6 +2,7 @@ package client_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -71,7 +72,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 	})
 
 	AfterEach(func() {
-		svr.Close()
+		svr.Config.Shutdown(context.Background())
 	})
 
 	It("sends auth headers", func() {

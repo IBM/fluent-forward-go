@@ -70,7 +70,7 @@ type Session struct {
 func New(opts ConnectionOptions) *Client {
 	factory := opts.Factory
 	if factory == nil {
-		factory = &SocketFactory{
+		factory = &ConnFactory{
 			Network: "tcp",
 			Address: "localhost:24224",
 		}
