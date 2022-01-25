@@ -130,7 +130,7 @@ func (c *Client) Connect() error {
 }
 
 func (c *Client) disconnect() (err error) {
-	if c.session != nil && c.session.Connection != nil {
+	if c.session != nil {
 		err = c.session.Connection.Close()
 	}
 
@@ -231,7 +231,7 @@ func (c *Client) Handshake() error {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
 
-	if c.session == nil || c.session.Connection == nil {
+	if c.session == nil {
 		return errors.New("not connected")
 	}
 
