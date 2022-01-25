@@ -98,7 +98,7 @@ var _ = Describe("ConnFactory", func() {
 			})
 		})
 
-		XWhen("using unix socket", func() {
+		When("using unix socket", func() {
 			// Note: when this test runs independently, it passes;
 			// when run with the full suite, it fails
 			BeforeEach(func() {

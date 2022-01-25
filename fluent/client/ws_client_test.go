@@ -64,10 +64,6 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 	BeforeEach(func() {
 		happy = make(chan struct{})
 		svr = httptest.NewServer(newHandler(happy))
-		go func() {
-			defer GinkgoRecover()
-			Expect(svr.Config.ListenAndServe()).ToNot(HaveOccurred())
-		}()
 		time.Sleep(500 * time.Millisecond)
 	})
 
