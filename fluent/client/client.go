@@ -147,17 +147,13 @@ func (c *Client) Disconnect() error {
 	return c.disconnect()
 }
 
-func (c *Client) Reconnect() (err error) {
+func (c *Client) Reconnect() error {
 	c.sessionLock.Lock()
 	defer c.sessionLock.Unlock()
 
 	_ = c.disconnect()
 
-	if err = c.connect(); err != nil {
-		c.session = nil
-	}
-
-	return
+	return c.connect()
 }
 
 func (c *Client) checkAck(chunk string) error {
