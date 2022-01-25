@@ -89,13 +89,13 @@ func New(opts ConnectionOptions) *Client {
 	}
 }
 
-// Connect initializes the Session and Connection objects by opening
-// a client connect to the target configured in the ConnectionFactory
-func (c *Client) Session() *Session {
+// TransportPhase indicates if the client has completed the
+// initial connection handshake.
+func (c *Client) TransportPhase() bool {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
 
-	return c.session
+	return c.session != nil && c.session.TransportPhase
 }
 
 func (c *Client) connect() error {

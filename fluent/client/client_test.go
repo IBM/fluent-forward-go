@@ -35,7 +35,7 @@ var _ = Describe("Client", func() {
 		clientSide, _ = net.Pipe()
 
 		Expect(factory.NewCallCount()).To(Equal(0))
-		Expect(client.Session()).To(BeNil())
+		Expect(client.TransportPhase()).To(BeFalse())
 	})
 
 	JustBeforeEach(func() {
@@ -53,11 +53,10 @@ var _ = Describe("Client", func() {
 			Expect(factory.NewCallCount()).To(Equal(1))
 		})
 
-		It("Stores the connection in the Session", func() {
+		It("Completes the handshake", func() {
 			err := client.Connect()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(client.Session()).NotTo(BeNil())
-			Expect(client.Session().Connection).To(Equal(clientSide))
+			Expect(client.TransportPhase()).To(BeTrue())
 		})
 
 		It("errors if session already exists", func() {
@@ -151,7 +150,7 @@ var _ = Describe("Client", func() {
 
 		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
 			JustBeforeEach(func() {
-				client.Session().TransportPhase = false
+				client.Disconnect()
 			})
 
 			It("Returns an error", func() {
@@ -279,7 +278,7 @@ var _ = Describe("Client", func() {
 
 		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
 			JustBeforeEach(func() {
-				client.Session().TransportPhase = false
+				client.Disconnect()
 			})
 
 			It("Returns an error", func() {
@@ -332,7 +331,7 @@ var _ = Describe("Client", func() {
 				<-hs
 				err := client.Handshake()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.Session().TransportPhase).To(BeTrue())
+				Expect(client.TransportPhase()).To(BeTrue())
 				hs <- struct{}{}
 			}()
 
@@ -360,7 +359,7 @@ var _ = Describe("Client", func() {
 			JustBeforeEach(func() {
 				err := client.Disconnect()
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.Session()).To(BeNil())
+				Expect(client.TransportPhase()).To(BeFalse())
 			})
 
 			It("Returns an error", func() {
