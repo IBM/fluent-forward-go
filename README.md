@@ -25,8 +25,7 @@ go get github.com/IBM/fluent-forward-go
 
 ```go
 c := client.New(client.ConnectionOptions{
-  Factory: &client.SocketConnFactory{
-    Network: "tcp",
+  Factory: &client.ConnFactory{
     Address: "localhost:24224",
   },
 })
@@ -42,7 +41,6 @@ defer c.Disconnect()
 keyPair, _ := tls.LoadX509KeyPair("server.crt", "server.key")
 c := client.New(client.ConnectionOptions{
   Factory: &client.ConnFactory{
-    Network: "tcp",
     Address: "localhost:24224",
     TLSConfig: &tls.Config{Certificates: []tls.Certificate{keyPair}},
   },

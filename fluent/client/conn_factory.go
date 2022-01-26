@@ -10,6 +10,7 @@ import (
 // is not nil, tls.Dial is called. Otherwise, net.Dial is used. See Go's
 // net.Dial documentation for more information.
 type ConnFactory struct {
+	// Network indicates the type of connection. The default value is "tcp".
 	Network   string
 	Address   string
 	TLSConfig *tls.Config
@@ -17,6 +18,10 @@ type ConnFactory struct {
 }
 
 func (f *ConnFactory) New() (net.Conn, error) {
+	if len(f.Network) == 0 {
+		f.Network = "tcp"
+	}
+
 	dialer := &net.Dialer{Timeout: f.Timeout}
 
 	if f.TLSConfig != nil {

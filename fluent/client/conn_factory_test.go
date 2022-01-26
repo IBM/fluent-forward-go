@@ -29,21 +29,28 @@ var _ = Describe("ConnFactory", func() {
 	})
 
 	JustBeforeEach(func() {
+		svrNetwork := network
+		if svrNetwork == "" {
+			svrNetwork = "tcp"
+		}
+
+		var clientTlsCfg *tls.Config
 		if tlsConfig != nil {
-			server, serverErr = tls.Listen(network, address, tlsConfig)
+			clientTlsCfg = &tls.Config{InsecureSkipVerify: true}
+			server, serverErr = tls.Listen(svrNetwork, address, tlsConfig)
 		} else {
-			server, serverErr = net.Listen(network, address)
+			server, serverErr = net.Listen(svrNetwork, address)
 		}
 		Expect(serverErr).NotTo(HaveOccurred())
 
-		if network == "tcp" {
+		if svrNetwork == "tcp" {
 			address = server.Addr().(*net.TCPAddr).String()
 		}
 
 		factory = &ConnFactory{
 			Network:   network,
 			Address:   address,
-			TLSConfig: tlsConfig,
+			TLSConfig: clientTlsCfg,
 			Timeout:   100 * time.Millisecond,
 		}
 	})
@@ -54,11 +61,23 @@ var _ = Describe("ConnFactory", func() {
 	})
 
 	Describe("New", func() {
-		testConnection := func() {
+		testConnection := func(testTls bool) {
 			socketConn, err := factory.New()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(socketConn).NotTo(BeNil())
 			time.Sleep(time.Millisecond)
+
+			if testTls {
+				tconn := socketConn.(*tls.Conn)
+				state := tconn.ConnectionState()
+				Expect(state.PeerCertificates).ToNot(BeEmpty())
+			}
+
+			tmp := make([]byte, 256)
+			n, err := socketConn.Read(tmp)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(n).To(Equal(1))
+
 			Expect(socketConn.Close()).ToNot(HaveOccurred())
 		}
 
@@ -81,26 +100,41 @@ var _ = Describe("ConnFactory", func() {
 
 		When("connecting with tcp", func() {
 			It("returns an established connection", func() {
-				testConnection()
+				testConnection(false)
+			})
+
+			When("Network is empty", func() {
+				BeforeEach(func() {
+					network = ""
+				})
+
+				It("defaults to tcp", func() {
+					Expect(factory.Network).To(BeEmpty())
+					testConnection(false)
+					Expect(factory.Network).To(Equal("tcp"))
+				})
 			})
 
 			When("using tls", func() {
 				BeforeEach(func() {
-					cer, err := tls.LoadX509KeyPair("clientfakes/test.crt", "clientfakes/test.key")
+					// go run $GOROOT/src/crypto/tls/generate_cert.go --rsa-bits 1024 \
+					//   --host 127.0.0.1,::1,localhost --ca \
+					//   --start-date "Jan 1 00:00:00 1970" --duration=1000000h
+					cer, err := tls.LoadX509KeyPair("clientfakes/cert.pem", "clientfakes/key.pem")
 					Expect(err).ToNot(HaveOccurred())
 
-					tlsConfig = &tls.Config{Certificates: []tls.Certificate{cer}, InsecureSkipVerify: true}
+					tlsConfig = &tls.Config{
+						Certificates: []tls.Certificate{cer},
+					}
 				})
 
 				It("returns an established connection", func() {
-					testConnection()
+					testConnection(true)
 				})
 			})
 		})
 
 		When("using unix socket", func() {
-			// Note: when this test runs independently, it passes;
-			// when run with the full suite, it fails
 			BeforeEach(func() {
 				network = "unix"
 				address = "/tmp/test.sock"
@@ -113,7 +147,7 @@ var _ = Describe("ConnFactory", func() {
 			})
 
 			It("returns an established connection", func() {
-				testConnection()
+				testConnection(false)
 			})
 		})
 	})
