@@ -34,7 +34,7 @@ func NewPackedForwardMessage(
 	tag string,
 	entries EntryList,
 ) (*PackedForwardMessage, error) {
-	el := EntryList(entries)
+	el := EntryList(entries) //nolint
 
 	bits, err := el.MarshalPacked()
 	if err != nil {
@@ -191,7 +191,7 @@ func (mc *GzipCompressor) Bytes() []byte {
 func NewCompressedPackedForwardMessage(
 	tag string, entries []EntryExt,
 ) (*PackedForwardMessage, error) {
-	el := EntryList(entries)
+	el := EntryList(entries) //nolint
 
 	bits, err := el.MarshalPacked()
 	if err != nil {

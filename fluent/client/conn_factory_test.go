@@ -34,9 +34,9 @@ var _ = Describe("ConnFactory", func() {
 			svrNetwork = "tcp"
 		}
 
-		var clientTlsCfg *tls.Config
+		var clientTLSCfg *tls.Config
 		if tlsConfig != nil {
-			clientTlsCfg = &tls.Config{InsecureSkipVerify: true}
+			clientTLSCfg = &tls.Config{InsecureSkipVerify: true}
 			server, serverErr = tls.Listen(svrNetwork, address, tlsConfig)
 		} else {
 			server, serverErr = net.Listen(svrNetwork, address)
@@ -50,7 +50,7 @@ var _ = Describe("ConnFactory", func() {
 		factory = &ConnFactory{
 			Network:   network,
 			Address:   address,
-			TLSConfig: clientTlsCfg,
+			TLSConfig: clientTLSCfg,
 			Timeout:   100 * time.Millisecond,
 		}
 	})
