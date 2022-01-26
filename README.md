@@ -4,7 +4,7 @@
 
 Features include:
 
-- TCP, TLS, and unix socket support
+- TCP, TLS, mTLS, and unix socket transport
 - shared-key authentication
 - support for all [Fluent message modes](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#message-modes)
 - [`gzip` compression](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1#compressedpackedforward-mode)
@@ -38,11 +38,10 @@ defer c.Disconnect()
 ### Create a TLS client
 
 ```go
-keyPair, _ := tls.LoadX509KeyPair("server.crt", "server.key")
 c := client.New(client.ConnectionOptions{
   Factory: &client.ConnFactory{
     Address: "localhost:24224",
-    TLSConfig: &tls.Config{Certificates: []tls.Certificate{keyPair}},
+    TLSConfig: &tls.Config{InsecureSkipVerify: true},
   },
 })
 if err := c.Connect(); err != nil {
