@@ -88,7 +88,7 @@ if err := c.SendMessage(myMsg); err != nil {
 
 ## Performance
 
-**tl;dr** `fluent-forward-go` is fast and lean
+**tl;dr** `fluent-forward-go` is fast and memory efficient. In some cases it is **70% faster** than the official package.
 
 You can read more about the benchmarks [here](cmd/bm/README.md).
 
@@ -97,37 +97,27 @@ You can read more about the benchmarks [here](cmd/bm/README.md).
 Run on `localhost`. Does not include message creation.
 
 ```shell
-Benchmark_Fluent_Forward_Go_SendOnly-8    100000    15726 ns/op    0 B/op    0 allocs/op
+Benchmark_Fluent_Forward_Go_SendOnly-16      10000      10847 ns/op      0 B/op      0 allocs/op
 ```
 
 ### Comparisons with `fluent-logger-golang`
 
-The benchmarks below compare `fluent-forward-go` with the official package, [`fluent-logger-golang`](https://github.com/fluent/fluent-logger-golang).
+The benchmarks below compare `fluent-forward-go` with the official package, [`fluent-logger-golang`](https://github.com/fluent/fluent-logger-golang). The message is a simple map with twelve keys.
 
 The differences in execution times can vary from one test run to another. The differences in memory allocations, however, are constant.
 
-#### Create and send single message
+#### Send a single message
 
 ```shell
-# Best of 10
-Benchmark_Fluent_Forward_Go_SingleMessage-8       100000    17063 ns/op     400 B/op     3 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000    19639 ns/op    1216 B/op    16 allocs/op
-
-# Worst of 10
-Benchmark_Fluent_Forward_Go_SingleMessage-8       100000    19191 ns/op     400 B/op      3 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessage-8    100000    21201 ns/op    1216 B/op     16 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessage-16    	   10000	     11355 ns/op	      48 B/op	       1 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessage-16      10000	     19687 ns/op	    2169 B/op	      33 allocs/op
 ```
 
-#### Create and send single message with `ack`
+#### Send single message with confirmation
 
 ```shell
-# Best of 10
-Benchmark_Fluent_Forward_Go_SingleMessageAck-8       5000    1013919 ns/op     538 B/op     8 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-8    5000    1089037 ns/op    4721 B/op    28 allocs/op
-
-# Worst of 10
-Benchmark_Fluent_Forward_Go_SingleMessageAck-8       5000    1125134 ns/op     538 B/op     8 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-8    5000    1493819 ns/op    4721 B/op    28 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessageAck-16       10000	    768743 ns/op	     185 B/op	       6 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16    10000	    793360 ns/op	    6015 B/op	      47 allocs/op
 ```
 
 ## Developing

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/IBM/fluent-forward-go/cmd/bm"
 	"github.com/IBM/fluent-forward-go/fluent/client"
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
@@ -24,11 +25,7 @@ func Benchmark_Fluent_Forward_Go_SendOnly(b *testing.B) {
 
 	defer c.Disconnect()
 
-	record := map[string]interface{}{
-		"first": "Sir",
-		"last":  "Gawain",
-		"enemy": "Green Knight",
-	}
+	record := bm.MakeRecord(12)
 	mne := protocol.NewMessage(tagVar, record)
 
 	b.ReportAllocs()
@@ -56,15 +53,12 @@ func Benchmark_Fluent_Forward_Go_SingleMessage(b *testing.B) {
 
 	defer c.Disconnect()
 
+	record := bm.MakeRecord(12)
+
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		record := map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		}
 		mne := protocol.NewMessage(tagVar, record)
 		err = c.SendMessage(mne)
 		if err != nil {
@@ -86,17 +80,14 @@ func Benchmark_Fluent_Forward_Go_SingleMessageAck(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	record := bm.MakeRecord(12)
+
 	defer c.Disconnect()
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		record := map[string]interface{}{
-			"first": "Sir",
-			"last":  "Gawain",
-			"enemy": "Green Knight",
-		}
 		mne := protocol.NewMessage(tagVar, record)
 		err = c.SendMessage(mne)
 		if err != nil {
@@ -119,11 +110,7 @@ func Benchmark_Fluent_Forward_Go_Bytes(b *testing.B) {
 
 	defer c.Disconnect()
 
-	record := map[string]interface{}{
-		"first": "Sir",
-		"last":  "Gawain",
-		"enemy": "Green Knight",
-	}
+	record := bm.MakeRecord(12)
 	mne := protocol.NewMessage(tagVar, record)
 
 	bits, _ := mne.MarshalMsg(nil)
@@ -154,11 +141,7 @@ func Benchmark_Fluent_Forward_Go_BytesAck(b *testing.B) {
 
 	defer c.Disconnect()
 
-	record := map[string]interface{}{
-		"first": "Sir",
-		"last":  "Gawain",
-		"enemy": "Green Knight",
-	}
+	record := bm.MakeRecord(12)
 	mne := protocol.NewMessage(tagVar, record)
 
 	mne.Chunk()
@@ -189,20 +172,16 @@ func Benchmark_Fluent_Forward_Go_RawMessage(b *testing.B) {
 
 	defer c.Disconnect()
 
-	record := map[string]interface{}{
-		"first": "Sir",
-		"last":  "Gawain",
-		"enemy": "Green Knight",
-	}
+	record := bm.MakeRecord(12)
 	mne := protocol.NewMessage(tagVar, record)
 
 	bits, _ := mne.MarshalMsg(nil)
-	rbits := protocol.RawMessage(bits)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		rbits := protocol.RawMessage(bits)
 		err = c.SendMessage(rbits)
 		if err != nil {
 			b.Fatal(err)
@@ -225,22 +204,127 @@ func Benchmark_Fluent_Forward_Go_RawMessageAck(b *testing.B) {
 
 	defer c.Disconnect()
 
-	record := map[string]interface{}{
-		"first": "Sir",
-		"last":  "Gawain",
-		"enemy": "Green Knight",
-	}
+	record := bm.MakeRecord(12)
 	mne := protocol.NewMessage(tagVar, record)
 
 	mne.Chunk()
 	bits, _ := mne.MarshalMsg(nil)
-	rbits := protocol.RawMessage(bits)
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		rbits := protocol.RawMessage(bits)
 		err = c.SendMessage(rbits)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func Benchmark_Fluent_Forward_Go_CompressedMessage(b *testing.B) {
+	tagVar := "foo"
+
+	c := client.New(client.ConnectionOptions{
+		ConnectionTimeout: 3 * time.Second,
+	})
+
+	err := c.Connect()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	defer c.Disconnect()
+
+	record := bm.MakeRecord(12)
+	entries := []protocol.EntryExt{
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		mne, _ := protocol.NewCompressedPackedForwardMessage(tagVar, entries)
+		err = c.SendMessage(mne)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func Benchmark_Fluent_Forward_Go_CompressedMessageAck(b *testing.B) {
+	tagVar := "foo"
+
+	c := client.New(client.ConnectionOptions{
+		RequireAck:        true,
+		ConnectionTimeout: 3 * time.Second,
+	})
+
+	err := c.Connect()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	defer c.Disconnect()
+
+	record := bm.MakeRecord(12)
+	entries := []protocol.EntryExt{
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+		{
+			Timestamp: protocol.EventTimeNow(),
+			Record:    record,
+		},
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		mne, _ := protocol.NewCompressedPackedForwardMessage(tagVar, entries)
+		err = c.SendMessage(mne)
 		if err != nil {
 			b.Fatal(err)
 		}
