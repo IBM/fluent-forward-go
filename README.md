@@ -59,18 +59,14 @@ record := map[string]interface{}{
   "Hello": "World",
 }
 msg := protocol.NewMessage("tag", record)
-if err := c.SendMessage(msg); err != nil {
-  // ...
-}
+err := c.SendMessage(msg)
 ```
 
 ### Send a byte-encoded message
 
 ```go
 raw := protocol.RawMessage(myMessageBytes)
-if err := c.SendMessage(raw); err != nil {
-  // ...
-}
+err := c.SendMessage(raw)
 ```
 
 ### Message confirmation
@@ -80,15 +76,16 @@ The client supports `ack` confirmations as specified by the Fluent protocol. Whe
 Note: For types other than `RawMessage`, the `SendMessage` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
 
 ```go
-c.RequireAck = true
-if err := c.SendMessage(myMsg); err != nil {
-  // ...
-}
+c := client.New(client.ConnectionOptions{
+  RequireAck: true,
+})
+//...
+err := c.SendMessage(myMsg)
 ```
 
 ## Performance
 
-**tl;dr** `fluent-forward-go` is fast and memory efficient. In some cases it is **70% faster** than the official package.
+**tl;dr** `fluent-forward-go` is fast and memory efficient.
 
 You can read more about the benchmarks [here](cmd/bm/README.md).
 
@@ -109,11 +106,11 @@ The differences in execution times can vary from one test run to another. The di
 #### Send a single message
 
 ```shell
-Benchmark_Fluent_Forward_Go_SingleMessage-16    	   10000	     11355 ns/op	      48 B/op	       1 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessage-16         10000	     11355 ns/op	      48 B/op	       1 allocs/op
 Benchmark_Fluent_Logger_Golang_SingleMessage-16      10000	     19687 ns/op	    2169 B/op	      33 allocs/op
 ```
 
-#### Send single message with confirmation
+#### Send a single message with confirmation
 
 ```shell
 Benchmark_Fluent_Forward_Go_SingleMessageAck-16       10000	    768743 ns/op	     185 B/op	       6 allocs/op

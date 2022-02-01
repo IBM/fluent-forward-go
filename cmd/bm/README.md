@@ -31,15 +31,15 @@ go test -benchmem -run=^$ -bench ^.*MessageAck$ -benchtime=10000x -count=10 gith
 #### Best of 10: create and send single message
 
 ```shell
-Benchmark_Fluent_Forward_Go_SingleMessage-16        	   10000	     11355 ns/op	      48 B/op	       1 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessage-16    	   10000	     19687 ns/op	    2169 B/op	      33 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessage-16        10000	     11355 ns/op	      48 B/op	       1 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessage-16     10000	     19687 ns/op	    2169 B/op	      33 allocs/op
 ```
 
 #### Best of 10: create and send single message with `ack`
 
 ```shell
-Benchmark_Fluent_Forward_Go_SingleMessageAck-16      	   10000	    768743 ns/op	     185 B/op	       6 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    793360 ns/op	    6015 B/op	      47 allocs/op
+Benchmark_Fluent_Forward_Go_SingleMessageAck-16        10000	    768743 ns/op	     185 B/op	       6 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16     10000	    793360 ns/op	    6015 B/op	      47 allocs/op
 ```
 
 #### Full results
