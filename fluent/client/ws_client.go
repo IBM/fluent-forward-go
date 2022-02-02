@@ -66,8 +66,9 @@ type WSSession struct {
 // DefaultWSConnectionFactory is used by the client if no other
 // ConnectionFactory is provided.
 type DefaultWSConnectionFactory struct {
-	URL      string
-	AuthInfo *IAMAuthInfo
+	URL         string
+	AuthInfo    *IAMAuthInfo
+	InsecureTLS bool
 }
 
 func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
@@ -80,7 +81,9 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
 	}
 
-	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //#nosec
+	if wcf.InsecureTLS {
+		dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} //#nosec
+	}
 
 	conn, resp, err := dialer.Dial(wcf.URL, header)
 	if resp != nil && resp.Body != nil {
