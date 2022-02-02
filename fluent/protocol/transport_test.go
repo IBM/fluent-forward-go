@@ -112,6 +112,7 @@ var _ = Describe("Transport", func() {
 				Expect(e2[1].Timestamp.Equal(el[1].Timestamp.Time)).To(BeTrue())
 				Expect(reflect.DeepEqual(e2[0].Record, el[0].Record)).To(BeTrue())
 				Expect(reflect.DeepEqual(e2[1].Record, el[1].Record)).To(BeTrue())
+				el.Equal(e2)
 			})
 		})
 
