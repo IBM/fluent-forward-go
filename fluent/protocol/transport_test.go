@@ -107,6 +107,7 @@ var _ = Describe("Transport", func() {
 				_, err = el.UnmarshalPacked(b)
 				Expect(err).ToNot(HaveOccurred())
 				el.Equal(e2)
+				Expect(el.Equal(e2)).To(BeTrue())
 			})
 		})
 
