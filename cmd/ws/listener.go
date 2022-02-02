@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"sync"
 	"time"
-	"crypto/tls"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
 	"github.com/gorilla/mux"
@@ -75,22 +75,22 @@ func (s *Listener) ListenAndServe() error {
 
 	router.HandleFunc("/", s.Connect)
 
-	if useTls {
-		config := &tls.Config {
+	if useTLS {
+		config := &tls.Config{
 			// Only allow ciphers that support forward secrecy for iOS9 compatibility:
 			// https://developer.apple.com/library/prerelease/ios/technotes/App-Transport-Security-Technote/
-			CipherSuites: []uint16 {
+			CipherSuites: []uint16{
 				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 			},
 			PreferServerCipherSuites: true,
+			MinVersion:               tls.VersionTLS12,
 		}
+
 		s.server.TLSConfig = config
+
 		go func() {
 			if err := s.server.ListenAndServeTLS("./cert/cert.pem", "./cert/key.pem"); err != nil && err != http.ErrServerClosed {
 				log.Fatal("ListenAndServe error: " + err.Error())
