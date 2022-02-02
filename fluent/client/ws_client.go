@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"sync"
@@ -65,8 +66,9 @@ type WSSession struct {
 // DefaultWSConnectionFactory is used by the client if no other
 // ConnectionFactory is provided.
 type DefaultWSConnectionFactory struct {
-	URL      string
-	AuthInfo *IAMAuthInfo
+	URL       string
+	AuthInfo  *IAMAuthInfo
+	TLSConfig *tls.Config
 }
 
 func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
@@ -77,6 +79,10 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {
 		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
+	}
+
+	if wcf.TLSConfig != nil {
+		dialer.TLSClientConfig = wcf.TLSConfig
 	}
 
 	conn, resp, err := dialer.Dial(wcf.URL, header)
@@ -97,16 +103,12 @@ func (wcf *DefaultWSConnectionFactory) NewSession(connection ws.Connection) *WSS
 
 type WSConnectionOptions struct {
 	ws.ConnectionOptions
-	Factory  WSConnectionFactory
-	AuthInfo *IAMAuthInfo
-	URL      string
+	Factory WSConnectionFactory
 }
 
 // WSClient manages the lifetime of a single websocket connection.
 type WSClient struct {
 	ConnectionFactory WSConnectionFactory
-	URL               string
-	AuthInfo          *IAMAuthInfo
 	ConnectionOptions ws.ConnectionOptions
 	session           *WSSession
 	errLock           sync.RWMutex
@@ -115,15 +117,15 @@ type WSClient struct {
 }
 
 func NewWS(opts WSConnectionOptions) *WSClient {
-	if opts.AuthInfo == nil {
-		opts.AuthInfo = &IAMAuthInfo{}
+	if opts.Factory == nil {
+		opts.Factory = &DefaultWSConnectionFactory{
+			URL: "127.0.0.1:8083",
+		}
 	}
 
 	return &WSClient{
 		ConnectionOptions: opts.ConnectionOptions,
 		ConnectionFactory: opts.Factory,
-		URL:               opts.URL,
-		AuthInfo:          opts.AuthInfo,
 	}
 }
 
@@ -154,13 +156,6 @@ func (c *WSClient) Session() *WSSession {
 //
 // extracted for internal re-use.
 func (c *WSClient) connect() error {
-	if c.ConnectionFactory == nil {
-		c.ConnectionFactory = &DefaultWSConnectionFactory{
-			URL:      c.URL,
-			AuthInfo: c.AuthInfo,
-		}
-	}
-
 	conn, err := c.ConnectionFactory.New()
 	if err != nil {
 		return err

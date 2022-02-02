@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"sync"
@@ -74,11 +75,34 @@ func (s *Listener) ListenAndServe() error {
 
 	router.HandleFunc("/", s.Connect)
 
-	go func() {
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("ListenAndServe error: " + err.Error())
+	if useTLS {
+		config := &tls.Config{
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			},
+			PreferServerCipherSuites: true,
+			MinVersion:               tls.VersionTLS12,
 		}
-	}()
+
+		s.server.TLSConfig = config
+
+		go func() {
+			if err := s.server.ListenAndServeTLS(
+				"../../fluent/client/clientfakes/cert.pem", "../../fluent/client/clientfakes/key.pem",
+			); err != nil && err != http.ErrServerClosed {
+				log.Fatal("ListenAndServe error: " + err.Error())
+			}
+		}()
+	} else {
+		go func() {
+			if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatal("ListenAndServe error: " + err.Error())
+			}
+		}()
+	}
 
 	<-s.shutdown
 	log.Println("shutting down")

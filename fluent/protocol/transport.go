@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -42,6 +43,7 @@ func init() {
 	})
 
 	compressorPool.New = func() interface{} {
+		fmt.Println("hi")
 		return new(GzipCompressor)
 	}
 
@@ -137,6 +139,11 @@ func (el *EntryList) UnmarshalPacked(bits []byte) ([]byte, error) {
 
 func (el EntryList) MarshalPacked() ([]byte, error) {
 	buf := bufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+
+	defer func() {
+		bufferPool.Put(buf)
+	}()
 
 	for _, e := range el {
 		if err := msgp.Encode(buf, e); err != nil {

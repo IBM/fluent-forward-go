@@ -1,9 +1,7 @@
 package protocol_test
 
 import (
-	"bytes"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -102,19 +100,13 @@ var _ = Describe("Transport", func() {
 			})
 
 			It("Can marshal and unmarshal packed entries", func() {
-				pfm, err := NewPackedForwardMessage("foo", e2)
+				b, err := e2.MarshalPacked()
 				Expect(err).ToNot(HaveOccurred())
 
 				el := EntryList{}
-				_, err = el.UnmarshalPacked(pfm.EventStream)
+				_, err = el.UnmarshalPacked(b)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(el)).To(Equal(2))
-				Expect(reflect.DeepEqual(e2[0].Record, el[0].Record)).To(BeTrue())
-				Expect(reflect.DeepEqual(e2[1].Record, el[1].Record)).To(BeTrue())
-
-				b, err := el.MarshalPacked()
-				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes.Equal(b, pfm.EventStream)).To(BeTrue())
+				Expect(el.Equal(e2)).To(BeTrue())
 			})
 		})
 
