@@ -58,6 +58,7 @@ func main() {
 	flag.Parse()
 
 	var tlsCfg *tls.Config
+
 	url := "ws://127.0.0.1:8083"
 	if useTLS {
 		url = "wss://127.0.0.1:8083"
