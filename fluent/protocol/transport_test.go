@@ -2,7 +2,6 @@ package protocol_test
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -107,11 +106,6 @@ var _ = Describe("Transport", func() {
 				el := EntryList{}
 				_, err = el.UnmarshalPacked(b)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(el)).To(Equal(2))
-				Expect(e2[0].Timestamp.Equal(el[0].Timestamp.Time)).To(BeTrue())
-				Expect(e2[1].Timestamp.Equal(el[1].Timestamp.Time)).To(BeTrue())
-				Expect(reflect.DeepEqual(e2[0].Record, el[0].Record)).To(BeTrue())
-				Expect(reflect.DeepEqual(e2[1].Record, el[1].Record)).To(BeTrue())
 				el.Equal(e2)
 			})
 		})
