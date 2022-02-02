@@ -97,9 +97,9 @@ Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    891730 ns/op	
 Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    800438 ns/op	    6012 B/op	      47 allocs/op
 Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    793360 ns/op	    6015 B/op	      47 allocs/op
 Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    843148 ns/op	    6014 B/op	      47 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-16   	   10000	    816468 ns/op	    6011 B/op	      47 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-16   	   10000	    833102 ns/op	    6013 B/op	      47 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-16   	   10000	    809983 ns/op	    6014 B/op	      47 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-16   	   10000	    848345 ns/op	    6015 B/op	      47 allocs/op
-Benchmark_Fluent_Logger_Golang_SingleMessageAck-16   	   10000	    846259 ns/op	    6013 B/op	      47 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    816468 ns/op	    6011 B/op	      47 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    833102 ns/op	    6013 B/op	      47 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    809983 ns/op	    6014 B/op	      47 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    848345 ns/op	    6015 B/op	      47 allocs/op
+Benchmark_Fluent_Logger_Golang_SingleMessageAck-16       10000	    846259 ns/op	    6013 B/op	      47 allocs/op
 ```
