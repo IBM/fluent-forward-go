@@ -90,7 +90,9 @@ func (s *Listener) ListenAndServe() error {
 		s.server.TLSConfig = config
 
 		go func() {
-			if err := s.server.ListenAndServeTLS("./cert/cert.pem", "./cert/key.pem"); err != nil && err != http.ErrServerClosed {
+			if err := s.server.ListenAndServeTLS(
+				"../../fluent/client/clientfakes/cert.pem", "../../fluent/client/clientfakes/key.pem",
+			); err != nil && err != http.ErrServerClosed {
 				log.Fatal("ListenAndServe error: " + err.Error())
 			}
 		}()
