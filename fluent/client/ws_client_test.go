@@ -2,7 +2,7 @@ package client_test
 
 import (
 	"bytes"
-	"context"
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -35,8 +35,9 @@ var _ = Describe("IAMAuthInfo", func() {
 
 var _ = Describe("DefaultWSConnectionFactory", func() {
 	var (
-		svr   *httptest.Server
-		happy chan struct{}
+		svr    *httptest.Server
+		happy  chan struct{}
+		useTLS bool
 	)
 
 	newHandler := func(happy chan struct{}) http.Handler {
@@ -61,27 +62,61 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		})
 	}
 
-	BeforeEach(func() {
+	JustBeforeEach(func() {
 		happy = make(chan struct{})
-		svr = httptest.NewServer(newHandler(happy))
-		time.Sleep(500 * time.Millisecond)
+
+		if useTLS {
+			svr = httptest.NewTLSServer(newHandler(happy))
+		} else {
+			svr = httptest.NewServer(newHandler(happy))
+		}
+
+		time.Sleep(5 * time.Millisecond)
 	})
 
 	AfterEach(func() {
-		svr.Config.Shutdown(context.Background())
+		svr.Close()
 	})
 
 	It("sends auth headers", func() {
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 
 		cli := fclient.NewWS(client.WSConnectionOptions{
-			URL: u,
+			Factory: &client.DefaultWSConnectionFactory{
+				URL: u,
+				TLSConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+				AuthInfo: NewIAMAuthInfo("oi"),
+			},
 		})
 
-		cli.AuthInfo.SetIAMToken("oi")
 		Expect(cli.Connect()).ToNot(HaveOccurred())
 		Eventually(happy).Should(Receive())
 		Expect(cli.Disconnect()).ToNot(HaveOccurred())
+	})
+
+	When("the factory is configured for TLS", func() {
+		BeforeEach(func() {
+			useTLS = true
+		})
+
+		It("works", func() {
+			u := "wss" + strings.TrimPrefix(svr.URL, "https")
+
+			cli := fclient.NewWS(client.WSConnectionOptions{
+				Factory: &client.DefaultWSConnectionFactory{
+					URL: u,
+					TLSConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+					AuthInfo: NewIAMAuthInfo("oi"),
+				},
+			})
+
+			err := cli.Connect()
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })
 

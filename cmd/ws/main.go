@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
@@ -22,7 +23,6 @@ var (
 func init() {
 	flag.StringVar(&tagVar, "tag", "test.message", "-tag <dot-delimited tag>")
 	flag.StringVar(&tagVar, "t", "test.message", "-t <dot-delimited tag> (shorthand for -tag)")
-	flag.BoolVar(&useTLS, "secure", false, "specify to use tls")
 	flag.BoolVar(&useTLS, "s", false, "specify to use tls")
 }
 
@@ -57,16 +57,21 @@ func listen() *Listener {
 func main() {
 	flag.Parse()
 
+	var tlsCfg *tls.Config
 	url := "ws://127.0.0.1:8083"
 	if useTLS {
 		url = "wss://127.0.0.1:8083"
+		tlsCfg = &tls.Config{InsecureSkipVerify: true}
 	}
 
 	fmt.Fprintln(os.Stderr, "Connecting to - ", url)
 
-	c := &client.WSClient{
-		URL: url,
-	}
+	c := client.NewWS(client.WSConnectionOptions{
+		Factory: &client.DefaultWSConnectionFactory{
+			URL:       url,
+			TLSConfig: tlsCfg,
+		},
+	})
 
 	wsSvr := listen()
 
