@@ -23,7 +23,7 @@ var _ = Describe("ForwardMessage", func() {
 		fwdmsg = &ForwardMessage{}
 		_, err = fwdmsg.UnmarshalMsg(bits)
 		Expect(err).NotTo(HaveOccurred())
-		entries := []EntryExt{
+		entries := []EventExt{
 			{
 				Timestamp: EventTime{time.Now()},
 				Record: map[string]interface{}{
@@ -60,12 +60,12 @@ var _ = Describe("ForwardMessage", func() {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
 			Expect(unmfwd.Tag).To(Equal("foo"))
-			Expect(unmfwd.Entries[0].Timestamp.Time.Equal(msg.Entries[0].Timestamp.Time)).To(BeTrue())
-			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
-			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(unmfwd.Entries[1].Timestamp.Time.Equal(msg.Entries[1].Timestamp.Time)).To(BeTrue())
-			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
-			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
+			Expect(unmfwd.Events[0].Timestamp.Time.Equal(msg.Events[0].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Events[0].Record).To(HaveKeyWithValue("foo", "bar"))
+			Expect(unmfwd.Events[0].Record).To(HaveKeyWithValue("george", "jungle"))
+			Expect(unmfwd.Events[1].Timestamp.Time.Equal(msg.Events[1].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Events[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
+			Expect(unmfwd.Events[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
 
 		It("Marshals and unmarshals correctly", func() {
@@ -93,12 +93,12 @@ var _ = Describe("ForwardMessage", func() {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
 			Expect(unmfwd.Tag).To(Equal("foo"))
-			Expect(unmfwd.Entries[0].Timestamp.Time.Equal(msg.Entries[0].Timestamp.Time)).To(BeTrue())
-			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
-			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(unmfwd.Entries[1].Timestamp.Time.Equal(msg.Entries[1].Timestamp.Time)).To(BeTrue())
-			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
-			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
+			Expect(unmfwd.Events[0].Timestamp.Time.Equal(msg.Events[0].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Events[0].Record).To(HaveKeyWithValue("foo", "bar"))
+			Expect(unmfwd.Events[0].Record).To(HaveKeyWithValue("george", "jungle"))
+			Expect(unmfwd.Events[1].Timestamp.Time.Equal(msg.Events[1].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Events[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
+			Expect(unmfwd.Events[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
 
 		It("Encodes and decodes correctly", func() {

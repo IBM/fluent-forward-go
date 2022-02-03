@@ -32,7 +32,7 @@ func Benchmark_Fluent_Forward_Go_SendOnly(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err = c.SendMessage(mne)
+		err = c.Send(mne)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -60,7 +60,7 @@ func Benchmark_Fluent_Forward_Go_SingleMessage(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mne := protocol.NewMessage(tagVar, record)
-		err = c.SendMessage(mne)
+		err = c.Send(mne)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -89,7 +89,7 @@ func Benchmark_Fluent_Forward_Go_SingleMessageAck(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mne := protocol.NewMessage(tagVar, record)
-		err = c.SendMessage(mne)
+		err = c.Send(mne)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -182,7 +182,7 @@ func Benchmark_Fluent_Forward_Go_RawMessage(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rbits := protocol.RawMessage(bits)
-		err = c.SendMessage(rbits)
+		err = c.Send(rbits)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -215,7 +215,7 @@ func Benchmark_Fluent_Forward_Go_RawMessageAck(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rbits := protocol.RawMessage(bits)
-		err = c.SendMessage(rbits)
+		err = c.Send(rbits)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -237,7 +237,7 @@ func Benchmark_Fluent_Forward_Go_CompressedMessage(b *testing.B) {
 	defer c.Disconnect()
 
 	record := bm.MakeRecord(12)
-	entries := []protocol.EntryExt{
+	entries := []protocol.EventExt{
 		{
 			Timestamp: protocol.EventTimeNow(),
 			Record:    record,
@@ -269,7 +269,7 @@ func Benchmark_Fluent_Forward_Go_CompressedMessage(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mne, _ := protocol.NewCompressedPackedForwardMessage(tagVar, entries)
-		err = c.SendMessage(mne)
+		err = c.Send(mne)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -292,7 +292,7 @@ func Benchmark_Fluent_Forward_Go_CompressedMessageAck(b *testing.B) {
 	defer c.Disconnect()
 
 	record := bm.MakeRecord(12)
-	entries := []protocol.EntryExt{
+	entries := []protocol.EventExt{
 		{
 			Timestamp: protocol.EventTimeNow(),
 			Record:    record,
@@ -324,7 +324,7 @@ func Benchmark_Fluent_Forward_Go_CompressedMessageAck(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		mne, _ := protocol.NewCompressedPackedForwardMessage(tagVar, entries)
-		err = c.SendMessage(mne)
+		err = c.Send(mne)
 		if err != nil {
 			b.Fatal(err)
 		}

@@ -28,13 +28,13 @@ type PackedForwardMessage struct {
 }
 
 // NewPackedForwardMessage creates a PackedForwardMessage from the supplied
-// tag, EntryList, and MessageOptions.  Regardless of the options supplied,
+// tag, EventStream, and MessageOptions.  Regardless of the options supplied,
 // this function will set Options.Size to the length of the entry list.
 func NewPackedForwardMessage(
 	tag string,
-	entries EntryList,
+	entries EventStream,
 ) (*PackedForwardMessage, error) {
-	el := EntryList(entries) //nolint
+	el := EventStream(entries) //nolint
 
 	bits, err := el.MarshalPacked()
 	if err != nil {
@@ -189,9 +189,9 @@ func (mc *GzipCompressor) Bytes() []byte {
 // NewCompressedPackedForwardMessage returns a PackedForwardMessage with a
 // gzip-compressed byte stream.
 func NewCompressedPackedForwardMessage(
-	tag string, entries []EntryExt,
+	tag string, entries []EventExt,
 ) (*PackedForwardMessage, error) {
-	el := EntryList(entries) //nolint
+	el := EventStream(entries) //nolint
 
 	bits, err := el.MarshalPacked()
 	if err != nil {

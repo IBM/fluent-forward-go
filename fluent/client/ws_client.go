@@ -180,7 +180,7 @@ func (c *WSClient) connect() error {
 		}
 
 		// Starts the async read. If there is a read error, it is set so that
-		// it is returned the next time SendMessage is called. That should be
+		// it is returned the next time Send is called. That should be
 		// sufficient for most cases where the client cares only about sending.
 		// If the client really cares about handling reads, they will define a
 		// custom ReadHandler that will receive the error synchronously.
@@ -239,8 +239,8 @@ func (c *WSClient) Reconnect() (err error) {
 	return
 }
 
-// SendMessage sends a single msgp.Encodable across the wire.
-func (c *WSClient) SendMessage(e protocol.ChunkEncoder) error {
+// Send sends a single msgp.Encodable across the wire.
+func (c *WSClient) Send(e protocol.ChunkEncoder) error {
 	// Check for an async connection error and return it here.
 	// In most cases, the client will not care about reading from
 	// the connection, so checking for the error here is sufficient.

@@ -14,11 +14,11 @@ import (
 var _ = Describe("Transport", func() {
 	Describe("EventTime", func() {
 		var (
-			ent EntryExt
+			ent EventExt
 		)
 
 		BeforeEach(func() {
-			ent = EntryExt{
+			ent = EventExt{
 				Timestamp: EventTime{
 					Time: time.Unix(int64(1257894000), int64(12340000)),
 				},
@@ -41,7 +41,7 @@ var _ = Describe("Transport", func() {
 				strings.Contains(fmt.Sprintf("%X", b), "D7004AF9F07000BC4B20"),
 			).To(BeTrue())
 
-			var unment EntryExt
+			var unment EventExt
 			_, err = unment.UnmarshalMsg(b)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -49,15 +49,15 @@ var _ = Describe("Transport", func() {
 		})
 	})
 
-	Describe("EntryList", func() {
+	Describe("EventStream", func() {
 		var (
-			e1 EntryList
+			e1 EventStream
 			et time.Time
 		)
 
 		BeforeEach(func() {
 			et = time.Now()
-			e1 = EntryList{
+			e1 = EventStream{
 				{
 					Timestamp: EventTime{et},
 					Record: map[string]interface{}{
@@ -77,11 +77,11 @@ var _ = Describe("Transport", func() {
 
 		Describe("Un/MarshalPacked", func() {
 			var (
-				e2 EntryList
+				e2 EventStream
 			)
 
 			BeforeEach(func() {
-				e2 = EntryList{
+				e2 = EventStream{
 					{
 						Timestamp: EventTime{et},
 						Record: map[string]interface{}{
@@ -103,7 +103,7 @@ var _ = Describe("Transport", func() {
 				b, err := e2.MarshalPacked()
 				Expect(err).ToNot(HaveOccurred())
 
-				el := EntryList{}
+				el := EventStream{}
 				_, err = el.UnmarshalPacked(b)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(el.Equal(e2)).To(BeTrue())
@@ -112,11 +112,11 @@ var _ = Describe("Transport", func() {
 
 		Describe("Equal", func() {
 			var (
-				e2 EntryList
+				e2 EventStream
 			)
 
 			BeforeEach(func() {
-				e2 = EntryList{
+				e2 = EventStream{
 					{
 						Timestamp: EventTime{et},
 						Record: map[string]interface{}{
@@ -163,12 +163,12 @@ var _ = Describe("Transport", func() {
 	Describe("NewPackedForwardMessage", func() {
 		var (
 			tag     string
-			entries EntryList
+			entries EventStream
 		)
 
 		BeforeEach(func() {
 			tag = "foo.bar"
-			entries = EntryList{
+			entries = EventStream{
 				{
 					Timestamp: EventTime{time.Now()},
 					Record: map[string]interface{}{
@@ -197,7 +197,7 @@ var _ = Describe("Transport", func() {
 		It("Correctly encodes the entries into a bytestream", func() {
 			msg, err := NewPackedForwardMessage(tag, entries)
 			Expect(err).NotTo(HaveOccurred())
-			elist := make(EntryList, 2)
+			elist := make(EventStream, 2)
 			_, err = elist.UnmarshalPacked(msg.EventStream)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(elist.Equal(entries)).To(BeTrue())
@@ -207,12 +207,12 @@ var _ = Describe("Transport", func() {
 	Describe("NewCompressedPackedForwardMessage", func() {
 		var (
 			tag     string
-			entries []EntryExt
+			entries []EventExt
 		)
 
 		BeforeEach(func() {
 			tag = "foo.bar"
-			entries = []EntryExt{
+			entries = []EventExt{
 				{
 					Timestamp: EventTime{time.Now()},
 					Record: map[string]interface{}{
