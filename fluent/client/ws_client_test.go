@@ -251,7 +251,7 @@ var _ = Describe("WSClient", func() {
 		})
 	})
 
-	Describe("SendMessage", func() {
+	Describe("Send", func() {
 		var (
 			msg protocol.MessageExt
 		)
@@ -273,7 +273,7 @@ var _ = Describe("WSClient", func() {
 
 		It("Sends the message", func() {
 			bits, _ := msg.MarshalMsg(nil)
-			Expect(client.SendMessage(&msg)).ToNot(HaveOccurred())
+			Expect(client.Send(&msg)).ToNot(HaveOccurred())
 
 			writtenbits := conn.WriteArgsForCall(0)
 			Expect(bytes.Equal(bits, writtenbits)).To(BeTrue())
@@ -286,7 +286,7 @@ var _ = Describe("WSClient", func() {
 			})
 
 			It("returns an error", func() {
-				Expect(client.SendMessage(&msg)).To(MatchError("no active session"))
+				Expect(client.Send(&msg)).To(MatchError("no active session"))
 			})
 		})
 
@@ -296,7 +296,7 @@ var _ = Describe("WSClient", func() {
 			})
 
 			It("returns the error", func() {
-				Expect(client.SendMessage(&msg)).To(MatchError("BOOM"))
+				Expect(client.Send(&msg)).To(MatchError("BOOM"))
 			})
 		})
 	})

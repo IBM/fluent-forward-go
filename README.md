@@ -59,28 +59,28 @@ record := map[string]interface{}{
   "Hello": "World",
 }
 msg := protocol.NewMessage("tag", record)
-err := c.SendMessage(msg)
+err := c.Send(msg)
 ```
 
 ### Send a byte-encoded message
 
 ```go
 raw := protocol.RawMessage(myMessageBytes)
-err := c.SendMessage(raw)
+err := c.Send(raw)
 ```
 
 ### Message confirmation
 
-The client supports `ack` confirmations as specified by the Fluent protocol. When enabled, `SendMessage` returns once the acknowledgement is received or the timeout is reached.
+The client supports `ack` confirmations as specified by the Fluent protocol. When enabled, `Send` returns once the acknowledgement is received or the timeout is reached.
 
-Note: For types other than `RawMessage`, the `SendMessage` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
+Note: For types other than `RawMessage`, the `Send` function sets the "chunk" option before sending. A `RawMessage` is immutable and must already contain a "chunk" value. The behavior is otherwise identical.
 
 ```go
 c := client.New(client.ConnectionOptions{
   RequireAck: true,
 })
 //...
-err := c.SendMessage(myMsg)
+err := c.Send(myMsg)
 ```
 
 ## Performance
@@ -89,7 +89,7 @@ err := c.SendMessage(myMsg)
 
 You can read more about the benchmarks [here](cmd/bm/README.md).
 
-### SendMessage
+### Send
 
 Run on `localhost`. Does not include message creation.
 
