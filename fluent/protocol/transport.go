@@ -43,7 +43,6 @@ func init() {
 	})
 
 	compressorPool.New = func() interface{} {
-		fmt.Println("hi")
 		return new(GzipCompressor)
 	}
 
