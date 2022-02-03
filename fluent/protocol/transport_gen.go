@@ -110,102 +110,7 @@ func (z AckMessage) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *EventExt) DecodeMsg(dc *msgp.Reader) (err error) {
-	var zb0001 uint32
-	zb0001, err = dc.ReadArrayHeader()
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	if zb0001 != 2 {
-		err = msgp.ArrayError{Wanted: 2, Got: zb0001}
-		return
-	}
-	err = dc.ReadExtension(&z.Timestamp)
-	if err != nil {
-		err = msgp.WrapError(err, "Timestamp")
-		return
-	}
-	z.Record, err = dc.ReadIntf()
-	if err != nil {
-		err = msgp.WrapError(err, "Record")
-		return
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z EventExt) EncodeMsg(en *msgp.Writer) (err error) {
-	// array header, size 2
-	err = en.Append(0x92)
-	if err != nil {
-		return
-	}
-	err = en.WriteExtension(&z.Timestamp)
-	if err != nil {
-		err = msgp.WrapError(err, "Timestamp")
-		return
-	}
-	err = en.WriteIntf(z.Record)
-	if err != nil {
-		err = msgp.WrapError(err, "Record")
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z EventExt) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	// array header, size 2
-	o = append(o, 0x92)
-	o, err = msgp.AppendExtension(o, &z.Timestamp)
-	if err != nil {
-		err = msgp.WrapError(err, "Timestamp")
-		return
-	}
-	o, err = msgp.AppendIntf(o, z.Record)
-	if err != nil {
-		err = msgp.WrapError(err, "Record")
-		return
-	}
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *EventExt) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	var zb0001 uint32
-	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err)
-		return
-	}
-	if zb0001 != 2 {
-		err = msgp.ArrayError{Wanted: 2, Got: zb0001}
-		return
-	}
-	bts, err = msgp.ReadExtensionBytes(bts, &z.Timestamp)
-	if err != nil {
-		err = msgp.WrapError(err, "Timestamp")
-		return
-	}
-	z.Record, bts, err = msgp.ReadIntfBytes(bts)
-	if err != nil {
-		err = msgp.WrapError(err, "Record")
-		return
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z EventExt) Msgsize() (s int) {
-	s = 1 + msgp.ExtensionPrefixSize + z.Timestamp.Len() + msgp.GuessSize(z.Record)
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
-func (z *Event) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *Entry) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0001 uint32
 	zb0001, err = dc.ReadArrayHeader()
 	if err != nil {
@@ -230,7 +135,7 @@ func (z *Event) DecodeMsg(dc *msgp.Reader) (err error) {
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z Event) EncodeMsg(en *msgp.Writer) (err error) {
+func (z Entry) EncodeMsg(en *msgp.Writer) (err error) {
 	// array header, size 2
 	err = en.Append(0x92)
 	if err != nil {
@@ -250,7 +155,7 @@ func (z Event) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z Event) MarshalMsg(b []byte) (o []byte, err error) {
+func (z Entry) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	// array header, size 2
 	o = append(o, 0x92)
@@ -264,7 +169,7 @@ func (z Event) MarshalMsg(b []byte) (o []byte, err error) {
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
-func (z *Event) UnmarshalMsg(bts []byte) (o []byte, err error) {
+func (z *Entry) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0001 uint32
 	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
@@ -290,13 +195,108 @@ func (z *Event) UnmarshalMsg(bts []byte) (o []byte, err error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z Event) Msgsize() (s int) {
+func (z Entry) Msgsize() (s int) {
 	s = 1 + msgp.Int64Size + msgp.GuessSize(z.Record)
 	return
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *EventStream) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *EntryExt) DecodeMsg(dc *msgp.Reader) (err error) {
+	var zb0001 uint32
+	zb0001, err = dc.ReadArrayHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	if zb0001 != 2 {
+		err = msgp.ArrayError{Wanted: 2, Got: zb0001}
+		return
+	}
+	err = dc.ReadExtension(&z.Timestamp)
+	if err != nil {
+		err = msgp.WrapError(err, "Timestamp")
+		return
+	}
+	z.Record, err = dc.ReadIntf()
+	if err != nil {
+		err = msgp.WrapError(err, "Record")
+		return
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z EntryExt) EncodeMsg(en *msgp.Writer) (err error) {
+	// array header, size 2
+	err = en.Append(0x92)
+	if err != nil {
+		return
+	}
+	err = en.WriteExtension(&z.Timestamp)
+	if err != nil {
+		err = msgp.WrapError(err, "Timestamp")
+		return
+	}
+	err = en.WriteIntf(z.Record)
+	if err != nil {
+		err = msgp.WrapError(err, "Record")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z EntryExt) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// array header, size 2
+	o = append(o, 0x92)
+	o, err = msgp.AppendExtension(o, &z.Timestamp)
+	if err != nil {
+		err = msgp.WrapError(err, "Timestamp")
+		return
+	}
+	o, err = msgp.AppendIntf(o, z.Record)
+	if err != nil {
+		err = msgp.WrapError(err, "Record")
+		return
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *EntryExt) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadArrayHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	if zb0001 != 2 {
+		err = msgp.ArrayError{Wanted: 2, Got: zb0001}
+		return
+	}
+	bts, err = msgp.ReadExtensionBytes(bts, &z.Timestamp)
+	if err != nil {
+		err = msgp.WrapError(err, "Timestamp")
+		return
+	}
+	z.Record, bts, err = msgp.ReadIntfBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err, "Record")
+		return
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z EntryExt) Msgsize() (s int) {
+	s = 1 + msgp.ExtensionPrefixSize + z.Timestamp.Len() + msgp.GuessSize(z.Record)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *EntryList) DecodeMsg(dc *msgp.Reader) (err error) {
 	var zb0002 uint32
 	zb0002, err = dc.ReadArrayHeader()
 	if err != nil {
@@ -306,7 +306,7 @@ func (z *EventStream) DecodeMsg(dc *msgp.Reader) (err error) {
 	if cap((*z)) >= int(zb0002) {
 		(*z) = (*z)[:zb0002]
 	} else {
-		(*z) = make(EventStream, zb0002)
+		(*z) = make(EntryList, zb0002)
 	}
 	for zb0001 := range *z {
 		var zb0003 uint32
@@ -334,7 +334,7 @@ func (z *EventStream) DecodeMsg(dc *msgp.Reader) (err error) {
 }
 
 // EncodeMsg implements msgp.Encodable
-func (z EventStream) EncodeMsg(en *msgp.Writer) (err error) {
+func (z EntryList) EncodeMsg(en *msgp.Writer) (err error) {
 	err = en.WriteArrayHeader(uint32(len(z)))
 	if err != nil {
 		err = msgp.WrapError(err)
@@ -361,7 +361,7 @@ func (z EventStream) EncodeMsg(en *msgp.Writer) (err error) {
 }
 
 // MarshalMsg implements msgp.Marshaler
-func (z EventStream) MarshalMsg(b []byte) (o []byte, err error) {
+func (z EntryList) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	o = msgp.AppendArrayHeader(o, uint32(len(z)))
 	for zb0004 := range z {
@@ -382,7 +382,7 @@ func (z EventStream) MarshalMsg(b []byte) (o []byte, err error) {
 }
 
 // UnmarshalMsg implements msgp.Unmarshaler
-func (z *EventStream) UnmarshalMsg(bts []byte) (o []byte, err error) {
+func (z *EntryList) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var zb0002 uint32
 	zb0002, bts, err = msgp.ReadArrayHeaderBytes(bts)
 	if err != nil {
@@ -392,7 +392,7 @@ func (z *EventStream) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	if cap((*z)) >= int(zb0002) {
 		(*z) = (*z)[:zb0002]
 	} else {
-		(*z) = make(EventStream, zb0002)
+		(*z) = make(EntryList, zb0002)
 	}
 	for zb0001 := range *z {
 		var zb0003 uint32
@@ -421,7 +421,7 @@ func (z *EventStream) UnmarshalMsg(bts []byte) (o []byte, err error) {
 }
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z EventStream) Msgsize() (s int) {
+func (z EntryList) Msgsize() (s int) {
 	s = msgp.ArrayHeaderSize
 	for zb0004 := range z {
 		s += 1 + msgp.ExtensionPrefixSize + z[zb0004].Timestamp.Len() + msgp.GuessSize(z[zb0004].Record)

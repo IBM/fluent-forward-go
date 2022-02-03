@@ -42,7 +42,7 @@ func main() {
 		},
 	}
 
-	entries := []protocol.EventExt{
+	entries := []protocol.EntryExt{
 		{
 			Timestamp: protocol.EventTimeNow(),
 			Record: map[string]interface{}{
@@ -66,33 +66,33 @@ func main() {
 	fwd := protocol.NewForwardMessage(tagVar, entries)
 	packedFwd, _ := protocol.NewPackedForwardMessage(tagVar+".packed", entries)
 	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
-		fwd.Events)
+		fwd.Entries)
 
-	err = c.Send(msg)
+	err = c.SendMessage(msg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(mne)
+	err = c.SendMessage(mne)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(fwd)
+	err = c.SendMessage(fwd)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(packedFwd)
+	err = c.SendMessage(packedFwd)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(compressed)
+	err = c.SendMessage(compressed)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -102,7 +102,7 @@ func main() {
 	b, _ := compressed.MarshalMsg(nil)
 	rm := protocol.RawMessage(b)
 
-	err = c.Send(rm)
+	err = c.SendMessage(rm)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

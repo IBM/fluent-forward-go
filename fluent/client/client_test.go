@@ -103,7 +103,7 @@ var _ = Describe("Client", func() {
 		})
 	})
 
-	Describe("Send", func() {
+	Describe("SendMessage", func() {
 		var (
 			serverSide net.Conn
 			msg        protocol.MessageExt
@@ -133,7 +133,7 @@ var _ = Describe("Client", func() {
 				defer GinkgoRecover()
 
 				c <- true
-				err := client.Send(&msg)
+				err := client.SendMessage(&msg)
 				Expect(err).NotTo(HaveOccurred())
 			}()
 
@@ -154,7 +154,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("Returns an error", func() {
-				Expect(client.Send(&msg)).To(HaveOccurred())
+				Expect(client.SendMessage(&msg)).To(HaveOccurred())
 			})
 
 			// TODO: We need a test that no message is sent
@@ -187,7 +187,7 @@ var _ = Describe("Client", func() {
 				go func() {
 					defer GinkgoRecover()
 					defer func() { done <- true }()
-					err := client.Send(&msg)
+					err := client.SendMessage(&msg)
 					Expect(err).ToNot(HaveOccurred())
 				}()
 
@@ -213,7 +213,7 @@ var _ = Describe("Client", func() {
 				go func() {
 					defer GinkgoRecover()
 					defer func() { done <- true }()
-					err := client.Send(&msg)
+					err := client.SendMessage(&msg)
 					Expect(err.Error()).To(ContainSubstring("Expected chunk"))
 				}()
 
@@ -282,7 +282,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("Returns an error", func() {
-				Expect(client.Send(&msg)).To(HaveOccurred())
+				Expect(client.SendMessage(&msg)).To(HaveOccurred())
 			})
 
 			// TODO: We need a test that no message is sent

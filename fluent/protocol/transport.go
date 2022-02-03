@@ -104,10 +104,10 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	return nil
 }
 
-// EventExt is the basic representation of an individual event, but using the
+// EntryExt is the basic representation of an individual event, but using the
 // msgpack extension format for the timestamp.
-//msgp:tuple EventExt
-type EventExt struct {
+//msgp:tuple EntryExt
+type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp EventTime `msg:"eventTime,extension"`
 	// Record is the actual event record. The object must be a map or
@@ -116,11 +116,11 @@ type EventExt struct {
 	Record interface{}
 }
 
-type EventStream []EventExt
+type EntryList []EntryExt
 
-func (el *EventStream) UnmarshalPacked(bits []byte) ([]byte, error) {
+func (el *EntryList) UnmarshalPacked(bits []byte) ([]byte, error) {
 	var (
-		entry EventExt
+		entry EntryExt
 		err   error
 	)
 
@@ -137,7 +137,7 @@ func (el *EventStream) UnmarshalPacked(bits []byte) ([]byte, error) {
 	return bits, err
 }
 
-func (el EventStream) MarshalPacked() ([]byte, error) {
+func (el EntryList) MarshalPacked() ([]byte, error) {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 
@@ -154,18 +154,18 @@ func (el EventStream) MarshalPacked() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Equal compares two EventStream objects and returns true if they have
+// Equal compares two EntryList objects and returns true if they have
 // exactly the same elements, false otherwise.
-func (el EventStream) Equal(e2 EventStream) bool {
+func (el EntryList) Equal(e2 EntryList) bool {
 	if len(el) != len(e2) {
 		return false
 	}
 
-	first := make(EventStream, len(el))
+	first := make(EntryList, len(el))
 
 	copy(first, el)
 
-	second := make(EventStream, len(e2))
+	second := make(EntryList, len(e2))
 
 	copy(second, e2)
 
@@ -185,11 +185,11 @@ func (el EventStream) Equal(e2 EventStream) bool {
 	return matches == len(el)
 }
 
-// EventExt is the basic representation of an individual event.  The timestamp
+// EntryExt is the basic representation of an individual event.  The timestamp
 // is an int64 representing seconds since the epoch (UTC).  The initial creator
 // of the entry is responsible for converting to UTC.
-//msgp:tuple Event
-type Event struct {
+//msgp:tuple Entry
+type Entry struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp int64
 	// Record is the actual event record.

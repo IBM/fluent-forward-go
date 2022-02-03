@@ -39,15 +39,15 @@ type FakeMessageClient struct {
 	reconnectReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SendStub        func(protocol.ChunkEncoder) error
-	sendMutex       sync.RWMutex
-	sendArgsForCall []struct {
+	SendMessageStub        func(protocol.ChunkEncoder) error
+	sendMessageMutex       sync.RWMutex
+	sendMessageArgsForCall []struct {
 		arg1 protocol.ChunkEncoder
 	}
-	sendReturns struct {
+	sendMessageReturns struct {
 		result1 error
 	}
-	sendReturnsOnCall map[int]struct {
+	sendMessageReturnsOnCall map[int]struct {
 		result1 error
 	}
 	SendRawStub        func([]byte) error
@@ -224,16 +224,16 @@ func (fake *FakeMessageClient) ReconnectReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeMessageClient) Send(arg1 protocol.ChunkEncoder) error {
-	fake.sendMutex.Lock()
-	ret, specificReturn := fake.sendReturnsOnCall[len(fake.sendArgsForCall)]
-	fake.sendArgsForCall = append(fake.sendArgsForCall, struct {
+func (fake *FakeMessageClient) SendMessage(arg1 protocol.ChunkEncoder) error {
+	fake.sendMessageMutex.Lock()
+	ret, specificReturn := fake.sendMessageReturnsOnCall[len(fake.sendMessageArgsForCall)]
+	fake.sendMessageArgsForCall = append(fake.sendMessageArgsForCall, struct {
 		arg1 protocol.ChunkEncoder
 	}{arg1})
-	stub := fake.SendStub
-	fakeReturns := fake.sendReturns
-	fake.recordInvocation("Send", []interface{}{arg1})
-	fake.sendMutex.Unlock()
+	stub := fake.SendMessageStub
+	fakeReturns := fake.sendMessageReturns
+	fake.recordInvocation("SendMessage", []interface{}{arg1})
+	fake.sendMessageMutex.Unlock()
 	if stub != nil {
 		return stub(arg1)
 	}
@@ -243,44 +243,44 @@ func (fake *FakeMessageClient) Send(arg1 protocol.ChunkEncoder) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeMessageClient) SendCallCount() int {
-	fake.sendMutex.RLock()
-	defer fake.sendMutex.RUnlock()
-	return len(fake.sendArgsForCall)
+func (fake *FakeMessageClient) SendMessageCallCount() int {
+	fake.sendMessageMutex.RLock()
+	defer fake.sendMessageMutex.RUnlock()
+	return len(fake.sendMessageArgsForCall)
 }
 
-func (fake *FakeMessageClient) SendCalls(stub func(protocol.ChunkEncoder) error) {
-	fake.sendMutex.Lock()
-	defer fake.sendMutex.Unlock()
-	fake.SendStub = stub
+func (fake *FakeMessageClient) SendMessageCalls(stub func(protocol.ChunkEncoder) error) {
+	fake.sendMessageMutex.Lock()
+	defer fake.sendMessageMutex.Unlock()
+	fake.SendMessageStub = stub
 }
 
-func (fake *FakeMessageClient) SendArgsForCall(i int) protocol.ChunkEncoder {
-	fake.sendMutex.RLock()
-	defer fake.sendMutex.RUnlock()
-	argsForCall := fake.sendArgsForCall[i]
+func (fake *FakeMessageClient) SendMessageArgsForCall(i int) protocol.ChunkEncoder {
+	fake.sendMessageMutex.RLock()
+	defer fake.sendMessageMutex.RUnlock()
+	argsForCall := fake.sendMessageArgsForCall[i]
 	return argsForCall.arg1
 }
 
-func (fake *FakeMessageClient) SendReturns(result1 error) {
-	fake.sendMutex.Lock()
-	defer fake.sendMutex.Unlock()
-	fake.SendStub = nil
-	fake.sendReturns = struct {
+func (fake *FakeMessageClient) SendMessageReturns(result1 error) {
+	fake.sendMessageMutex.Lock()
+	defer fake.sendMessageMutex.Unlock()
+	fake.SendMessageStub = nil
+	fake.sendMessageReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeMessageClient) SendReturnsOnCall(i int, result1 error) {
-	fake.sendMutex.Lock()
-	defer fake.sendMutex.Unlock()
-	fake.SendStub = nil
-	if fake.sendReturnsOnCall == nil {
-		fake.sendReturnsOnCall = make(map[int]struct {
+func (fake *FakeMessageClient) SendMessageReturnsOnCall(i int, result1 error) {
+	fake.sendMessageMutex.Lock()
+	defer fake.sendMessageMutex.Unlock()
+	fake.SendMessageStub = nil
+	if fake.sendMessageReturnsOnCall == nil {
+		fake.sendMessageReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.sendReturnsOnCall[i] = struct {
+	fake.sendMessageReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -360,8 +360,8 @@ func (fake *FakeMessageClient) Invocations() map[string][][]interface{} {
 	defer fake.disconnectMutex.RUnlock()
 	fake.reconnectMutex.RLock()
 	defer fake.reconnectMutex.RUnlock()
-	fake.sendMutex.RLock()
-	defer fake.sendMutex.RUnlock()
+	fake.sendMessageMutex.RLock()
+	defer fake.sendMessageMutex.RUnlock()
 	fake.sendRawMutex.RLock()
 	defer fake.sendRawMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
