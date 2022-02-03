@@ -17,8 +17,8 @@ import "github.com/tinylib/msgp/msgp"
 type ForwardMessage struct {
 	// Tag is a dot-delimted string used to categorize events
 	Tag string
-	// Entries is the set of event objects to be carried in this message
-	Entries EventStream
+	// Events is the set of event objects to be carried in this message
+	Events EventStream
 	// Options - used to control server behavior.  Same as above, may need to
 	// switch to interface{} or similar at some point.
 	Options *MessageOptions
@@ -34,8 +34,8 @@ func NewForwardMessage(
 	lenEntries := len(entries)
 
 	pfm := &ForwardMessage{
-		Tag:     tag,
-		Entries: entries,
+		Tag:    tag,
+		Events: entries,
 	}
 
 	pfm.Options = &MessageOptions{
@@ -61,7 +61,7 @@ func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	err = fm.Entries.EncodeMsg(dc)
+	err = fm.Events.EncodeMsg(dc)
 	if err != nil {
 		return err
 	}
@@ -87,9 +87,9 @@ func (fm *ForwardMessage) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	fm.Entries = EventStream{}
-	if err = fm.Entries.DecodeMsg(dc); err != nil {
-		return msgp.WrapError(err, "Entries")
+	fm.Events = EventStream{}
+	if err = fm.Events.DecodeMsg(dc); err != nil {
+		return msgp.WrapError(err, "Events")
 	}
 
 	// has three elements only when options are included
@@ -126,7 +126,7 @@ func (fm *ForwardMessage) MarshalMsg(bits []byte) ([]byte, error) {
 	bits = msgp.AppendArrayHeader(bits, sz)
 	bits = msgp.AppendString(bits, fm.Tag)
 
-	bits, err = fm.Entries.MarshalMsg(bits)
+	bits, err = fm.Events.MarshalMsg(bits)
 	if err != nil {
 		return bits, err
 	}
@@ -152,8 +152,8 @@ func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 		return bits, msgp.WrapError(err, "Tag")
 	}
 
-	fm.Entries = EventStream{}
-	if bits, err = fm.Entries.UnmarshalMsg(bits); err != nil {
+	fm.Events = EventStream{}
+	if bits, err = fm.Events.UnmarshalMsg(bits); err != nil {
 		return bits, err
 	}
 
@@ -174,7 +174,7 @@ func (fm *ForwardMessage) UnmarshalMsg(bits []byte) ([]byte, error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (fm *ForwardMessage) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(fm.Tag) + fm.Entries.Msgsize()
+	s = 1 + msgp.StringPrefixSize + len(fm.Tag) + fm.Events.Msgsize()
 	if fm.Options != nil {
 		s += fm.Options.Msgsize()
 	}
