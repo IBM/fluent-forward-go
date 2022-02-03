@@ -66,7 +66,7 @@ func main() {
 	fwd := protocol.NewForwardMessage(tagVar, entries)
 	packedFwd, _ := protocol.NewPackedForwardMessage(tagVar+".packed", entries)
 	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
-		fwd.Events)
+		fwd.Entries)
 
 	err = c.Send(msg)
 	if err != nil {
