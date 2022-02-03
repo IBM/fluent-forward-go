@@ -26,7 +26,7 @@ type MessageClient interface {
 	Connect() error
 	Disconnect() (err error)
 	Reconnect() error
-	SendMessage(e protocol.ChunkEncoder) error
+	Send(e protocol.ChunkEncoder) error
 	SendRaw(raw []byte) error
 }
 
@@ -175,9 +175,9 @@ func (c *Client) checkAck(chunk string) error {
 	return nil
 }
 
-// SendMessage sends a single protocol.ChunkEncoder across the wire.  If the session
+// Send sends a single protocol.ChunkEncoder across the wire.  If the session
 // is not yet in transport phase, an error is returned, and no message is sent.
-func (c *Client) SendMessage(e protocol.ChunkEncoder) error {
+func (c *Client) Send(e protocol.ChunkEncoder) error {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
 
@@ -215,7 +215,7 @@ func (c *Client) SendMessage(e protocol.ChunkEncoder) error {
 // is not yet in transport phase, an error is returned,
 // and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
-	return c.SendMessage(protocol.RawMessage(m))
+	return c.Send(protocol.RawMessage(m))
 }
 
 // Handshake initiates handshake mode.  Users must call this before attempting

@@ -68,31 +68,31 @@ func main() {
 	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
 		fwd.Entries)
 
-	err = c.SendMessage(msg)
+	err = c.Send(msg)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.SendMessage(mne)
+	err = c.Send(mne)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.SendMessage(fwd)
+	err = c.Send(fwd)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.SendMessage(packedFwd)
+	err = c.Send(packedFwd)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.SendMessage(compressed)
+	err = c.Send(compressed)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -102,7 +102,7 @@ func main() {
 	b, _ := compressed.MarshalMsg(nil)
 	rm := protocol.RawMessage(b)
 
-	err = c.SendMessage(rm)
+	err = c.Send(rm)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

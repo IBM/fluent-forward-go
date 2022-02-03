@@ -96,7 +96,7 @@ func main() {
 		},
 	}
 
-	if err := c.SendMessage(&msg); err != nil {
+	if err := c.Send(&msg); err != nil {
 		log.Fatal(err)
 	}
 
@@ -110,7 +110,7 @@ func main() {
 		},
 	}
 
-	if err := c.SendMessage(&msg); err != nil {
+	if err := c.Send(&msg); err != nil {
 		log.Fatal(err)
 	}
 

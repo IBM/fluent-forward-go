@@ -224,7 +224,7 @@ func (fake *FakeMessageClient) ReconnectReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeMessageClient) SendMessage(arg1 protocol.ChunkEncoder) error {
+func (fake *FakeMessageClient) Send(arg1 protocol.ChunkEncoder) error {
 	fake.sendMessageMutex.Lock()
 	ret, specificReturn := fake.sendMessageReturnsOnCall[len(fake.sendMessageArgsForCall)]
 	fake.sendMessageArgsForCall = append(fake.sendMessageArgsForCall, struct {
@@ -232,7 +232,7 @@ func (fake *FakeMessageClient) SendMessage(arg1 protocol.ChunkEncoder) error {
 	}{arg1})
 	stub := fake.SendMessageStub
 	fakeReturns := fake.sendMessageReturns
-	fake.recordInvocation("SendMessage", []interface{}{arg1})
+	fake.recordInvocation("Send", []interface{}{arg1})
 	fake.sendMessageMutex.Unlock()
 	if stub != nil {
 		return stub(arg1)
