@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -43,7 +42,6 @@ func init() {
 	})
 
 	compressorPool.New = func() interface{} {
-		fmt.Println("hi")
 		return new(GzipCompressor)
 	}
 
