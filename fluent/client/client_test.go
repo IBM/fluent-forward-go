@@ -418,16 +418,6 @@ var _ = Describe("Client", func() {
 					},
 				})
 			})
-
-			Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
-				JustBeforeEach(func() {
-					client.Disconnect()
-				})
-
-				It("Returns an error", func() {
-					Expect(client.SendRaw(bits)).To(HaveOccurred())
-				})
-			})
 		})
 	})
 
