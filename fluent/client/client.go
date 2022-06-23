@@ -302,7 +302,20 @@ func (c *Client) Send(e protocol.ChunkEncoder) error {
 // is not yet in transport phase, an error is returned,
 // and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
-	return c.Send(protocol.RawMessage(m))
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	if c.session == nil {
+		return errors.New("no active session")
+	}
+
+	if !c.session.TransportPhase {
+		return errors.New("session handshake not completed")
+	}
+
+	_, err := c.session.Connection.Write(m)
+
+	return err
 }
 
 func (c *Client) SendPacked(tag string, entries protocol.EntryList) error {
