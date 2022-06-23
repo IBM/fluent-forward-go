@@ -213,9 +213,11 @@ func (mc *GzipCompressor) Bytes() []byte {
 // NewCompressedPackedForwardMessage returns a PackedForwardMessage with a
 // gzip-compressed byte stream.
 func NewCompressedPackedForwardMessage(
-	tag string, entries EntryList,
+	tag string, entries []EntryExt,
 ) (*PackedForwardMessage, error) {
-	bits, err := entries.MarshalPacked()
+	el := EntryList(entries) //nolint
+
+	bits, err := el.MarshalPacked()
 	if err != nil {
 		return nil, err
 	}

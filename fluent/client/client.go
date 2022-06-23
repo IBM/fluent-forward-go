@@ -302,9 +302,7 @@ func (c *Client) Send(e protocol.ChunkEncoder) error {
 // is not yet in transport phase, an error is returned,
 // and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
-	_, err := c.session.Connection.Write(m)
-	return err
-	//return c.Send(protocol.RawMessage(m))
+	return c.Send(protocol.RawMessage(m))
 }
 
 func (c *Client) SendPacked(tag string, entries protocol.EntryList) error {

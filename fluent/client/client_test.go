@@ -258,24 +258,48 @@ var _ = Describe("Client", func() {
 				<-done
 			})
 		})
-
 	})
 
-	Describe("SendRaw", func() {
+	Describe("Send*", func() {
+		type msgSender struct {
+			tag     string
+			doSend  func() error
+			decoder msgp.Decodable
+		}
 		var (
 			serverSide net.Conn
 			msg        protocol.MessageExt
 			bits       []byte
+			el         protocol.EntryList
 		)
 
 		BeforeEach(func() {
 			clientSide, serverSide = net.Pipe()
+
 			msg = protocol.MessageExt{
-				Tag: "foo.bar",
+				Record: map[string]string{
+					"a": "b",
+				},
+				Tag: "msg",
 			}
 			var err error
 			bits, err = msg.MarshalMsg(nil)
 			Expect(err).NotTo(HaveOccurred())
+
+			el = protocol.EntryList{
+				{
+					Record: map[string]interface{}{
+						"foo":    "bar",
+						"george": "jungle",
+					},
+				},
+				{
+					Record: map[string]interface{}{
+						"foo":    "kablooie",
+						"george": "frank",
+					},
+				},
+			}
 		})
 
 		JustBeforeEach(func() {
@@ -283,33 +307,117 @@ var _ = Describe("Client", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("Sends the message", func() {
+		doTest := func(sndr msgSender) {
 			c := make(chan bool, 1)
 			go func() {
 				defer GinkgoRecover()
 
 				c <- true
-				err := client.SendRaw(bits)
+				err := sndr.doSend()
 				Expect(err).NotTo(HaveOccurred())
 			}()
 
-			var recvd protocol.MessageExt
 			<-c
-			err := recvd.DecodeMsg(msgp.NewReader(serverSide))
+			err := sndr.decoder.DecodeMsg(msgp.NewReader(serverSide))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(recvd.Tag).To(Equal(msg.Tag))
+			val := reflect.Indirect(reflect.ValueOf(sndr.decoder))
+			Expect(val.FieldByName("Tag").String()).To(Equal(sndr.tag))
+		}
+
+		Context("SendForward", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "fwd",
+					decoder: &protocol.ForwardMessage{},
+					doSend: func() error {
+						return client.SendForward("fwd", el)
+					},
+				})
+			})
 		})
 
-		Context("When the Session is not yet in Transport phase (handshake not performed)", func() {
-			JustBeforeEach(func() {
-				client.Disconnect()
+		Context("SendCompressed", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "cmp",
+					decoder: &protocol.PackedForwardMessage{},
+					doSend: func() error {
+						return client.SendCompressed("cmp", el)
+					},
+				})
 			})
+		})
 
-			It("Returns an error", func() {
-				Expect(client.Send(&msg)).To(HaveOccurred())
+		Context("SendCompressedFromBytes", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "cmpfb",
+					decoder: &protocol.PackedForwardMessage{},
+					doSend: func() error {
+						return client.SendCompressedFromBytes("cmpfb", bits)
+					},
+				})
 			})
+		})
 
-			// TODO: We need a test that no message is sent
+		Context("SendMessage", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "sm",
+					decoder: &protocol.Message{},
+					doSend: func() error {
+						return client.SendMessage("sm", el[0].Record)
+					},
+				})
+			})
+		})
+
+		Context("SendMessageExt", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "ext",
+					decoder: &protocol.MessageExt{},
+					doSend: func() error {
+						return client.SendMessageExt("ext", el[1].Record)
+					},
+				})
+			})
+		})
+
+		Context("SendPacked", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "pkd",
+					decoder: &protocol.PackedForwardMessage{},
+					doSend: func() error {
+						return client.SendPacked("pkd", el)
+					},
+				})
+			})
+		})
+
+		Context("SendPackedFromBytes", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "pkdfb",
+					decoder: &protocol.PackedForwardMessage{},
+					doSend: func() error {
+						return client.SendPackedFromBytes("pkdfb", bits)
+					},
+				})
+			})
+		})
+
+		Context("SendRaw", func() {
+			It("works", func() {
+				doTest(msgSender{
+					tag:     "msg",
+					decoder: &protocol.MessageExt{},
+					doSend: func() error {
+						return client.SendRaw(bits)
+					},
+				})
+			})
 		})
 	})
 

@@ -58,15 +58,13 @@ The `record` object must be a `map` or `struct`. Objects that implement the [`ms
 record := map[string]interface{}{
   "Hello": "World",
 }
-msg := protocol.NewMessage("tag", record)
-err := c.Send(msg)
+err := c.SendMessage("tag", record)
 ```
 
 ### Send a byte-encoded message
 
 ```go
-raw := protocol.RawMessage(myMessageBytes)
-err := c.Send(raw)
+err := c.SendRaw(myMessageBytes)
 ```
 
 ### Message confirmation
