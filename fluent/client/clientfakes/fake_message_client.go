@@ -39,15 +39,99 @@ type FakeMessageClient struct {
 	reconnectReturnsOnCall map[int]struct {
 		result1 error
 	}
-	SendMessageStub        func(protocol.ChunkEncoder) error
+	SendStub        func(protocol.ChunkEncoder) error
+	sendMutex       sync.RWMutex
+	sendArgsForCall []struct {
+		arg1 protocol.ChunkEncoder
+	}
+	sendReturns struct {
+		result1 error
+	}
+	sendReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendCompressedStub        func(string, protocol.EntryList) error
+	sendCompressedMutex       sync.RWMutex
+	sendCompressedArgsForCall []struct {
+		arg1 string
+		arg2 protocol.EntryList
+	}
+	sendCompressedReturns struct {
+		result1 error
+	}
+	sendCompressedReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendCompressedFromBytesStub        func(string, []byte) error
+	sendCompressedFromBytesMutex       sync.RWMutex
+	sendCompressedFromBytesArgsForCall []struct {
+		arg1 string
+		arg2 []byte
+	}
+	sendCompressedFromBytesReturns struct {
+		result1 error
+	}
+	sendCompressedFromBytesReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendForwardStub        func(string, protocol.EntryList) error
+	sendForwardMutex       sync.RWMutex
+	sendForwardArgsForCall []struct {
+		arg1 string
+		arg2 protocol.EntryList
+	}
+	sendForwardReturns struct {
+		result1 error
+	}
+	sendForwardReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendMessageStub        func(string, interface{}) error
 	sendMessageMutex       sync.RWMutex
 	sendMessageArgsForCall []struct {
-		arg1 protocol.ChunkEncoder
+		arg1 string
+		arg2 interface{}
 	}
 	sendMessageReturns struct {
 		result1 error
 	}
 	sendMessageReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendMessageExtStub        func(string, interface{}) error
+	sendMessageExtMutex       sync.RWMutex
+	sendMessageExtArgsForCall []struct {
+		arg1 string
+		arg2 interface{}
+	}
+	sendMessageExtReturns struct {
+		result1 error
+	}
+	sendMessageExtReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendPackedStub        func(string, protocol.EntryList) error
+	sendPackedMutex       sync.RWMutex
+	sendPackedArgsForCall []struct {
+		arg1 string
+		arg2 protocol.EntryList
+	}
+	sendPackedReturns struct {
+		result1 error
+	}
+	sendPackedReturnsOnCall map[int]struct {
+		result1 error
+	}
+	SendPackedFromBytesStub        func(string, []byte) error
+	sendPackedFromBytesMutex       sync.RWMutex
+	sendPackedFromBytesArgsForCall []struct {
+		arg1 string
+		arg2 []byte
+	}
+	sendPackedFromBytesReturns struct {
+		result1 error
+	}
+	sendPackedFromBytesReturnsOnCall map[int]struct {
 		result1 error
 	}
 	SendRawStub        func([]byte) error
@@ -225,17 +309,270 @@ func (fake *FakeMessageClient) ReconnectReturnsOnCall(i int, result1 error) {
 }
 
 func (fake *FakeMessageClient) Send(arg1 protocol.ChunkEncoder) error {
+	fake.sendMutex.Lock()
+	ret, specificReturn := fake.sendReturnsOnCall[len(fake.sendArgsForCall)]
+	fake.sendArgsForCall = append(fake.sendArgsForCall, struct {
+		arg1 protocol.ChunkEncoder
+	}{arg1})
+	stub := fake.SendStub
+	fakeReturns := fake.sendReturns
+	fake.recordInvocation("Send", []interface{}{arg1})
+	fake.sendMutex.Unlock()
+	if stub != nil {
+		return stub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendCallCount() int {
+	fake.sendMutex.RLock()
+	defer fake.sendMutex.RUnlock()
+	return len(fake.sendArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendCalls(stub func(protocol.ChunkEncoder) error) {
+	fake.sendMutex.Lock()
+	defer fake.sendMutex.Unlock()
+	fake.SendStub = stub
+}
+
+func (fake *FakeMessageClient) SendArgsForCall(i int) protocol.ChunkEncoder {
+	fake.sendMutex.RLock()
+	defer fake.sendMutex.RUnlock()
+	argsForCall := fake.sendArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeMessageClient) SendReturns(result1 error) {
+	fake.sendMutex.Lock()
+	defer fake.sendMutex.Unlock()
+	fake.SendStub = nil
+	fake.sendReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendReturnsOnCall(i int, result1 error) {
+	fake.sendMutex.Lock()
+	defer fake.sendMutex.Unlock()
+	fake.SendStub = nil
+	if fake.sendReturnsOnCall == nil {
+		fake.sendReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendCompressed(arg1 string, arg2 protocol.EntryList) error {
+	fake.sendCompressedMutex.Lock()
+	ret, specificReturn := fake.sendCompressedReturnsOnCall[len(fake.sendCompressedArgsForCall)]
+	fake.sendCompressedArgsForCall = append(fake.sendCompressedArgsForCall, struct {
+		arg1 string
+		arg2 protocol.EntryList
+	}{arg1, arg2})
+	stub := fake.SendCompressedStub
+	fakeReturns := fake.sendCompressedReturns
+	fake.recordInvocation("SendCompressed", []interface{}{arg1, arg2})
+	fake.sendCompressedMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendCompressedCallCount() int {
+	fake.sendCompressedMutex.RLock()
+	defer fake.sendCompressedMutex.RUnlock()
+	return len(fake.sendCompressedArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendCompressedCalls(stub func(string, protocol.EntryList) error) {
+	fake.sendCompressedMutex.Lock()
+	defer fake.sendCompressedMutex.Unlock()
+	fake.SendCompressedStub = stub
+}
+
+func (fake *FakeMessageClient) SendCompressedArgsForCall(i int) (string, protocol.EntryList) {
+	fake.sendCompressedMutex.RLock()
+	defer fake.sendCompressedMutex.RUnlock()
+	argsForCall := fake.sendCompressedArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMessageClient) SendCompressedReturns(result1 error) {
+	fake.sendCompressedMutex.Lock()
+	defer fake.sendCompressedMutex.Unlock()
+	fake.SendCompressedStub = nil
+	fake.sendCompressedReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendCompressedReturnsOnCall(i int, result1 error) {
+	fake.sendCompressedMutex.Lock()
+	defer fake.sendCompressedMutex.Unlock()
+	fake.SendCompressedStub = nil
+	if fake.sendCompressedReturnsOnCall == nil {
+		fake.sendCompressedReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendCompressedReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendCompressedFromBytes(arg1 string, arg2 []byte) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.sendCompressedFromBytesMutex.Lock()
+	ret, specificReturn := fake.sendCompressedFromBytesReturnsOnCall[len(fake.sendCompressedFromBytesArgsForCall)]
+	fake.sendCompressedFromBytesArgsForCall = append(fake.sendCompressedFromBytesArgsForCall, struct {
+		arg1 string
+		arg2 []byte
+	}{arg1, arg2Copy})
+	stub := fake.SendCompressedFromBytesStub
+	fakeReturns := fake.sendCompressedFromBytesReturns
+	fake.recordInvocation("SendCompressedFromBytes", []interface{}{arg1, arg2Copy})
+	fake.sendCompressedFromBytesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendCompressedFromBytesCallCount() int {
+	fake.sendCompressedFromBytesMutex.RLock()
+	defer fake.sendCompressedFromBytesMutex.RUnlock()
+	return len(fake.sendCompressedFromBytesArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendCompressedFromBytesCalls(stub func(string, []byte) error) {
+	fake.sendCompressedFromBytesMutex.Lock()
+	defer fake.sendCompressedFromBytesMutex.Unlock()
+	fake.SendCompressedFromBytesStub = stub
+}
+
+func (fake *FakeMessageClient) SendCompressedFromBytesArgsForCall(i int) (string, []byte) {
+	fake.sendCompressedFromBytesMutex.RLock()
+	defer fake.sendCompressedFromBytesMutex.RUnlock()
+	argsForCall := fake.sendCompressedFromBytesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMessageClient) SendCompressedFromBytesReturns(result1 error) {
+	fake.sendCompressedFromBytesMutex.Lock()
+	defer fake.sendCompressedFromBytesMutex.Unlock()
+	fake.SendCompressedFromBytesStub = nil
+	fake.sendCompressedFromBytesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendCompressedFromBytesReturnsOnCall(i int, result1 error) {
+	fake.sendCompressedFromBytesMutex.Lock()
+	defer fake.sendCompressedFromBytesMutex.Unlock()
+	fake.SendCompressedFromBytesStub = nil
+	if fake.sendCompressedFromBytesReturnsOnCall == nil {
+		fake.sendCompressedFromBytesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendCompressedFromBytesReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendForward(arg1 string, arg2 protocol.EntryList) error {
+	fake.sendForwardMutex.Lock()
+	ret, specificReturn := fake.sendForwardReturnsOnCall[len(fake.sendForwardArgsForCall)]
+	fake.sendForwardArgsForCall = append(fake.sendForwardArgsForCall, struct {
+		arg1 string
+		arg2 protocol.EntryList
+	}{arg1, arg2})
+	stub := fake.SendForwardStub
+	fakeReturns := fake.sendForwardReturns
+	fake.recordInvocation("SendForward", []interface{}{arg1, arg2})
+	fake.sendForwardMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendForwardCallCount() int {
+	fake.sendForwardMutex.RLock()
+	defer fake.sendForwardMutex.RUnlock()
+	return len(fake.sendForwardArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendForwardCalls(stub func(string, protocol.EntryList) error) {
+	fake.sendForwardMutex.Lock()
+	defer fake.sendForwardMutex.Unlock()
+	fake.SendForwardStub = stub
+}
+
+func (fake *FakeMessageClient) SendForwardArgsForCall(i int) (string, protocol.EntryList) {
+	fake.sendForwardMutex.RLock()
+	defer fake.sendForwardMutex.RUnlock()
+	argsForCall := fake.sendForwardArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMessageClient) SendForwardReturns(result1 error) {
+	fake.sendForwardMutex.Lock()
+	defer fake.sendForwardMutex.Unlock()
+	fake.SendForwardStub = nil
+	fake.sendForwardReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendForwardReturnsOnCall(i int, result1 error) {
+	fake.sendForwardMutex.Lock()
+	defer fake.sendForwardMutex.Unlock()
+	fake.SendForwardStub = nil
+	if fake.sendForwardReturnsOnCall == nil {
+		fake.sendForwardReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendForwardReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendMessage(arg1 string, arg2 interface{}) error {
 	fake.sendMessageMutex.Lock()
 	ret, specificReturn := fake.sendMessageReturnsOnCall[len(fake.sendMessageArgsForCall)]
 	fake.sendMessageArgsForCall = append(fake.sendMessageArgsForCall, struct {
-		arg1 protocol.ChunkEncoder
-	}{arg1})
+		arg1 string
+		arg2 interface{}
+	}{arg1, arg2})
 	stub := fake.SendMessageStub
 	fakeReturns := fake.sendMessageReturns
-	fake.recordInvocation("Send", []interface{}{arg1})
+	fake.recordInvocation("SendMessage", []interface{}{arg1, arg2})
 	fake.sendMessageMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -249,17 +586,17 @@ func (fake *FakeMessageClient) SendMessageCallCount() int {
 	return len(fake.sendMessageArgsForCall)
 }
 
-func (fake *FakeMessageClient) SendMessageCalls(stub func(protocol.ChunkEncoder) error) {
+func (fake *FakeMessageClient) SendMessageCalls(stub func(string, interface{}) error) {
 	fake.sendMessageMutex.Lock()
 	defer fake.sendMessageMutex.Unlock()
 	fake.SendMessageStub = stub
 }
 
-func (fake *FakeMessageClient) SendMessageArgsForCall(i int) protocol.ChunkEncoder {
+func (fake *FakeMessageClient) SendMessageArgsForCall(i int) (string, interface{}) {
 	fake.sendMessageMutex.RLock()
 	defer fake.sendMessageMutex.RUnlock()
 	argsForCall := fake.sendMessageArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeMessageClient) SendMessageReturns(result1 error) {
@@ -281,6 +618,197 @@ func (fake *FakeMessageClient) SendMessageReturnsOnCall(i int, result1 error) {
 		})
 	}
 	fake.sendMessageReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendMessageExt(arg1 string, arg2 interface{}) error {
+	fake.sendMessageExtMutex.Lock()
+	ret, specificReturn := fake.sendMessageExtReturnsOnCall[len(fake.sendMessageExtArgsForCall)]
+	fake.sendMessageExtArgsForCall = append(fake.sendMessageExtArgsForCall, struct {
+		arg1 string
+		arg2 interface{}
+	}{arg1, arg2})
+	stub := fake.SendMessageExtStub
+	fakeReturns := fake.sendMessageExtReturns
+	fake.recordInvocation("SendMessageExt", []interface{}{arg1, arg2})
+	fake.sendMessageExtMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendMessageExtCallCount() int {
+	fake.sendMessageExtMutex.RLock()
+	defer fake.sendMessageExtMutex.RUnlock()
+	return len(fake.sendMessageExtArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendMessageExtCalls(stub func(string, interface{}) error) {
+	fake.sendMessageExtMutex.Lock()
+	defer fake.sendMessageExtMutex.Unlock()
+	fake.SendMessageExtStub = stub
+}
+
+func (fake *FakeMessageClient) SendMessageExtArgsForCall(i int) (string, interface{}) {
+	fake.sendMessageExtMutex.RLock()
+	defer fake.sendMessageExtMutex.RUnlock()
+	argsForCall := fake.sendMessageExtArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMessageClient) SendMessageExtReturns(result1 error) {
+	fake.sendMessageExtMutex.Lock()
+	defer fake.sendMessageExtMutex.Unlock()
+	fake.SendMessageExtStub = nil
+	fake.sendMessageExtReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendMessageExtReturnsOnCall(i int, result1 error) {
+	fake.sendMessageExtMutex.Lock()
+	defer fake.sendMessageExtMutex.Unlock()
+	fake.SendMessageExtStub = nil
+	if fake.sendMessageExtReturnsOnCall == nil {
+		fake.sendMessageExtReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendMessageExtReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendPacked(arg1 string, arg2 protocol.EntryList) error {
+	fake.sendPackedMutex.Lock()
+	ret, specificReturn := fake.sendPackedReturnsOnCall[len(fake.sendPackedArgsForCall)]
+	fake.sendPackedArgsForCall = append(fake.sendPackedArgsForCall, struct {
+		arg1 string
+		arg2 protocol.EntryList
+	}{arg1, arg2})
+	stub := fake.SendPackedStub
+	fakeReturns := fake.sendPackedReturns
+	fake.recordInvocation("SendPacked", []interface{}{arg1, arg2})
+	fake.sendPackedMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendPackedCallCount() int {
+	fake.sendPackedMutex.RLock()
+	defer fake.sendPackedMutex.RUnlock()
+	return len(fake.sendPackedArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendPackedCalls(stub func(string, protocol.EntryList) error) {
+	fake.sendPackedMutex.Lock()
+	defer fake.sendPackedMutex.Unlock()
+	fake.SendPackedStub = stub
+}
+
+func (fake *FakeMessageClient) SendPackedArgsForCall(i int) (string, protocol.EntryList) {
+	fake.sendPackedMutex.RLock()
+	defer fake.sendPackedMutex.RUnlock()
+	argsForCall := fake.sendPackedArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMessageClient) SendPackedReturns(result1 error) {
+	fake.sendPackedMutex.Lock()
+	defer fake.sendPackedMutex.Unlock()
+	fake.SendPackedStub = nil
+	fake.sendPackedReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendPackedReturnsOnCall(i int, result1 error) {
+	fake.sendPackedMutex.Lock()
+	defer fake.sendPackedMutex.Unlock()
+	fake.SendPackedStub = nil
+	if fake.sendPackedReturnsOnCall == nil {
+		fake.sendPackedReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendPackedReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendPackedFromBytes(arg1 string, arg2 []byte) error {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.sendPackedFromBytesMutex.Lock()
+	ret, specificReturn := fake.sendPackedFromBytesReturnsOnCall[len(fake.sendPackedFromBytesArgsForCall)]
+	fake.sendPackedFromBytesArgsForCall = append(fake.sendPackedFromBytesArgsForCall, struct {
+		arg1 string
+		arg2 []byte
+	}{arg1, arg2Copy})
+	stub := fake.SendPackedFromBytesStub
+	fakeReturns := fake.sendPackedFromBytesReturns
+	fake.recordInvocation("SendPackedFromBytes", []interface{}{arg1, arg2Copy})
+	fake.sendPackedFromBytesMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeMessageClient) SendPackedFromBytesCallCount() int {
+	fake.sendPackedFromBytesMutex.RLock()
+	defer fake.sendPackedFromBytesMutex.RUnlock()
+	return len(fake.sendPackedFromBytesArgsForCall)
+}
+
+func (fake *FakeMessageClient) SendPackedFromBytesCalls(stub func(string, []byte) error) {
+	fake.sendPackedFromBytesMutex.Lock()
+	defer fake.sendPackedFromBytesMutex.Unlock()
+	fake.SendPackedFromBytesStub = stub
+}
+
+func (fake *FakeMessageClient) SendPackedFromBytesArgsForCall(i int) (string, []byte) {
+	fake.sendPackedFromBytesMutex.RLock()
+	defer fake.sendPackedFromBytesMutex.RUnlock()
+	argsForCall := fake.sendPackedFromBytesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeMessageClient) SendPackedFromBytesReturns(result1 error) {
+	fake.sendPackedFromBytesMutex.Lock()
+	defer fake.sendPackedFromBytesMutex.Unlock()
+	fake.SendPackedFromBytesStub = nil
+	fake.sendPackedFromBytesReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeMessageClient) SendPackedFromBytesReturnsOnCall(i int, result1 error) {
+	fake.sendPackedFromBytesMutex.Lock()
+	defer fake.sendPackedFromBytesMutex.Unlock()
+	fake.SendPackedFromBytesStub = nil
+	if fake.sendPackedFromBytesReturnsOnCall == nil {
+		fake.sendPackedFromBytesReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.sendPackedFromBytesReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -360,8 +888,22 @@ func (fake *FakeMessageClient) Invocations() map[string][][]interface{} {
 	defer fake.disconnectMutex.RUnlock()
 	fake.reconnectMutex.RLock()
 	defer fake.reconnectMutex.RUnlock()
+	fake.sendMutex.RLock()
+	defer fake.sendMutex.RUnlock()
+	fake.sendCompressedMutex.RLock()
+	defer fake.sendCompressedMutex.RUnlock()
+	fake.sendCompressedFromBytesMutex.RLock()
+	defer fake.sendCompressedFromBytesMutex.RUnlock()
+	fake.sendForwardMutex.RLock()
+	defer fake.sendForwardMutex.RUnlock()
 	fake.sendMessageMutex.RLock()
 	defer fake.sendMessageMutex.RUnlock()
+	fake.sendMessageExtMutex.RLock()
+	defer fake.sendMessageExtMutex.RUnlock()
+	fake.sendPackedMutex.RLock()
+	defer fake.sendPackedMutex.RUnlock()
+	fake.sendPackedFromBytesMutex.RLock()
+	defer fake.sendPackedFromBytesMutex.RUnlock()
 	fake.sendRawMutex.RLock()
 	defer fake.sendRawMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
