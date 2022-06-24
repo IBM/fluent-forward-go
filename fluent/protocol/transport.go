@@ -115,7 +115,7 @@ func (et *EventTime) MarshalBinaryTo(b []byte) error {
 // into an EventTime object.
 func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	if len(timeBytes) != eventTimeLen {
-		return errors.New("Invalid length")
+		return errors.New("invalid length")
 	}
 
 	seconds := binary.BigEndian.Uint32(timeBytes)

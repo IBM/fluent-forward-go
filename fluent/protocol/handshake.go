@@ -133,11 +133,11 @@ type Ping struct {
 func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 	helo *Helo, ping *Ping) (*Pong, error) {
 	if helo == nil || ping == nil {
-		return nil, errors.New("Either helo or ping is nil")
+		return nil, errors.New("either helo or ping is nil")
 	}
 
 	if helo.Options == nil {
-		return nil, errors.New("Helo has a nil options field")
+		return nil, errors.New("helo has a nil options field")
 	}
 
 	bytes, err := computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey)
@@ -185,7 +185,7 @@ func validateDigest(received, key, nonce, salt []byte, hostname string) error {
 	}
 
 	if !bytes.Equal(received, expected) {
-		return errors.New("No match")
+		return errors.New("no match")
 	}
 
 	return nil
