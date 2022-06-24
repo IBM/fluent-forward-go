@@ -262,7 +262,9 @@ func (c *Client) checkAck(chunk string) error {
 	return nil
 }
 
-func (c *Client) send(e protocol.ChunkEncoder, setChunk bool) error {
+// Send sends a single protocol.ChunkEncoder across the wire.  If the session
+// is not yet in transport phase, an error is returned, and no message is sent.
+func (c *Client) Send(e protocol.ChunkEncoder) error {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
 
@@ -279,7 +281,7 @@ func (c *Client) send(e protocol.ChunkEncoder, setChunk bool) error {
 		err   error
 	)
 
-	if setChunk {
+	if c.RequireAck {
 		if chunk, err = e.Chunk(); err != nil {
 			return err
 		}
@@ -296,18 +298,24 @@ func (c *Client) send(e protocol.ChunkEncoder, setChunk bool) error {
 	return c.checkAck(chunk)
 }
 
-// Send sends a single protocol.ChunkEncoder across the wire.  If the session
-// is not yet in transport phase, an error is returned, and no message is sent.
-func (c *Client) Send(e protocol.ChunkEncoder) error {
-	return c.send(e, c.RequireAck)
-}
-
 // SendRaw sends bytes across the wire. If the session
 // is not yet in transport phase, an error is returned,
 // and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
-	// raw messages are immutable, so never set chunk
-	return c.send(protocol.RawMessage(m), false)
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	if c.session == nil {
+		return errors.New("no active session")
+	}
+
+	if !c.session.TransportPhase {
+		return errors.New("session handshake not completed")
+	}
+
+	_, err := c.session.Connection.Write(m)
+
+	return err
 }
 
 func (c *Client) SendPacked(tag string, entries protocol.EntryList) error {
