@@ -51,6 +51,13 @@ type MessageClient interface {
 	Disconnect() (err error)
 	Reconnect() error
 	Send(e protocol.ChunkEncoder) error
+	SendCompressed(tag string, entries protocol.EntryList) error
+	SendCompressedFromBytes(tag string, entries []byte) error
+	SendForward(tag string, entries protocol.EntryList) error
+	SendMessage(tag string, record interface{}) error
+	SendMessageExt(tag string, record interface{}) error
+	SendPacked(tag string, entries protocol.EntryList) error
+	SendPackedFromBytes(tag string, entries []byte) error
 	SendRaw(raw []byte) error
 }
 
@@ -136,6 +143,62 @@ func (c *Client) connect() error {
 	if c.AuthInfo.SharedKey == nil {
 		c.session.TransportPhase = true
 	}
+
+	return nil
+}
+
+// Handshake initiates handshake mode.  Users must call this before attempting
+// to send any messages when the server is configured with a shared key, otherwise
+// the server will reject any message events.  Successful completion of the
+// handshake puts the connection into message (or forward) mode, at which time
+// the client is free to send event messages.
+func (c *Client) Handshake() error {
+	c.sessionLock.RLock()
+	defer c.sessionLock.RUnlock()
+
+	if c.session == nil {
+		return errors.New("not connected")
+	}
+
+	var helo protocol.Helo
+
+	r := msgp.NewReader(c.session.Connection)
+	err := helo.DecodeMsg(r)
+
+	if err != nil {
+		return err
+	}
+
+	salt := make([]byte, 16)
+
+	_, err = rand.Read(salt)
+	if err != nil {
+		return err
+	}
+
+	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
+	if err != nil {
+		return err
+	}
+
+	err = msgp.Encode(c.session.Connection, ping)
+	if err != nil {
+		return err
+	}
+
+	var pong protocol.Pong
+
+	err = pong.DecodeMsg(r)
+	if err != nil {
+		return err
+	}
+
+	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
+		helo.Options.Nonce, salt); err != nil {
+		return err
+	}
+
+	c.session.TransportPhase = true
 
 	return nil
 }
@@ -239,61 +302,69 @@ func (c *Client) Send(e protocol.ChunkEncoder) error {
 // is not yet in transport phase, an error is returned,
 // and no message is sent.
 func (c *Client) SendRaw(m []byte) error {
-	return c.Send(protocol.RawMessage(m))
-}
-
-// Handshake initiates handshake mode.  Users must call this before attempting
-// to send any messages when the server is configured with a shared key, otherwise
-// the server will reject any message events.  Successful completion of the
-// handshake puts the connection into message (or forward) mode, at which time
-// the client is free to send event messages.
-func (c *Client) Handshake() error {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
 
 	if c.session == nil {
-		return errors.New("not connected")
+		return errors.New("no active session")
 	}
 
-	var helo protocol.Helo
-
-	r := msgp.NewReader(c.session.Connection)
-	err := helo.DecodeMsg(r)
-
-	if err != nil {
-		return err
+	if !c.session.TransportPhase {
+		return errors.New("session handshake not completed")
 	}
 
-	salt := make([]byte, 16)
+	_, err := c.session.Connection.Write(m)
 
-	_, err = rand.Read(salt)
-	if err != nil {
-		return err
+	return err
+}
+
+func (c *Client) SendPacked(tag string, entries protocol.EntryList) error {
+	msg, err := protocol.NewPackedForwardMessage(tag, entries)
+	if err == nil {
+		err = c.Send(msg)
 	}
 
-	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
-	if err != nil {
-		return err
+	return err
+}
+
+func (c *Client) SendPackedFromBytes(tag string, entries []byte) error {
+	msg := protocol.NewPackedForwardMessageFromBytes(tag, entries)
+
+	return c.Send(msg)
+}
+
+func (c *Client) SendMessage(tag string, record interface{}) error {
+	msg := protocol.NewMessage(tag, record)
+
+	return c.Send(msg)
+}
+
+func (c *Client) SendMessageExt(tag string, record interface{}) error {
+	msg := protocol.NewMessageExt(tag, record)
+
+	return c.Send(msg)
+}
+
+func (c *Client) SendForward(tag string, entries protocol.EntryList) error {
+	msg := protocol.NewForwardMessage(tag, entries)
+
+	return c.Send(msg)
+}
+
+func (c *Client) SendCompressed(tag string, entries protocol.EntryList) error {
+	msg, err := protocol.NewCompressedPackedForwardMessage(tag, entries)
+	if err == nil {
+		err = c.Send(msg)
 	}
 
-	err = msgp.Encode(c.session.Connection, ping)
-	if err != nil {
-		return err
+	return err
+}
+
+func (c *Client) SendCompressedFromBytes(tag string, entries []byte) error {
+	msg, err := protocol.NewCompressedPackedForwardMessageFromBytes(tag, entries)
+	if err == nil {
+		err = c.Send(msg)
 	}
 
-	var pong protocol.Pong
-
-	err = pong.DecodeMsg(r)
-	if err != nil {
-		return err
-	}
-
-	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
-		helo.Options.Nonce, salt); err != nil {
-		return err
-	}
-
-	c.session.TransportPhase = true
-
-	return nil
+	return err
 }

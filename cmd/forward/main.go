@@ -85,48 +85,31 @@ func main() {
 		},
 	}
 
-	msg := protocol.NewMessage(tagVar, record)
-	mne := protocol.NewMessageExt(tagVar, record)
-	fwd := protocol.NewForwardMessage(tagVar, entries)
-	packedFwd, _ := protocol.NewPackedForwardMessage(tagVar+".packed", entries)
-	compressed, _ := protocol.NewCompressedPackedForwardMessage(tagVar+".compressed",
-		fwd.Entries)
-
-	err = c.Send(msg)
+	err = c.SendMessage(tagVar, record)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(mne)
+	err = c.SendMessageExt(tagVar, record)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(fwd)
+	err = c.SendForward(tagVar, entries)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(packedFwd)
+	err = c.SendPacked(tagVar+".packed", entries)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	err = c.Send(compressed)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	_, _ = compressed.Chunk()
-	b, _ := compressed.MarshalMsg(nil)
-	rm := protocol.RawMessage(b)
-
-	err = c.Send(rm)
+	err = c.SendCompressed(tagVar+".compressed", entries)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
