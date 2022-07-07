@@ -27,11 +27,10 @@ package protocol_test
 import (
 	"encoding/base64"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
-	. "github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Chunk", func() {
@@ -45,7 +44,7 @@ var _ = Describe("Chunk", func() {
 			bits, err := msg.MarshalMsg(nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			chunk, err := GetChunk(bits)
+			chunk, err := protocol.GetChunk(bits)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chunk).To(Equal(expected))
 		})
@@ -56,7 +55,7 @@ var _ = Describe("Chunk", func() {
 			bits, err := msg.MarshalMsg(nil)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = GetChunk(bits)
+			_, err = protocol.GetChunk(bits)
 			Expect(err.Error()).To(ContainSubstring("chunk not found"))
 		})
 	})

@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tinylib/msgp/msgp"
 
-	. "github.com/IBM/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 func TestMarshalNewMessage(t *testing.T) {
@@ -42,20 +42,20 @@ func TestMarshalNewMessage(t *testing.T) {
 			"sword",
 		},
 	}
-	msg := NewMessage("tag", record)
+	msg := protocol.NewMessage("tag", record)
 	assert.Equal(t, msg.Tag, "tag")
 	assert.Equal(t, msg.Record, record)
 	assert.Greater(t, msg.Timestamp, int64(0))
 
-	msgext := NewMessageExt("tag", record)
+	msgext := protocol.NewMessageExt("tag", record)
 	assert.Equal(t, msgext.Tag, "tag")
 	assert.Equal(t, msgext.Record, record)
 	assert.Greater(t, msgext.Timestamp.Time.UTC().Nanosecond(), 0)
 }
 
 func TestMarshalUnmarshalMessage(t *testing.T) {
-	v := Message{
-		Options: &MessageOptions{},
+	v := protocol.Message{
+		Options: &protocol.MessageOptions{},
 	}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
@@ -79,8 +79,8 @@ func TestMarshalUnmarshalMessage(t *testing.T) {
 }
 
 func BenchmarkMarshalMsgMessage(b *testing.B) {
-	v := Message{
-		Options: &MessageOptions{},
+	v := protocol.Message{
+		Options: &protocol.MessageOptions{},
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -93,8 +93,8 @@ func BenchmarkMarshalMsgMessage(b *testing.B) {
 }
 
 func BenchmarkAppendMsgMessage(b *testing.B) {
-	v := Message{
-		Options: &MessageOptions{},
+	v := protocol.Message{
+		Options: &protocol.MessageOptions{},
 	}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
@@ -107,8 +107,8 @@ func BenchmarkAppendMsgMessage(b *testing.B) {
 }
 
 func BenchmarkUnmarshalMessage(b *testing.B) {
-	v := Message{
-		Options: &MessageOptions{},
+	v := protocol.Message{
+		Options: &protocol.MessageOptions{},
 	}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
@@ -123,8 +123,8 @@ func BenchmarkUnmarshalMessage(b *testing.B) {
 }
 
 func TestEncodeDecodeMessage(t *testing.T) {
-	v := Message{
-		Options: &MessageOptions{},
+	v := protocol.Message{
+		Options: &protocol.MessageOptions{},
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &v)
@@ -137,7 +137,7 @@ func TestEncodeDecodeMessage(t *testing.T) {
 		t.Log("WARNING: TestEncodeDecodeMessage Msgsize() is inaccurate")
 	}
 
-	vn := Message{}
+	vn := protocol.Message{}
 	err = msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -155,7 +155,7 @@ func TestEncodeDecodeMessage(t *testing.T) {
 }
 
 func BenchmarkEncodeMessage(b *testing.B) {
-	v := Message{}
+	v := protocol.Message{}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &v)
 	if err != nil {
@@ -175,7 +175,7 @@ func BenchmarkEncodeMessage(b *testing.B) {
 }
 
 func BenchmarkDecodeMessage(b *testing.B) {
-	v := Message{}
+	v := protocol.Message{}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &v)
 	if err != nil {
@@ -195,8 +195,8 @@ func BenchmarkDecodeMessage(b *testing.B) {
 }
 
 func TestMarshalUnmarshalMessageExt(t *testing.T) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	bts, err := v.MarshalMsg(nil)
 	if err != nil {
@@ -220,8 +220,8 @@ func TestMarshalUnmarshalMessageExt(t *testing.T) {
 }
 
 func BenchmarkMarshalMsgMessageExt(b *testing.B) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -234,8 +234,8 @@ func BenchmarkMarshalMsgMessageExt(b *testing.B) {
 }
 
 func BenchmarkAppendMsgMessageExt(b *testing.B) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	bts := make([]byte, 0, v.Msgsize())
 	bts, _ = v.MarshalMsg(bts[0:0])
@@ -248,8 +248,8 @@ func BenchmarkAppendMsgMessageExt(b *testing.B) {
 }
 
 func BenchmarkUnmarshalMessageExt(b *testing.B) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	bts, _ := v.MarshalMsg(nil)
 	b.ReportAllocs()
@@ -264,8 +264,8 @@ func BenchmarkUnmarshalMessageExt(b *testing.B) {
 }
 
 func TestEncodeDecodeMessageExt(t *testing.T) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &v)
@@ -278,7 +278,7 @@ func TestEncodeDecodeMessageExt(t *testing.T) {
 		t.Log("WARNING: TestEncodeDecodeMessageExt Msgsize() is inaccurate")
 	}
 
-	vn := MessageExt{}
+	vn := protocol.MessageExt{}
 	err = msgp.Decode(&buf, &vn)
 	if err != nil {
 		t.Error(err)
@@ -296,8 +296,8 @@ func TestEncodeDecodeMessageExt(t *testing.T) {
 }
 
 func BenchmarkEncodeMessageExt(b *testing.B) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &v)
@@ -318,8 +318,8 @@ func BenchmarkEncodeMessageExt(b *testing.B) {
 }
 
 func BenchmarkDecodeMessageExt(b *testing.B) {
-	v := MessageExt{
-		Options: &MessageOptions{},
+	v := protocol.MessageExt{
+		Options: &protocol.MessageOptions{},
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &v)

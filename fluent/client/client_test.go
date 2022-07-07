@@ -34,7 +34,7 @@ import (
 	. "github.com/IBM/fluent-forward-go/fluent/client"
 	"github.com/IBM/fluent-forward-go/fluent/client/clientfakes"
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tinylib/msgp/msgp"
 )

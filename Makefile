@@ -1,12 +1,14 @@
 GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GOPATH=$(shell go env GOPATH)
 
 .PHONY: lintall
 lintall: fmt lint
 
 .PHONY:
 lint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin
 	golangci-lint run ./...
+	go mod tidy
 
 .PHONY: fmt
 fmt:
