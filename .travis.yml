@@ -7,6 +7,7 @@ go:
 
 before_install:
   - pip --quiet install yamllint
+  - find . -type f
   - [[ -f go.mod ]] && cat go.mod
   - go get github.com/sonatype-nexus-community/nancy
 

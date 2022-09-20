@@ -5,13 +5,10 @@ pwd
 ls
 echo "go.mod Before -"
 cat go.mod
-echo "go.sum Before -"
-cat go.sum
 cp go.mod go.mod.bak
-cp go.sum go.sum.bak
 go mod tidy
+echo "go.mod Differences after -"
 diff go.mod go.mod.bak
-diff go.sum go.sum.bak
 
 go mod download
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin
