@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
 go mod download
+echo "Current dir - "
+pwd
+ls
+echo "go.mod Before -"
 cat go.mod
+echo "go.sum Before -"
 cat go.sum
 cp go.mod go.mod.bak
 cp go.sum go.sum.bak
