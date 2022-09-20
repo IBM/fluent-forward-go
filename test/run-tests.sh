@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+go mod download
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin
 ${GOPATH}/bin/golangci-lint run ./...
 
