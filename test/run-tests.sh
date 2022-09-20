@@ -5,10 +5,9 @@ golangci-lint run ./...
 
 if [[ "$?" != "0" ]]; then
   echo "golangci-lint run ./... failed..."
-  exit 1
+  # exit 1
 fi
 
-go mod tidy
 go test ./...
 if [[ "$?" != "0" ]]; then
   echo "go test ./... failed..."
