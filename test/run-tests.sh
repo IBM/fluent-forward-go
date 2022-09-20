@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-go mod download
 echo "Current dir - "
 pwd
 ls
@@ -13,6 +12,8 @@ cp go.sum go.sum.bak
 go mod tidy
 diff go.mod go.mod.bak
 diff go.sum go.sum.bak
+
+go mod download
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin
 ${GOPATH}/bin/golangci-lint run ./...
 
