@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
-golangci-lint run ./...
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin
+${GOPATH}/bin/golangci-lint run ./...
 
 if [[ "$?" != "0" ]]; then
   echo "golangci-lint run ./... failed..."
-  # exit 1
+  exit 1
 fi
 
 go test ./...

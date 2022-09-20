@@ -28,6 +28,9 @@ issues:
         - gosec
         - unparam
         - wsl
+    - path: _test\.go
+      linters:
+        - typecheck
   # maximum count of issues with the same text. set to 0 to disable. default is 3.
   max-same-issues: 0
 linters-settings:
