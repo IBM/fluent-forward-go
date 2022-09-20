@@ -50,7 +50,7 @@ func init() {
 	flag.BoolVar(&useTLS, "s", false, "specify to use tls")
 }
 
-//nolint
+// nolint
 func listen() *Listener {
 
 	log.Println("Starting server on port 8083")

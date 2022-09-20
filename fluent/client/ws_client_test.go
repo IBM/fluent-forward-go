@@ -44,7 +44,7 @@ import (
 	"github.com/IBM/fluent-forward-go/fluent/client/ws/wsfakes"
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
 	"github.com/gorilla/websocket"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

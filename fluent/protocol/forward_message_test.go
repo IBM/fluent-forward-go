@@ -29,34 +29,34 @@ import (
 	"io/ioutil"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/tinylib/msgp/msgp"
-
-	. "github.com/IBM/fluent-forward-go/fluent/protocol"
+	// . "github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("ForwardMessage", func() {
 	var (
-		fwdmsg *ForwardMessage
+		fwdmsg *protocol.ForwardMessage
 	)
 
 	BeforeEach(func() {
 		bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
 		Expect(err).ToNot(HaveOccurred())
-		fwdmsg = &ForwardMessage{}
+		fwdmsg = &protocol.ForwardMessage{}
 		_, err = fwdmsg.UnmarshalMsg(bits)
 		Expect(err).NotTo(HaveOccurred())
-		entries := []EntryExt{
+		entries := []protocol.EntryExt{
 			{
-				Timestamp: EventTime{time.Now()},
+				Timestamp: protocol.EventTime{time.Now()},
 				Record: map[string]interface{}{
 					"foo":    "bar",
 					"george": "jungle",
 				},
 			},
 			{
-				Timestamp: EventTime{time.Now()},
+				Timestamp: protocol.EventTime{time.Now()},
 				Record: map[string]interface{}{
 					"foo":    "kablooie",
 					"george": "frank",
@@ -64,17 +64,17 @@ var _ = Describe("ForwardMessage", func() {
 			},
 		}
 
-		fwdmsg = NewForwardMessage("foo", entries)
+		fwdmsg = protocol.NewForwardMessage("foo", entries)
 		Expect(*fwdmsg.Options.Size).To(Equal(len(entries)))
 	})
 
 	Describe("Unmarshaling", func() {
-		testMarshalling := func(msg *ForwardMessage, opts *MessageOptions) {
+		testMarshalling := func(msg *protocol.ForwardMessage, opts *protocol.MessageOptions) {
 			msg.Options = opts
 			b, err := msg.MarshalMsg(nil)
 			Expect(err).NotTo(HaveOccurred())
 
-			var unmfwd ForwardMessage
+			var unmfwd protocol.ForwardMessage
 			_, err = unmfwd.UnmarshalMsg(b)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -94,10 +94,10 @@ var _ = Describe("ForwardMessage", func() {
 
 		It("Marshals and unmarshals correctly", func() {
 			testMarshalling(fwdmsg, nil)
-			testMarshalling(fwdmsg, &MessageOptions{})
+			testMarshalling(fwdmsg, &protocol.MessageOptions{})
 		})
 
-		testEncodingDecoding := func(msg *ForwardMessage, opts *MessageOptions) {
+		testEncodingDecoding := func(msg *protocol.ForwardMessage, opts *protocol.MessageOptions) {
 			var buf bytes.Buffer
 			en := msgp.NewWriter(&buf)
 
@@ -106,7 +106,7 @@ var _ = Describe("ForwardMessage", func() {
 			Expect(err).NotTo(HaveOccurred())
 			en.Flush()
 
-			var unmfwd ForwardMessage
+			var unmfwd protocol.ForwardMessage
 			re := msgp.NewReader(&buf)
 			err = unmfwd.DecodeMsg(re)
 			Expect(err).NotTo(HaveOccurred())
@@ -127,14 +127,14 @@ var _ = Describe("ForwardMessage", func() {
 
 		It("Encodes and decodes correctly", func() {
 			testEncodingDecoding(fwdmsg, nil)
-			testEncodingDecoding(fwdmsg, &MessageOptions{})
+			testEncodingDecoding(fwdmsg, &protocol.MessageOptions{})
 		})
 
 		It("Properly deserializes real fluentbit messages with no options", func() {
 			bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
 			Expect(err).ToNot(HaveOccurred())
 
-			fwdmsg := ForwardMessage{}
+			fwdmsg := protocol.ForwardMessage{}
 			_, err = fwdmsg.UnmarshalMsg(bits)
 			Expect(err).NotTo(HaveOccurred())
 		})

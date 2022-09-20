@@ -30,6 +30,7 @@ import "github.com/tinylib/msgp/msgp"
 
 // ForwardMessage is used in Forward mode to send multiple events in a single
 // msgpack array within a single request.
+//
 //msgp:tuple ForwardMessage
 //mgsp:test ignore ForwardMessage
 //msgp:encode ignore ForwardMessage

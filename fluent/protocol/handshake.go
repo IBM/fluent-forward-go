@@ -67,6 +67,7 @@ func NewHelo(opts *HeloOpts) *Helo {
 
 // Helo is the initial handshake message, sent by the server and received
 // by the client.  Client will respond with a Ping.
+//
 //msgp:tuple Helo
 type Helo struct {
 	MessageType string
@@ -112,6 +113,7 @@ func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (
 
 // Ping is the response message sent by the client after receiving a
 // Helo from the server.  Server will respond with a Pong.
+//
 //msgp:tuple Ping
 type Ping struct {
 	MessageType        string
@@ -155,6 +157,7 @@ func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 
 // Pong is the response message sent by the server after receiving a
 // Ping from the client.  A Pong concludes the handshake.
+//
 //msgp:tuple Pong
 type Pong struct {
 	MessageType        string
