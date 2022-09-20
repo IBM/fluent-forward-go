@@ -8,6 +8,7 @@ if [[ "$?" != "0" ]]; then
   exit 1
 fi
 
+go mod tidy
 go test ./...
 if [[ "$?" != "0" ]]; then
   echo "go test ./... failed..."
