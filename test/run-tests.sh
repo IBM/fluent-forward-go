@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
 go mod download
+cat go.mod
+cat go.sum
+cp go.mod go.mod.bak
+cp go.sum go.sum.bak
 go mod tidy
+diff go.mod go.mod.bak
+diff go.sum go.sum.bak
 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${GOPATH}/bin
 ${GOPATH}/bin/golangci-lint run ./...
 
