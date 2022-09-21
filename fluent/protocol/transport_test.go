@@ -29,21 +29,21 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/IBM/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Transport", func() {
 	Describe("EventTime", func() {
 		var (
-			ent EntryExt
+			ent protocol.EntryExt
 		)
 
 		BeforeEach(func() {
-			ent = EntryExt{
-				Timestamp: EventTime{
+			ent = protocol.EntryExt{
+				Timestamp: protocol.EventTime{
 					Time: time.Unix(int64(1257894000), int64(12340000)),
 				},
 			}
@@ -65,7 +65,7 @@ var _ = Describe("Transport", func() {
 				strings.Contains(fmt.Sprintf("%X", b), "D7004AF9F07000BC4B20"),
 			).To(BeTrue())
 
-			var unment EntryExt
+			var unment protocol.EntryExt
 			_, err = unment.UnmarshalMsg(b)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -75,22 +75,22 @@ var _ = Describe("Transport", func() {
 
 	Describe("EntryList", func() {
 		var (
-			e1 EntryList
+			e1 protocol.EntryList
 			et time.Time
 		)
 
 		BeforeEach(func() {
 			et = time.Now()
-			e1 = EntryList{
+			e1 = protocol.EntryList{
 				{
-					Timestamp: EventTime{et},
+					Timestamp: protocol.EventTime{et},
 					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
-					Timestamp: EventTime{et},
+					Timestamp: protocol.EventTime{et},
 					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
@@ -101,20 +101,20 @@ var _ = Describe("Transport", func() {
 
 		Describe("Un/MarshalPacked", func() {
 			var (
-				e2 EntryList
+				e2 protocol.EntryList
 			)
 
 			BeforeEach(func() {
-				e2 = EntryList{
+				e2 = protocol.EntryList{
 					{
-						Timestamp: EventTime{et},
+						Timestamp: protocol.EventTime{et},
 						Record: map[string]interface{}{
 							"foo":    "bar",
 							"george": "jungle",
 						},
 					},
 					{
-						Timestamp: EventTime{et},
+						Timestamp: protocol.EventTime{et},
 						Record: map[string]interface{}{
 							"foo":    "kablooie",
 							"george": "frank",
@@ -127,7 +127,7 @@ var _ = Describe("Transport", func() {
 				b, err := e2.MarshalPacked()
 				Expect(err).ToNot(HaveOccurred())
 
-				el := EntryList{}
+				el := protocol.EntryList{}
 				_, err = el.UnmarshalPacked(b)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(el.Equal(e2)).To(BeTrue())
@@ -136,20 +136,20 @@ var _ = Describe("Transport", func() {
 
 		Describe("Equal", func() {
 			var (
-				e2 EntryList
+				e2 protocol.EntryList
 			)
 
 			BeforeEach(func() {
-				e2 = EntryList{
+				e2 = protocol.EntryList{
 					{
-						Timestamp: EventTime{et},
+						Timestamp: protocol.EventTime{et},
 						Record: map[string]interface{}{
 							"foo":    "bar",
 							"george": "jungle",
 						},
 					},
 					{
-						Timestamp: EventTime{et},
+						Timestamp: protocol.EventTime{et},
 						Record: map[string]interface{}{
 							"foo":    "kablooie",
 							"george": "frank",
@@ -174,7 +174,7 @@ var _ = Describe("Transport", func() {
 
 			Context("When the lists have differing elements", func() {
 				BeforeEach(func() {
-					e2[0].Timestamp = EventTime{et.Add(5 * time.Second)}
+					e2[0].Timestamp = protocol.EventTime{et.Add(5 * time.Second)}
 				})
 
 				It("Returns false", func() {
@@ -187,21 +187,21 @@ var _ = Describe("Transport", func() {
 	Describe("NewPackedForwardMessage", func() {
 		var (
 			tag     string
-			entries EntryList
+			entries protocol.EntryList
 		)
 
 		BeforeEach(func() {
 			tag = "foo.bar"
-			entries = EntryList{
+			entries = protocol.EntryList{
 				{
-					Timestamp: EventTime{time.Now()},
+					Timestamp: protocol.EventTime{time.Now()},
 					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
-					Timestamp: EventTime{time.Now()},
+					Timestamp: protocol.EventTime{time.Now()},
 					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
@@ -211,7 +211,7 @@ var _ = Describe("Transport", func() {
 		})
 
 		It("Returns a PackedForwardMessage", func() {
-			msg, err := NewPackedForwardMessage(tag, entries)
+			msg, err := protocol.NewPackedForwardMessage(tag, entries)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(msg).NotTo(BeNil())
 			Expect(*msg.Options.Size).To(Equal(len(entries)))
@@ -219,9 +219,9 @@ var _ = Describe("Transport", func() {
 		})
 
 		It("Correctly encodes the entries into a bytestream", func() {
-			msg, err := NewPackedForwardMessage(tag, entries)
+			msg, err := protocol.NewPackedForwardMessage(tag, entries)
 			Expect(err).NotTo(HaveOccurred())
-			elist := make(EntryList, 2)
+			elist := make(protocol.EntryList, 2)
 			_, err = elist.UnmarshalPacked(msg.EventStream)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(elist.Equal(entries)).To(BeTrue())
@@ -231,21 +231,21 @@ var _ = Describe("Transport", func() {
 	Describe("NewCompressedPackedForwardMessage", func() {
 		var (
 			tag     string
-			entries []EntryExt
+			entries []protocol.EntryExt
 		)
 
 		BeforeEach(func() {
 			tag = "foo.bar"
-			entries = []EntryExt{
+			entries = []protocol.EntryExt{
 				{
-					Timestamp: EventTime{time.Now()},
+					Timestamp: protocol.EventTime{time.Now()},
 					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
-					Timestamp: EventTime{time.Now()},
+					Timestamp: protocol.EventTime{time.Now()},
 					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
@@ -255,7 +255,7 @@ var _ = Describe("Transport", func() {
 		})
 
 		It("Returns a message with a gzip-compressed event stream", func() {
-			msg, err := NewCompressedPackedForwardMessage(tag, entries)
+			msg, err := protocol.NewCompressedPackedForwardMessage(tag, entries)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(msg).NotTo(BeNil())
 			Expect(*msg.Options.Size).To(Equal(len(entries)))

@@ -35,6 +35,7 @@ import (
 
 // PackedForwardMessage is just like ForwardMessage, except that the events
 // are carried as a msgpack binary stream
+//
 //msgp:tuple PackedForwardMessage
 //msgp:decode ignore PackedForwardMessage
 //msgp:unmarshal ignore PackedForwardMessage

@@ -33,6 +33,7 @@ import (
 //go:generate msgp
 
 // Message is used to send a single event at a time
+//
 //msgp:tuple Message
 //msgp:decode ignore Message
 //msgp:unmarshal ignore Message
@@ -166,6 +167,7 @@ func (msg *Message) Chunk() (string, error) {
 }
 
 // MessageExt
+//
 //msgp:tuple MessageExt
 //msgp:decode ignore MessageExt
 //msgp:unmarshal ignore MessageExt

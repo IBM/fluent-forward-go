@@ -36,6 +36,7 @@ import (
 
 // Conn is an interface for websocket.Conn. Generated with
 // ifacemaker (https://github.com/vburenin/ifacemaker).
+//
 //counterfeiter:generate . Conn
 type Conn interface {
 	// Subprotocol returns the negotiated protocol for the connection.

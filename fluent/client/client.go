@@ -45,6 +45,7 @@ const (
 )
 
 // MessageClient implementations send MessagePack messages to a peer
+//
 //counterfeiter:generate . MessageClient
 type MessageClient interface {
 	Connect() error
@@ -62,6 +63,7 @@ type MessageClient interface {
 }
 
 // ConnectionFactory implementations create new connections
+//
 //counterfeiter:generate . ConnectionFactory
 type ConnectionFactory interface {
 	New() (net.Conn, error)

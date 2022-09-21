@@ -128,6 +128,7 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 
 // EntryExt is the basic representation of an individual event, but using the
 // msgpack extension format for the timestamp.
+//
 //msgp:tuple EntryExt
 type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
@@ -210,6 +211,7 @@ func (el EntryList) Equal(e2 EntryList) bool {
 // EntryExt is the basic representation of an individual event.  The timestamp
 // is an int64 representing seconds since the epoch (UTC).  The initial creator
 // of the entry is responsible for converting to UTC.
+//
 //msgp:tuple Entry
 type Entry struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
@@ -229,6 +231,7 @@ type AckMessage struct {
 }
 
 // RawMessage is a ChunkEncoder wrapper for []byte.
+//
 //msgp:encode ignore RawMessage
 type RawMessage []byte
 
