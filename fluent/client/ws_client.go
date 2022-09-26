@@ -25,6 +25,7 @@ SOFTWARE.
 package client
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -265,10 +266,14 @@ func (c *WSClient) Reconnect() (err error) {
 
 // Send sends a single msgp.Encodable across the wire.
 func (c *WSClient) Send(e protocol.ChunkEncoder) error {
+	var (
+		err            error
+		rawMessageData bytes.Buffer
+	)
 	// Check for an async connection error and return it here.
 	// In most cases, the client will not care about reading from
 	// the connection, so checking for the error here is sufficient.
-	if err := c.getErr(); err != nil {
+	if err = c.getErr(); err != nil {
 		return err // TODO: wrap this
 	}
 
@@ -278,8 +283,17 @@ func (c *WSClient) Send(e protocol.ChunkEncoder) error {
 		return errors.New("no active session")
 	}
 
-	// msgp.Encode makes use of object pool to decrease allocations
-	return msgp.Encode(session.Connection, e)
+	err = msgp.Encode(&rawMessageData, e)
+	if err != nil {
+		return err
+	}
+
+	bytesData := rawMessageData.Bytes()
+	// Write function does not accurately return the number of bytes written
+	// so it would be ineffective to compare
+	_, err = c.session.Connection.Write(bytesData)
+
+	return err
 }
 
 // SendRaw sends an array of bytes across the wire.
