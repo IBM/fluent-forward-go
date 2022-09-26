@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -46,6 +47,7 @@ import (
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tinylib/msgp/msgp"
 )
 
 var _ = Describe("IAMAuthInfo", func() {
@@ -301,6 +303,44 @@ var _ = Describe("WSClient", func() {
 
 			writtenbits := conn.WriteArgsForCall(0)
 			Expect(bytes.Equal(bits, writtenbits)).To(BeTrue())
+		})
+
+		It("Sends the message", func() {
+			msgBytes, _ := msg.MarshalMsg(nil)
+			Expect(client.Send(&msg)).ToNot(HaveOccurred())
+
+			writtenBytes := conn.WriteArgsForCall(0)
+			Expect(bytes.Equal(msgBytes, writtenBytes)).To(BeTrue())
+		})
+
+		When("The message is large", func() {
+			const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+			var (
+				expectedBytes int
+				messageSize   = 65536
+			)
+
+			JustBeforeEach(func() {
+				seededRand := rand.New(
+					rand.NewSource(time.Now().UnixNano()))
+				m := make([]byte, messageSize)
+				for i := range m {
+					m[i] = charset[seededRand.Intn(len(charset))]
+				}
+				msg.Record = m
+
+				var b bytes.Buffer
+				Expect(msgp.Encode(&b, &msg)).ToNot(HaveOccurred())
+				expectedBytes = len(b.Bytes())
+			})
+
+			It("Sends the correct number of bits", func() {
+				Expect(client.Send(&msg)).ToNot(HaveOccurred())
+				Expect(conn.WriteCallCount()).To(Equal(1))
+				writtenBytes := len(conn.WriteArgsForCall(0))
+				Expect(writtenBytes).To(Equal(expectedBytes))
+			})
 		})
 
 		When("the connection is disconnected", func() {
