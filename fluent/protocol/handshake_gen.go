@@ -421,7 +421,7 @@ func (z *Ping) DecodeMsg(dc *msgp.Reader) (err error) {
 		err = msgp.WrapError(err, "SharedKeySalt")
 		return
 	}
-	z.SharedKeyHexDigest, err = dc.ReadBytes(z.SharedKeyHexDigest)
+	z.SharedKeyHexDigest, err = dc.ReadString()
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeyHexDigest")
 		return
@@ -461,7 +461,7 @@ func (z *Ping) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "SharedKeySalt")
 		return
 	}
-	err = en.WriteBytes(z.SharedKeyHexDigest)
+	err = en.WriteString(z.SharedKeyHexDigest)
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeyHexDigest")
 		return
@@ -487,7 +487,7 @@ func (z *Ping) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.AppendString(o, z.MessageType)
 	o = msgp.AppendString(o, z.ClientHostname)
 	o = msgp.AppendBytes(o, z.SharedKeySalt)
-	o = msgp.AppendBytes(o, z.SharedKeyHexDigest)
+	o = msgp.AppendString(o, z.SharedKeyHexDigest)
 	o = msgp.AppendString(o, z.Username)
 	o = msgp.AppendString(o, z.Password)
 	return
@@ -520,7 +520,7 @@ func (z *Ping) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "SharedKeySalt")
 		return
 	}
-	z.SharedKeyHexDigest, bts, err = msgp.ReadBytesBytes(bts, z.SharedKeyHexDigest)
+	z.SharedKeyHexDigest, bts, err = msgp.ReadStringBytes(bts)
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeyHexDigest")
 		return
@@ -541,7 +541,7 @@ func (z *Ping) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Ping) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.MessageType) + msgp.StringPrefixSize + len(z.ClientHostname) + msgp.BytesPrefixSize + len(z.SharedKeySalt) + msgp.BytesPrefixSize + len(z.SharedKeyHexDigest) + msgp.StringPrefixSize + len(z.Username) + msgp.StringPrefixSize + len(z.Password)
+	s = 1 + msgp.StringPrefixSize + len(z.MessageType) + msgp.StringPrefixSize + len(z.ClientHostname) + msgp.BytesPrefixSize + len(z.SharedKeySalt) + msgp.StringPrefixSize + len(z.SharedKeyHexDigest) + msgp.StringPrefixSize + len(z.Username) + msgp.StringPrefixSize + len(z.Password)
 	return
 }
 
@@ -577,7 +577,7 @@ func (z *Pong) DecodeMsg(dc *msgp.Reader) (err error) {
 		err = msgp.WrapError(err, "ServerHostname")
 		return
 	}
-	z.SharedKeyHexDigest, err = dc.ReadBytes(z.SharedKeyHexDigest)
+	z.SharedKeyHexDigest, err = dc.ReadString()
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeyHexDigest")
 		return
@@ -612,7 +612,7 @@ func (z *Pong) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "ServerHostname")
 		return
 	}
-	err = en.WriteBytes(z.SharedKeyHexDigest)
+	err = en.WriteString(z.SharedKeyHexDigest)
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeyHexDigest")
 		return
@@ -629,7 +629,7 @@ func (z *Pong) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.AppendBool(o, z.AuthResult)
 	o = msgp.AppendString(o, z.Reason)
 	o = msgp.AppendString(o, z.ServerHostname)
-	o = msgp.AppendBytes(o, z.SharedKeyHexDigest)
+	o = msgp.AppendString(o, z.SharedKeyHexDigest)
 	return
 }
 
@@ -665,7 +665,7 @@ func (z *Pong) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "ServerHostname")
 		return
 	}
-	z.SharedKeyHexDigest, bts, err = msgp.ReadBytesBytes(bts, z.SharedKeyHexDigest)
+	z.SharedKeyHexDigest, bts, err = msgp.ReadStringBytes(bts)
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeyHexDigest")
 		return
@@ -676,6 +676,6 @@ func (z *Pong) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Pong) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.MessageType) + msgp.BoolSize + msgp.StringPrefixSize + len(z.Reason) + msgp.StringPrefixSize + len(z.ServerHostname) + msgp.BytesPrefixSize + len(z.SharedKeyHexDigest)
+	s = 1 + msgp.StringPrefixSize + len(z.MessageType) + msgp.BoolSize + msgp.StringPrefixSize + len(z.Reason) + msgp.StringPrefixSize + len(z.ServerHostname) + msgp.StringPrefixSize + len(z.SharedKeyHexDigest)
 	return
 }
