@@ -100,7 +100,7 @@ func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (
 		MessageType:        MsgTypePing,
 		ClientHostname:     hostname,
 		SharedKeySalt:      salt,
-		SharedKeyHexDigest: bytes,
+		SharedKeyHexDigest: string(bytes),
 	}
 
 	if len(creds) >= 2 {
@@ -119,7 +119,7 @@ type Ping struct {
 	MessageType        string
 	ClientHostname     string
 	SharedKeySalt      []byte
-	SharedKeyHexDigest []byte
+	SharedKeyHexDigest string
 	Username           string
 	Password           string
 }
@@ -149,7 +149,7 @@ func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 		AuthResult:         authResult,
 		Reason:             reason,
 		ServerHostname:     hostname,
-		SharedKeyHexDigest: bytes,
+		SharedKeyHexDigest: string(bytes),
 	}
 
 	return &p, err
@@ -164,21 +164,21 @@ type Pong struct {
 	AuthResult         bool
 	Reason             string
 	ServerHostname     string
-	SharedKeyHexDigest []byte
+	SharedKeyHexDigest string
 }
 
 // ValidatePingDigest validates that the digest contained in the PING message
 // is valid for the client hostname (as contained in the PING).
 // Returns a non-nil error if validation fails, nil otherwise.
 func ValidatePingDigest(p *Ping, key, nonce []byte) error {
-	return validateDigest(p.SharedKeyHexDigest, key, nonce, p.SharedKeySalt, p.ClientHostname)
+	return validateDigest([]byte(p.SharedKeyHexDigest), key, nonce, p.SharedKeySalt, p.ClientHostname)
 }
 
 // ValidatePongDigest validates that the digest contained in the PONG message
 // is valid for the server hostname (as contained in the PONG).
 // Returns a non-nil error if validation fails, nil otherwise.
 func ValidatePongDigest(p *Pong, key, nonce, salt []byte) error {
-	return validateDigest(p.SharedKeyHexDigest, key, nonce, salt, p.ServerHostname)
+	return validateDigest([]byte(p.SharedKeyHexDigest), key, nonce, salt, p.ServerHostname)
 }
 
 func validateDigest(received, key, nonce, salt []byte, hostname string) error {
