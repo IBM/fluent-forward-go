@@ -102,7 +102,7 @@ type connection struct {
 	writeLock     sync.Mutex
 	stateLock     sync.RWMutex
 	readHandler   ReadHandler
-	closedSig     chan struct{}
+	done          chan struct{}
 	connState     ConnState
 	closeDeadline time.Duration
 }
@@ -110,7 +110,7 @@ type connection struct {
 func NewConnection(conn ext.Conn, opts ConnectionOptions) (Connection, error) {
 	wsc := &connection{
 		Conn:      conn,
-		closedSig: make(chan struct{}),
+		done:      make(chan struct{}),
 		connState: ConnStateOpen,
 		logger:    opts.Logger,
 	}
@@ -239,7 +239,7 @@ func (wsc *connection) CloseWithMsg(closeCode int, msg string) error {
 			case <-time.After(wsc.closeDeadline):
 				// sent a close, but never heard back, close anyway
 				err = errors.New("close deadline expired")
-			case <-wsc.closedSig:
+			case <-wsc.done:
 			}
 		}
 	}
@@ -285,7 +285,7 @@ func (wsc *connection) runReadLoop(nextMsg chan connMsg) {
 
 		close(nextMsg)
 		wsc.unsetConnState(ConnStateListening)
-		wsc.closedSig <- struct{}{}
+		close(wsc.done)
 	}()
 
 	msg := connMsg{}
