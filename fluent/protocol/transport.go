@@ -126,13 +126,31 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	return nil
 }
 
+// msgp:tuple Dummy
+type Dummy struct{}
+
+// fluent-bit v2
+// entry timestamp is packed into a array
+//
+// msgp:tuple EntryExtTimestampv2
+type EntryExtTimestampv2 struct {
+	// Timestamp can contain the timestamp in either seconds or nanoseconds
+	Timestamp EventTime `msg:"eventTime,extension"`
+
+	// this is an empty fixed array 8x80
+	Packing interface{}
+}
+
 // EntryExt is the basic representation of an individual event, but using the
 // msgpack extension format for the timestamp.
 //
 //msgp:tuple EntryExt
 type EntryExt struct {
-	// Timestamp can contain the timestamp in either seconds or nanoseconds
-	Timestamp EventTime `msg:"eventTime,extension"`
+	// fluentbit v2 timestamp format comes as an array of 2 entries
+	TimeV2 EntryExtTimestampv2
+
+	// Timestamp EventTime `msg:"eventTime,extension"`
+
 	// Record is the actual event record. The object must be a map or
 	// struct. Objects that implement the msgp.Encodable interface will
 	// be the most performant.
@@ -169,7 +187,7 @@ func (el EntryList) MarshalPacked() ([]byte, error) {
 	}()
 
 	for _, e := range el {
-		if err := msgp.Encode(buf, e); err != nil {
+		if err := msgp.Encode(buf, &e); err != nil {
 			return nil, err
 		}
 	}
@@ -196,7 +214,7 @@ func (el EntryList) Equal(e2 EntryList) bool {
 
 	for _, ea := range first {
 		for _, eb := range second {
-			if ea.Timestamp.Equal(eb.Timestamp.Time) {
+			if ea.TimeV2.Timestamp.Equal(eb.TimeV2.Timestamp.Time) {
 				// Timestamps equal, check the record
 				if reflect.DeepEqual(ea.Record, eb.Record) {
 					matches++

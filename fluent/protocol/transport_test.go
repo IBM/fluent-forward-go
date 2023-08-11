@@ -43,8 +43,10 @@ var _ = Describe("Transport", func() {
 
 		BeforeEach(func() {
 			ent = protocol.EntryExt{
-				Timestamp: protocol.EventTime{
-					Time: time.Unix(int64(1257894000), int64(12340000)),
+				TimeV2: protocol.EntryExtTimestampv2{
+					Timestamp: protocol.EventTime{
+						Time: time.Unix(int64(1257894000), int64(12340000)),
+					},
 				},
 			}
 		})
@@ -69,7 +71,7 @@ var _ = Describe("Transport", func() {
 			_, err = unment.UnmarshalMsg(b)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(unment.Timestamp.Time.Equal(ent.Timestamp.Time)).To(BeTrue())
+			Expect(unment.TimeV2.Timestamp.Time.Equal(ent.TimeV2.Timestamp.Time)).To(BeTrue())
 		})
 	})
 
@@ -83,14 +85,14 @@ var _ = Describe("Transport", func() {
 			et = time.Now()
 			e1 = protocol.EntryList{
 				{
-					Timestamp: protocol.EventTime{et},
+					TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{et}},
 					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
-					Timestamp: protocol.EventTime{et},
+					TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{et}},
 					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
@@ -107,14 +109,14 @@ var _ = Describe("Transport", func() {
 			BeforeEach(func() {
 				e2 = protocol.EntryList{
 					{
-						Timestamp: protocol.EventTime{et},
+						TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{et}},
 						Record: map[string]interface{}{
 							"foo":    "bar",
 							"george": "jungle",
 						},
 					},
 					{
-						Timestamp: protocol.EventTime{et},
+						TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{et}},
 						Record: map[string]interface{}{
 							"foo":    "kablooie",
 							"george": "frank",
@@ -142,14 +144,14 @@ var _ = Describe("Transport", func() {
 			BeforeEach(func() {
 				e2 = protocol.EntryList{
 					{
-						Timestamp: protocol.EventTime{et},
+						TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{et}},
 						Record: map[string]interface{}{
 							"foo":    "bar",
 							"george": "jungle",
 						},
 					},
 					{
-						Timestamp: protocol.EventTime{et},
+						TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{et}},
 						Record: map[string]interface{}{
 							"foo":    "kablooie",
 							"george": "frank",
@@ -174,7 +176,7 @@ var _ = Describe("Transport", func() {
 
 			Context("When the lists have differing elements", func() {
 				BeforeEach(func() {
-					e2[0].Timestamp = protocol.EventTime{et.Add(5 * time.Second)}
+					e2[0].TimeV2.Timestamp = protocol.EventTime{et.Add(5 * time.Second)}
 				})
 
 				It("Returns false", func() {
@@ -194,14 +196,14 @@ var _ = Describe("Transport", func() {
 			tag = "foo.bar"
 			entries = protocol.EntryList{
 				{
-					Timestamp: protocol.EventTime{time.Now()},
+					TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{time.Now()}},
 					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
-					Timestamp: protocol.EventTime{time.Now()},
+					TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{time.Now()}},
 					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",
@@ -238,14 +240,14 @@ var _ = Describe("Transport", func() {
 			tag = "foo.bar"
 			entries = []protocol.EntryExt{
 				{
-					Timestamp: protocol.EventTime{time.Now()},
+					TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{time.Now()}},
 					Record: map[string]interface{}{
 						"foo":    "bar",
 						"george": "jungle",
 					},
 				},
 				{
-					Timestamp: protocol.EventTime{time.Now()},
+					TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{time.Now()}},
 					Record: map[string]interface{}{
 						"foo":    "kablooie",
 						"george": "frank",

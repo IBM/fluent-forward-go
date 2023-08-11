@@ -27,6 +27,7 @@ package protocol_test
 import (
 	"bytes"
 	"io/ioutil"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -42,21 +43,21 @@ var _ = Describe("ForwardMessage", func() {
 	)
 
 	BeforeEach(func() {
-		bits, err := ioutil.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
+		bits, err := os.ReadFile("protocolfakes/forwarded_records.msgpack.bin")
 		Expect(err).ToNot(HaveOccurred())
 		fwdmsg = &protocol.ForwardMessage{}
 		_, err = fwdmsg.UnmarshalMsg(bits)
 		Expect(err).NotTo(HaveOccurred())
 		entries := []protocol.EntryExt{
 			{
-				Timestamp: protocol.EventTime{time.Now()},
+				TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{time.Now()}},
 				Record: map[string]interface{}{
 					"foo":    "bar",
 					"george": "jungle",
 				},
 			},
 			{
-				Timestamp: protocol.EventTime{time.Now()},
+				TimeV2: protocol.EntryExtTimestampv2{Timestamp: protocol.EventTime{time.Now()}},
 				Record: map[string]interface{}{
 					"foo":    "kablooie",
 					"george": "frank",
@@ -84,10 +85,10 @@ var _ = Describe("ForwardMessage", func() {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
 			Expect(unmfwd.Tag).To(Equal("foo"))
-			Expect(unmfwd.Entries[0].Timestamp.Time.Equal(msg.Entries[0].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Entries[0].TimeV2.Timestamp.Time.Equal(msg.Entries[0].TimeV2.Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(unmfwd.Entries[1].Timestamp.Time.Equal(msg.Entries[1].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Entries[1].TimeV2.Timestamp.Time.Equal(msg.Entries[1].TimeV2.Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}
@@ -117,10 +118,10 @@ var _ = Describe("ForwardMessage", func() {
 				Expect(unmfwd.Options).ToNot(BeNil())
 			}
 			Expect(unmfwd.Tag).To(Equal("foo"))
-			Expect(unmfwd.Entries[0].Timestamp.Time.Equal(msg.Entries[0].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Entries[0].TimeV2.Timestamp.Time.Equal(msg.Entries[0].TimeV2.Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("foo", "bar"))
 			Expect(unmfwd.Entries[0].Record).To(HaveKeyWithValue("george", "jungle"))
-			Expect(unmfwd.Entries[1].Timestamp.Time.Equal(msg.Entries[1].Timestamp.Time)).To(BeTrue())
+			Expect(unmfwd.Entries[1].TimeV2.Timestamp.Time.Equal(msg.Entries[1].TimeV2.Timestamp.Time)).To(BeTrue())
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("foo", "kablooie"))
 			Expect(unmfwd.Entries[1].Record).To(HaveKeyWithValue("george", "frank"))
 		}

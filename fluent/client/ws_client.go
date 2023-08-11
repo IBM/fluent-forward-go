@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 
@@ -201,6 +202,7 @@ func (c *WSClient) connect() error {
 		// is extremely small; e.g., who will call Dis/Reconnect immediately
 		// after calling Connect?
 		if c.Session() == nil {
+			fmt.Printf("====== ERROR ====== leaving connect without reading on connection =======\n")
 			return
 		}
 
@@ -209,6 +211,7 @@ func (c *WSClient) connect() error {
 		// sufficient for most cases where the client cares only about sending.
 		// If the client really cares about handling reads, they will define a
 		// custom ReadHandler that will receive the error synchronously.
+		fmt.Printf("====== INFO ====== start listening on ws connection =======\n")
 		if err := c.session.Connection.Listen(); err != nil {
 			c.setErr(err)
 		}
