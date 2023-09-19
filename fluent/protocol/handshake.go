@@ -25,7 +25,6 @@ SOFTWARE.
 package protocol
 
 import (
-	"bytes"
 	"crypto/sha512"
 	"encoding/hex"
 	"errors"
@@ -94,13 +93,13 @@ func NewPingWithAuth(hostname string, sharedKey, salt, nonce []byte, username, p
 }
 
 func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (*Ping, error) {
-	bytes, err := computeHexDigest(salt, hostname, nonce, sharedKey)
+	hexDigest, err := computeHexDigest(salt, hostname, nonce, sharedKey)
 
 	p := Ping{
 		MessageType:        MsgTypePing,
 		ClientHostname:     hostname,
 		SharedKeySalt:      salt,
-		SharedKeyHexDigest: string(bytes),
+		SharedKeyHexDigest: hexDigest,
 	}
 
 	if len(creds) >= 2 {
@@ -142,14 +141,14 @@ func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 		return nil, errors.New("Helo has a nil options field")
 	}
 
-	bytes, err := computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey)
+	hexDigest, err := computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey)
 
 	p := Pong{
 		MessageType:        MsgTypePong,
 		AuthResult:         authResult,
 		Reason:             reason,
 		ServerHostname:     hostname,
-		SharedKeyHexDigest: string(bytes),
+		SharedKeyHexDigest: hexDigest,
 	}
 
 	return &p, err
@@ -171,36 +170,36 @@ type Pong struct {
 // is valid for the client hostname (as contained in the PING).
 // Returns a non-nil error if validation fails, nil otherwise.
 func ValidatePingDigest(p *Ping, key, nonce []byte) error {
-	return validateDigest([]byte(p.SharedKeyHexDigest), key, nonce, p.SharedKeySalt, p.ClientHostname)
+	return validateDigest(p.SharedKeyHexDigest, key, nonce, p.SharedKeySalt, p.ClientHostname)
 }
 
 // ValidatePongDigest validates that the digest contained in the PONG message
 // is valid for the server hostname (as contained in the PONG).
 // Returns a non-nil error if validation fails, nil otherwise.
 func ValidatePongDigest(p *Pong, key, nonce, salt []byte) error {
-	return validateDigest([]byte(p.SharedKeyHexDigest), key, nonce, salt, p.ServerHostname)
+	return validateDigest(p.SharedKeyHexDigest, key, nonce, salt, p.ServerHostname)
 }
 
-func validateDigest(received, key, nonce, salt []byte, hostname string) error {
+func validateDigest(received string, key, nonce, salt []byte, hostname string) error {
 	expected, err := computeHexDigest(salt, hostname, nonce, key)
 	if err != nil {
 		return err
 	}
 
-	if !bytes.Equal(received, expected) {
+	if received != expected {
 		return errors.New("No match")
 	}
 
 	return nil
 }
 
-func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) ([]byte, error) {
+func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) (string, error) {
 	h := sha512.New()
 	h.Write(salt)
 
 	_, err := io.WriteString(h, hostname)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	h.Write(nonce)
@@ -208,6 +207,7 @@ func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) ([]
 	sum := h.Sum(nil)
 	hexOut := make([]byte, hex.EncodedLen(len(sum)))
 	hex.Encode(hexOut, sum)
+	stringValue := string(hexOut[:])
 
-	return hexOut, err
+	return stringValue, err
 }

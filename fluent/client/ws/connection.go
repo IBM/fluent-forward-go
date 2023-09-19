@@ -48,9 +48,9 @@ type Logger interface {
 
 type noopLogger struct{}
 
-func (l *noopLogger) Println(v ...interface{}) {}
+func (l *noopLogger) Println(_ ...interface{}) {}
 
-func (l *noopLogger) Printf(format string, v ...interface{}) {}
+func (l *noopLogger) Printf(_ string, _ ...interface{}) {}
 
 type ReadHandler func(conn Connection, messageType int, p []byte, err error) error
 
