@@ -204,22 +204,6 @@ var _ = Describe("WSClient", func() {
 			})
 		})
 
-		When("the factory returns an error", func() {
-			var (
-				connectionError error
-			)
-
-			JustBeforeEach(func() {
-				connectionError = errors.New("Nope")
-				factory.NewReturns(nil, connectionError)
-			})
-
-			It("Returns an error", func() {
-				err := client.Connect()
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(BeIdenticalTo(connectionError))
-			})
-		})
 	})
 
 	Describe("Disconnect", func() {

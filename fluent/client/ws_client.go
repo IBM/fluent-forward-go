@@ -118,7 +118,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 		bodyBytes, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
 			bodyString := string(bodyBytes)
-			if resp.StatusCode == 403 {
+			if resp.StatusCode >= 300 {
 				err = fmt.Errorf("%s. %s:%s", err, strconv.Itoa(resp.StatusCode), bodyString)
 			}
 		}
