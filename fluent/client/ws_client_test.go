@@ -61,12 +61,12 @@ var _ = Describe("IAMAuthInfo", func() {
 
 var _ = Describe("DefaultWSConnectionFactory", func() {
 	var (
-		svr    *httptest.Server
-		happy  chan struct{}
-		useTLS bool
+		svr               *httptest.Server
+		ch                chan struct{}
+		useTLS, testError bool
 	)
 
-	newHandler := func(happy chan struct{}) http.Handler {
+	happyHandler := func(happy chan struct{}) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
 			svrOpts := ws.ConnectionOptions{}
@@ -88,13 +88,21 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		})
 	}
 
+	sadHandler := func(happy chan struct{}) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "broken test", http.StatusInternalServerError)
+		})
+	}
+
 	JustBeforeEach(func() {
-		happy = make(chan struct{})
+		ch = make(chan struct{})
 
 		if useTLS {
-			svr = httptest.NewTLSServer(newHandler(happy))
+			svr = httptest.NewTLSServer(happyHandler(ch))
+		} else if testError {
+			svr = httptest.NewTLSServer(sadHandler(ch))
 		} else {
-			svr = httptest.NewServer(newHandler(happy))
+			svr = httptest.NewServer(happyHandler(ch))
 		}
 
 		time.Sleep(5 * time.Millisecond)
@@ -118,8 +126,34 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		})
 
 		Expect(cli.Connect()).ToNot(HaveOccurred())
-		Eventually(happy).Should(Receive())
+		Eventually(ch).Should(Receive())
 		Expect(cli.Disconnect()).ToNot(HaveOccurred())
+	})
+
+	When("sends wrong url, expects error", func() {
+
+		BeforeEach(func() {
+			testError = true
+		})
+
+		It("returns error", func() {
+			u := "ws" + strings.TrimPrefix(svr.URL, "http")
+
+			cli := fclient.NewWS(client.WSConnectionOptions{
+				Factory: &client.DefaultWSConnectionFactory{
+					URL: u + "/test",
+					TLSConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+					AuthInfo: NewIAMAuthInfo("oi"),
+				},
+			})
+
+			err := cli.Connect()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("websocket: bad handshake. 500:broken test"))
+		})
+
 	})
 
 	When("the factory is configured for TLS", func() {
