@@ -66,7 +66,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		useTLS, testError bool
 	)
 
-	happyHandler := func(happy chan struct{}) http.Handler {
+	happyHandler := func(ch chan struct{}) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
 			svrOpts := ws.ConnectionOptions{}
@@ -82,13 +82,13 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 				Fail("broke")
 			}
 
-			happy <- struct{}{}
+			ch <- struct{}{}
 
 			svrConnection.Close()
 		})
 	}
 
-	sadHandler := func(happy chan struct{}) http.Handler {
+	sadHandler := func(ch chan struct{}) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "broken test", http.StatusInternalServerError)
 		})
