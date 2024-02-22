@@ -32,9 +32,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/IBM/fluent-forward-go/fluent/client/ws"
-	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
-	"github.com/IBM/fluent-forward-go/fluent/protocol"
+	"github.com/aanujj/fluent-forward-go/fluent/client/ws"
+	"github.com/aanujj/fluent-forward-go/fluent/client/ws/ext"
+	"github.com/aanujj/fluent-forward-go/fluent/protocol"
 	"github.com/gorilla/websocket"
 
 	"github.com/tinylib/msgp/msgp"

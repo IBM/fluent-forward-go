@@ -33,7 +33,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/IBM/fluent-forward-go/fluent/protocol"
+	"github.com/aanujj/fluent-forward-go/fluent/protocol"
 
 	"github.com/tinylib/msgp/msgp"
 )

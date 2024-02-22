@@ -30,7 +30,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/IBM/fluent-forward-go/fluent/protocol"
+	"github.com/aanujj/fluent-forward-go/fluent/protocol"
 )
 
 var _ = Describe("Chunk", func() {

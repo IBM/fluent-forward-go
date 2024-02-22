@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tinylib/msgp/msgp"
 
-	. "github.com/IBM/fluent-forward-go/fluent/protocol"
+	. "github.com/aanujj/fluent-forward-go/fluent/protocol"
 )
 
 func TestMarshalNewMessage(t *testing.T) {
