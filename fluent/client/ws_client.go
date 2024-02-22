@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -117,6 +118,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 		if readErr == nil {
 			bodyString := string(bodyBytes)
 			if resp.StatusCode >= 300 {
+				fmt.Printf("|||||| resp.StatusCode: %v\n", resp.StatusCode)
 				err = &HTTPError{StatusCode: resp.StatusCode, Message: bodyString}
 			}
 		}
