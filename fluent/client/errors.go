@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"net/http"
 )
 
 type HTTPError struct {
@@ -11,11 +10,8 @@ type HTTPError struct {
 }
 
 func (e *HTTPError) Error() string {
-	return fmt.Sprintf("HTTP Error %d: %s", e.StatusCode, e.Message)
+	return fmt.Sprintf("HTTP Connection Error %d: %s", e.StatusCode, e.Message)
 }
-
-var (
-	ErrUnauthorized = &HTTPError{StatusCode: http.StatusUnauthorized, Message: "Unauthorized"}
-	ErrForbidden    = &HTTPError{StatusCode: http.StatusForbidden, Message: "Forbidden"}
-	// Add more custom errors as needed
-)
+func NewHTTPError(statusCode int, message string) *HTTPError {
+	return &HTTPError{StatusCode: statusCode, Message: message}
+}

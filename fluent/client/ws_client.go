@@ -113,17 +113,21 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	}
 
 	conn, resp, err := dialer.Dial(wcf.URL, header)
+	if err != nil {
+		return nil, err
+	}
+
 	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+
 		bodyBytes, readErr := io.ReadAll(resp.Body)
-		if readErr == nil {
-			bodyString := string(bodyBytes)
-			if resp.StatusCode >= 300 {
-				fmt.Printf("|||||| resp.StatusCode: %v\n", resp.StatusCode)
-				err = &HTTPError{StatusCode: resp.StatusCode, Message: bodyString}
-			}
+		if readErr != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", readErr)
 		}
 
-		resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			return nil, NewHTTPError(resp.StatusCode, string(bodyBytes))
+		}
 	}
 
 	return conn, err
