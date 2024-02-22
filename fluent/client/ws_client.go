@@ -28,10 +28,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
@@ -119,7 +117,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 		if readErr == nil {
 			bodyString := string(bodyBytes)
 			if resp.StatusCode >= 300 {
-				err = fmt.Errorf("%s. %s:%s", err, strconv.Itoa(resp.StatusCode), bodyString)
+				err = &HTTPError{StatusCode: resp.StatusCode, Message: bodyString}
 			}
 		}
 
