@@ -20,12 +20,12 @@ The benchmark packages must be run separately. Running them together generates a
 
 ```shell
 # no ack
-go test -benchmem -run=^$ -bench ^.*Message$ -benchtime=10000x -count=10 github.com/aanujj/fluent-forward-go/cmd/bm/fluent_forward_go
-go test -benchmem -run=^$ -bench ^.*Message$ -benchtime=10000x -count=10 github.com/aanujj/fluent-forward-go/cmd/bm/fluent_logger_golang
+go test -benchmem -run=^$ -bench ^.*Message$ -benchtime=10000x -count=10 github.com/IBM/fluent-forward-go/cmd/bm/fluent_forward_go
+go test -benchmem -run=^$ -bench ^.*Message$ -benchtime=10000x -count=10 github.com/IBM/fluent-forward-go/cmd/bm/fluent_logger_golang
 
 # with ack
-go test -benchmem -run=^$ -bench ^.*MessageAck$ -benchtime=10000x -count=10 github.com/aanujj/fluent-forward-go/cmd/bm/fluent_forward_go
-go test -benchmem -run=^$ -bench ^.*MessageAck$ -benchtime=10000x -count=10 github.com/aanujj/fluent-forward-go/cmd/bm/fluent_logger_golang
+go test -benchmem -run=^$ -bench ^.*MessageAck$ -benchtime=10000x -count=10 github.com/IBM/fluent-forward-go/cmd/bm/fluent_forward_go
+go test -benchmem -run=^$ -bench ^.*MessageAck$ -benchtime=10000x -count=10 github.com/IBM/fluent-forward-go/cmd/bm/fluent_logger_golang
 ```
 
 #### Best of 10: create and send single message
@@ -47,7 +47,7 @@ Benchmark_Fluent_Logger_Golang_SingleMessageAck-16     10000	    793360 ns/op	  
 ##### `fluent-forward-go`
 
 ```shell
-pkg: github.com/aanujj/fluent-forward-go/cmd/bm/fluent_forward_go
+pkg: github.com/IBM/fluent-forward-go/cmd/bm/fluent_forward_go
 cpu: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz
 
 Benchmark_Fluent_Forward_Go_SingleMessage-16        	   10000	     13153 ns/op	      48 B/op	       1 allocs/op
@@ -78,7 +78,7 @@ Benchmark_Fluent_Forward_Go_SingleMessageAck-16      	   10000	    885662 ns/op	
 ```shell
 goos: darwin
 goarch: amd64
-pkg: github.com/aanujj/fluent-forward-go/cmd/bm/fluent_logger_golang
+pkg: github.com/IBM/fluent-forward-go/cmd/bm/fluent_logger_golang
 cpu: Intel(R) Core(TM) i9-9980HK CPU @ 2.40GHz
 
 Benchmark_Fluent_Logger_Golang_SingleMessage-16    	   10000	     20002 ns/op	    2171 B/op	      33 allocs/op

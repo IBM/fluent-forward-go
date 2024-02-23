@@ -35,15 +35,15 @@ import (
 
 	"time"
 
-	"github.com/aanujj/fluent-forward-go/fluent/client"
-	. "github.com/aanujj/fluent-forward-go/fluent/client"
-	fclient "github.com/aanujj/fluent-forward-go/fluent/client"
-	"github.com/aanujj/fluent-forward-go/fluent/client/clientfakes"
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws"
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws/ext"
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws/ext/extfakes"
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws/wsfakes"
-	"github.com/aanujj/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/fluent/client"
+	. "github.com/IBM/fluent-forward-go/fluent/client"
+	fclient "github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/client/clientfakes"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext/extfakes"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/wsfakes"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 	"github.com/gorilla/websocket"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -64,6 +64,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		svr               *httptest.Server
 		ch                chan struct{}
 		useTLS, testError bool
+		customErr         *client.WSConnError
 	)
 
 	happyHandler := func(ch chan struct{}) http.Handler {
@@ -151,7 +152,12 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 
 			err := cli.Connect()
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("websocket: bad handshake. 500:broken test"))
+
+			Expect(errors.As(err, &customErr)).To(BeTrue())
+			Expect(customErr.StatusCode).To(Equal(http.StatusInternalServerError))
+			Expect(customErr.ConnErr.Error()).To(ContainSubstring("websocket: bad handshake"))
+			Expect(customErr.ResponseBody).To(ContainSubstring("broken test"))
+			Expect(customErr.IsRetryable()).To(BeTrue())
 		})
 
 	})

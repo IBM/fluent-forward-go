@@ -1,4 +1,4 @@
-module github.com/aanujj/fluent-forward-go
+module github.com/IBM/fluent-forward-go
 
 go 1.18
 
@@ -7,8 +7,8 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
-	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/ginkgo/v2 v2.9.7
+	github.com/onsi/gomega v1.27.8
 	github.com/stretchr/testify v1.7.0
 	github.com/tinylib/msgp v1.1.8
 )

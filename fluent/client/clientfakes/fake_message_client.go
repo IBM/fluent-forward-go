@@ -4,8 +4,8 @@ package clientfakes
 import (
 	"sync"
 
-	"github.com/aanujj/fluent-forward-go/fluent/protocol"
-	"github.com/aanujj/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 type FakeMessageClient struct {

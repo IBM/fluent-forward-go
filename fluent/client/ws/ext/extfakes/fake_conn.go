@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws/ext"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
 	"github.com/gorilla/websocket"
 )
 

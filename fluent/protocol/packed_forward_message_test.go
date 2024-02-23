@@ -30,7 +30,7 @@ import (
 
 	"github.com/tinylib/msgp/msgp"
 
-	. "github.com/aanujj/fluent-forward-go/fluent/protocol"
+	. "github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 func TestMarshalUnmarshalPackedForwardMessage(t *testing.T) {

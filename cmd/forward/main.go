@@ -29,8 +29,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aanujj/fluent-forward-go/fluent/client"
-	"github.com/aanujj/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 var (

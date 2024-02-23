@@ -28,14 +28,13 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
 
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws"
-	"github.com/aanujj/fluent-forward-go/fluent/client/ws/ext"
-	"github.com/aanujj/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws"
+	"github.com/IBM/fluent-forward-go/fluent/client/ws/ext"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 	"github.com/gorilla/websocket"
 
 	"github.com/tinylib/msgp/msgp"
@@ -113,20 +112,16 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	}
 
 	conn, resp, err := dialer.Dial(wcf.URL, header)
-	if err != nil {
-		return nil, err
-	}
-
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 
 		bodyBytes, readErr := io.ReadAll(resp.Body)
 		if readErr != nil {
-			return nil, fmt.Errorf("failed to read response body: %w", readErr)
+			err = readErr
 		}
 
 		if resp.StatusCode >= 300 {
-			return nil, NewHTTPError(resp.StatusCode, string(bodyBytes))
+			err = NewWSConnError(err, resp.StatusCode, string(bodyBytes))
 		}
 	}
 

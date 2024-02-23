@@ -1,14 +1,14 @@
 package main
 
-//go test -benchmem -benchtime=100x -run=^$ -bench ^Benchmark.*$ github.com/aanujj/fluent-forward-go/cmd/bm/fluent_forward_go
+//go test -benchmem -benchtime=100x -run=^$ -bench ^Benchmark.*$ github.com/IBM/fluent-forward-go/cmd/bm/fluent_forward_go
 
 import (
 	"testing"
 	"time"
 
-	"github.com/aanujj/fluent-forward-go/cmd/bm"
-	"github.com/aanujj/fluent-forward-go/fluent/client"
-	"github.com/aanujj/fluent-forward-go/fluent/protocol"
+	"github.com/IBM/fluent-forward-go/cmd/bm"
+	"github.com/IBM/fluent-forward-go/fluent/client"
+	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
 
 func Benchmark_Fluent_Forward_Go_SendOnly(b *testing.B) {
