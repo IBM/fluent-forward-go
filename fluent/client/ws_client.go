@@ -28,10 +28,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/IBM/fluent-forward-go/fluent/client/ws"
@@ -115,15 +113,16 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 
 	conn, resp, err := dialer.Dial(wcf.URL, header)
 	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+
 		bodyBytes, readErr := io.ReadAll(resp.Body)
-		if readErr == nil {
-			bodyString := string(bodyBytes)
-			if resp.StatusCode >= 300 {
-				err = fmt.Errorf("%s. %s:%s", err, strconv.Itoa(resp.StatusCode), bodyString)
-			}
+		if readErr != nil {
+			err = readErr
 		}
 
-		resp.Body.Close()
+		if resp.StatusCode >= 300 {
+			err = NewWSConnError(err, resp.StatusCode, string(bodyBytes))
+		}
 	}
 
 	return conn, err

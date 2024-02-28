@@ -64,6 +64,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		svr               *httptest.Server
 		ch                chan struct{}
 		useTLS, testError bool
+		customErr         *client.WSConnError
 	)
 
 	happyHandler := func(ch chan struct{}) http.Handler {
@@ -151,7 +152,12 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 
 			err := cli.Connect()
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("websocket: bad handshake. 500:broken test"))
+
+			Expect(errors.As(err, &customErr)).To(BeTrue())
+			Expect(customErr.StatusCode).To(Equal(http.StatusInternalServerError))
+			Expect(customErr.ConnErr.Error()).To(ContainSubstring("websocket: bad handshake"))
+			Expect(customErr.ResponseBody).To(ContainSubstring("broken test"))
+			Expect(customErr.IsRetryable()).To(BeTrue())
 		})
 
 	})
