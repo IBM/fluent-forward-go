@@ -10,7 +10,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.9.7
 	github.com/onsi/gomega v1.27.8
 	github.com/stretchr/testify v1.7.0
-	github.com/tinylib/msgp v1.1.8
+	github.com/tinylib/msgp v1.1.9
 )
 
 require (
