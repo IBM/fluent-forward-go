@@ -79,11 +79,9 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 			header := r.Header.Get(fclient.AuthorizationHeader)
 			Expect(header).To(Equal("oi"))
 
-			if testHeaders != nil {
-				for k := range testHeaders {
-					v := r.Header.Get(k)
-					Expect(v).To(Equal(testHeaders[k]))
-				}
+			for k := range testHeaders {
+				v := r.Header.Get(k)
+				Expect(v).To(Equal(testHeaders[k]))
 			}
 
 			svrConnection, err := ws.NewConnection(wc, svrOpts)
