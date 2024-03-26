@@ -64,6 +64,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		svr               *httptest.Server
 		ch                chan struct{}
 		useTLS, testError bool
+		testHeaders       map[string]string
 		customErr         *client.WSConnError
 	)
 
@@ -77,6 +78,13 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 
 			header := r.Header.Get(fclient.AuthorizationHeader)
 			Expect(header).To(Equal("oi"))
+
+			if testHeaders != nil {
+				for k := range testHeaders {
+					v := r.Header.Get(k)
+					Expect(v).To(Equal(testHeaders[k]))
+				}
+			}
 
 			svrConnection, err := ws.NewConnection(wc, svrOpts)
 			if err != nil {
@@ -111,6 +119,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 
 	AfterEach(func() {
 		svr.Close()
+		testHeaders = nil
 	})
 
 	It("sends auth headers", func() {
@@ -123,6 +132,31 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 					InsecureSkipVerify: true,
 				},
 				AuthInfo: NewIAMAuthInfo("oi"),
+			},
+		})
+
+		Expect(cli.Connect()).ToNot(HaveOccurred())
+		Eventually(ch).Should(Receive())
+		Expect(cli.Disconnect()).ToNot(HaveOccurred())
+	})
+
+	It("sends auth headers with additional header", func() {
+		u := "ws" + strings.TrimPrefix(svr.URL, "http")
+
+		testHeaders = map[string]string{
+			"User-Agent": "xxxx:1.0.5", // user agent
+			"X-a":        "",           // empty value
+			"X-b":        "value",      // some string value
+		}
+
+		cli := fclient.NewWS(client.WSConnectionOptions{
+			Factory: &client.DefaultWSConnectionFactory{
+				URL: u,
+				TLSConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+				AuthInfo: NewIAMAuthInfo("oi"),
+				Headers:  testHeaders,
 			},
 		})
 
