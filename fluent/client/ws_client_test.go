@@ -64,7 +64,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 		svr               *httptest.Server
 		ch                chan struct{}
 		useTLS, testError bool
-		testHeaders       map[string]string
+		testHeaders       http.Header
 		customErr         *client.WSConnError
 	)
 
@@ -141,10 +141,10 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 	It("sends auth headers with additional header", func() {
 		u := "ws" + strings.TrimPrefix(svr.URL, "http")
 
-		testHeaders = map[string]string{
-			"User-Agent": "xxxx:1.0.5", // user agent
-			"X-a":        "",           // empty value
-			"X-b":        "value",      // some string value
+		testHeaders = http.Header{
+			"User-Agent": []string{"xxxx:1.0.5"}, // user agent
+			"X-a":        []string{""},           // empty value
+			"X-b":        []string{"value"},      // some string value
 		}
 
 		cli := fclient.NewWS(client.WSConnectionOptions{
@@ -154,7 +154,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 					InsecureSkipVerify: true,
 				},
 				AuthInfo: NewIAMAuthInfo("oi"),
-				Headers:  testHeaders,
+				Header:   testHeaders,
 			},
 		})
 

@@ -95,7 +95,7 @@ type DefaultWSConnectionFactory struct {
 	URL       string
 	AuthInfo  *IAMAuthInfo
 	TLSConfig *tls.Config
-	Headers   map[string]string
+	Header    http.Header
 }
 
 func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
@@ -107,10 +107,8 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	// set additional custom headers. here we do not validate
 	// header names and values. Caller should make sure the
 	// headers provided are not conflict with protocols
-	if wcf.Headers != nil {
-		for key := range wcf.Headers {
-			header.Add(key, wcf.Headers[key])
-		}
+	if wcf.Header != nil {
+		header = wcf.Header
 	}
 
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {
