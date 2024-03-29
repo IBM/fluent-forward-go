@@ -81,7 +81,7 @@ var _ = Describe("DefaultWSConnectionFactory", func() {
 
 			for k := range testHeaders {
 				v := r.Header.Get(k)
-				Expect(v).To(Equal(testHeaders[k]))
+				Expect(v).To(Equal(testHeaders[k][0]))
 			}
 
 			svrConnection, err := ws.NewConnection(wc, svrOpts)
