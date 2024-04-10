@@ -95,6 +95,7 @@ type DefaultWSConnectionFactory struct {
 	URL       string
 	AuthInfo  *IAMAuthInfo
 	TLSConfig *tls.Config
+	Header    http.Header
 }
 
 func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
@@ -102,6 +103,13 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 		dialer websocket.Dialer
 		header = http.Header{}
 	)
+
+	// set additional custom headers. here we do not validate
+	// header names and values. Caller should make sure the
+	// headers provided are not conflict with protocols
+	if wcf.Header != nil {
+		header = wcf.Header
+	}
 
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {
 		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
