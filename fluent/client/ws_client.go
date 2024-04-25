@@ -112,7 +112,7 @@ func (wcf *DefaultWSConnectionFactory) New() (ext.Conn, error) {
 	}
 
 	if wcf.AuthInfo != nil && len(wcf.AuthInfo.IAMToken()) > 0 {
-		header.Add(AuthorizationHeader, wcf.AuthInfo.IAMToken())
+		header.Set(AuthorizationHeader, wcf.AuthInfo.IAMToken())
 	}
 
 	if wcf.TLSConfig != nil {
