@@ -105,8 +105,8 @@ func (et *EventTime) MarshalBinaryTo(b []byte) error {
 
 	// b[0] = 0xD7
 	// b[1] = 0x00
-	binary.BigEndian.PutUint32(b, uint32(utc.Unix()))
-	binary.BigEndian.PutUint32(b[4:], uint32(utc.Nanosecond()))
+	binary.BigEndian.PutUint32(b, uint32(utc.Unix()))           //#nosec:G115
+	binary.BigEndian.PutUint32(b[4:], uint32(utc.Nanosecond())) //#nosec:G115
 
 	return nil
 }

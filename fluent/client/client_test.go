@@ -50,8 +50,8 @@ var _ = Describe("Client", func() {
 		factory = &clientfakes.FakeConnectionFactory{}
 
 		opts := ConnectionOptions{
-			Factory:           factory,
-			ConnectionTimeout: 2 * time.Second,
+			Factory:     factory,
+			DialTimeout: 2 * time.Second,
 		}
 
 		client = New(opts)
@@ -184,6 +184,77 @@ var _ = Describe("Client", func() {
 			// TODO: We need a test that no message is sent
 		})
 
+		Context("When WriteDeadline is set and write takes too long", func() {
+			BeforeEach(func() {
+				opts := ConnectionOptions{
+					Factory:      factory,
+					DialTimeout:  2 * time.Second,
+					WriteTimeout: 100 * time.Millisecond, // short timeout
+					RequireAck:   false,
+				}
+				client = New(opts)
+				clientSide, serverSide = net.Pipe()
+				factory.NewReturns(clientSide, nil)
+			})
+
+			It("returns a write timeout error", func() {
+				go func() {
+					defer GinkgoRecover()
+					time.Sleep(200 * time.Millisecond) // this is longer than WriteTimeout
+					buf := make([]byte, 1024)
+					_, err := serverSide.Read(buf)
+					Expect(err).NotTo(HaveOccurred())
+				}()
+
+				err := client.Send(&msg)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("write pipe: i/o timeout"))
+			})
+		})
+
+		Context("When ReadDeadline is set and acknowledgment is delayed", func() {
+			BeforeEach(func() {
+				opts := ConnectionOptions{
+					Factory:     factory,
+					DialTimeout: 2 * time.Second,
+					ReadTimeout: 100 * time.Millisecond, // short timeout
+					RequireAck:  true,                   // waig for acknowledgment
+				}
+				client = New(opts)
+				clientSide, serverSide = net.Pipe()
+				factory.NewReturns(clientSide, nil)
+			})
+
+			It("returns a read timeout error", func() {
+				done := make(chan bool) // used to synchronize test
+				go func() {
+					defer GinkgoRecover()
+					defer func() {
+						done <- true
+					}()
+					err := client.Send(&msg)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("read pipe: i/o timeout"))
+				}()
+
+				// Server reads the message
+				rcvd := &protocol.MessageExt{}
+				err := rcvd.DecodeMsg(msgp.NewReader(serverSide))
+				Expect(err).NotTo(HaveOccurred())
+
+				// delay sending the ack (longer than ReadTimeout)
+				time.Sleep(200 * time.Millisecond)
+
+				// send the ack
+				chunk := rcvd.Options.Chunk
+				ack := &protocol.AckMessage{Ack: chunk}
+				err = ack.EncodeMsg(msgp.NewWriter(serverSide))
+				Expect(err).NotTo(HaveOccurred())
+
+				<-done
+			})
+		})
+
 		Context("RequireAck is true", func() {
 			var (
 				serverSide   net.Conn
@@ -215,11 +286,11 @@ var _ = Describe("Client", func() {
 					Expect(err).ToNot(HaveOccurred())
 				}()
 
-				rcvd := &protocol.MessageExt{}
-				err := rcvd.DecodeMsg(serverReader)
+				msgext := &protocol.MessageExt{}
+				err := msgext.DecodeMsg(serverReader)
 				Expect(err).ToNot(HaveOccurred())
 
-				chunk := rcvd.Options.Chunk
+				chunk := msgext.Options.Chunk
 				Expect(chunk).ToNot(BeEmpty())
 				Expect(chunk).To(Equal(msg.Options.Chunk))
 
@@ -241,12 +312,12 @@ var _ = Describe("Client", func() {
 					Expect(err.Error()).To(ContainSubstring("Expected chunk"))
 				}()
 
-				rcvd := &protocol.MessageExt{}
+				msgext := &protocol.MessageExt{}
 				serverSide.SetReadDeadline(time.Now().Add(time.Second))
-				err := rcvd.DecodeMsg(serverReader)
+				err := msgext.DecodeMsg(serverReader)
 				Expect(err).ToNot(HaveOccurred())
 
-				chunk := rcvd.Options.Chunk
+				chunk := msgext.Options.Chunk
 				Expect(chunk).ToNot(BeEmpty())
 				Expect(chunk).To(Equal(msg.Options.Chunk))
 

@@ -24,7 +24,9 @@ SOFTWARE.
 
 package protocol
 
-import "github.com/tinylib/msgp/msgp"
+import (
+	"github.com/tinylib/msgp/msgp"
+)
 
 //go:generate msgp
 
@@ -76,7 +78,7 @@ func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
 		size = 3
 	}
 
-	err := dc.WriteArrayHeader(uint32(size))
+	err := dc.WriteArrayHeader(uint32(size)) //#nosec:G115
 	if err != nil {
 		return msgp.WrapError(err, "Array Header")
 	}

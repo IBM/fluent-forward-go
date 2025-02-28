@@ -6,7 +6,6 @@ linters:
   enable:
     - revive
     - bodyclose
-    - exportloopref
     - gocognit
     - goconst
     - gofmt
@@ -22,7 +21,6 @@ issues:
     - path: _test\.go
       linters:
         - errcheck
-        - exportloopref
         - gocognit
         - goconst
         - gosec

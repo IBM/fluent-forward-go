@@ -41,7 +41,9 @@ import (
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
 
 const (
-	DefaultConnectionTimeout time.Duration = 60 * time.Second
+	DefaultDialTimeout  time.Duration = 10 * time.Second
+	DefaultReadTimeout  time.Duration = 30 * time.Second
+	DefaultWriteTimeout time.Duration = 30 * time.Second
 )
 
 // MessageClient implementations send MessagePack messages to a peer
@@ -71,23 +73,24 @@ type ConnectionFactory interface {
 
 type Client struct {
 	ConnectionFactory
-	RequireAck  bool
-	Timeout     time.Duration
-	AuthInfo    AuthInfo
-	Hostname    string
-	session     *Session
-	ackLock     sync.Mutex
-	sessionLock sync.RWMutex
+	RequireAck   bool
+	DialTimeout  time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	AuthInfo     AuthInfo
+	Hostname     string
+	session      *Session
+	ackLock      sync.Mutex
+	sessionLock  sync.RWMutex
 }
 
 type ConnectionOptions struct {
-	Factory           ConnectionFactory
-	RequireAck        bool
-	ConnectionTimeout time.Duration
-	// TODO:
-	// ReadTimeout       time.Duration
-	// WriteTimeout      time.Duration
-	AuthInfo AuthInfo
+	Factory      ConnectionFactory
+	RequireAck   bool
+	DialTimeout  time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	AuthInfo     AuthInfo
 }
 
 type AuthInfo struct {
@@ -110,15 +113,26 @@ func New(opts ConnectionOptions) *Client {
 		}
 	}
 
-	if opts.ConnectionTimeout == 0 {
-		opts.ConnectionTimeout = DefaultConnectionTimeout
+	// Set default timeouts if not provided
+	if opts.DialTimeout == 0 {
+		opts.DialTimeout = DefaultDialTimeout
+	}
+
+	if opts.ReadTimeout == 0 {
+		opts.ReadTimeout = DefaultReadTimeout
+	}
+
+	if opts.WriteTimeout == 0 {
+		opts.WriteTimeout = DefaultWriteTimeout
 	}
 
 	return &Client{
 		ConnectionFactory: factory,
 		AuthInfo:          opts.AuthInfo,
 		RequireAck:        opts.RequireAck,
-		Timeout:           opts.ConnectionTimeout,
+		DialTimeout:       opts.DialTimeout,
+		ReadTimeout:       opts.ReadTimeout,
+		WriteTimeout:      opts.WriteTimeout,
 	}
 }
 
@@ -164,6 +178,13 @@ func (c *Client) Handshake() error {
 
 	var helo protocol.Helo
 
+	// apply read timeout for reading helo message
+	if c.ReadTimeout != 0 {
+		if err := c.session.Connection.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
+			return err
+		}
+	}
+
 	r := msgp.NewReader(c.session.Connection)
 	err := helo.DecodeMsg(r)
 
@@ -183,12 +204,26 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
+	// apply write timeout for sending the ping message
+	if c.WriteTimeout != 0 {
+		if err := c.session.Connection.SetWriteDeadline(time.Now().Add(c.WriteTimeout)); err != nil {
+			return err
+		}
+	}
+
 	err = msgp.Encode(c.session.Connection, ping)
 	if err != nil {
 		return err
 	}
 
 	var pong protocol.Pong
+
+	// apply read timeout for receiving the pong message
+	if c.ReadTimeout != 0 {
+		if err := c.session.Connection.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
+			return err
+		}
+	}
 
 	err = pong.DecodeMsg(r)
 	if err != nil {
@@ -246,8 +281,8 @@ func (c *Client) Reconnect() error {
 }
 
 func (c *Client) checkAck(chunk string) error {
-	if c.Timeout != 0 {
-		if err := c.session.Connection.SetReadDeadline(time.Now().Add(c.Timeout)); err != nil {
+	if c.ReadTimeout != 0 {
+		if err := c.session.Connection.SetReadDeadline(time.Now().Add(c.ReadTimeout)); err != nil {
 			return err
 		}
 	}
@@ -292,6 +327,13 @@ func (c *Client) Send(e protocol.ChunkEncoder) error {
 		defer c.ackLock.Unlock()
 	}
 
+	// apply write timeout for sending the message
+	if c.WriteTimeout != 0 {
+		if err := c.session.Connection.SetWriteDeadline(time.Now().Add(c.WriteTimeout)); err != nil {
+			return err
+		}
+	}
+
 	err = msgp.Encode(c.session.Connection, e)
 	if err != nil || !c.RequireAck {
 		return err
@@ -313,6 +355,13 @@ func (c *Client) SendRaw(m []byte) error {
 
 	if !c.session.TransportPhase {
 		return errors.New("session handshake not completed")
+	}
+
+	// apply write timeout for write
+	if c.WriteTimeout != 0 {
+		if err := c.session.Connection.SetWriteDeadline(time.Now().Add(c.WriteTimeout)); err != nil {
+			return err
+		}
 	}
 
 	_, err := c.session.Connection.Write(m)

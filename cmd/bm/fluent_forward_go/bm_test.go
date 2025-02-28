@@ -15,7 +15,7 @@ func Benchmark_Fluent_Forward_Go_SendOnly(b *testing.B) {
 	tagVar := "bar"
 
 	c := client.New(client.ConnectionOptions{
-		ConnectionTimeout: 3 * time.Second,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -43,7 +43,7 @@ func Benchmark_Fluent_Forward_Go_SingleMessage(b *testing.B) {
 	tagVar := "bar"
 
 	c := client.New(client.ConnectionOptions{
-		ConnectionTimeout: 3 * time.Second,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -71,8 +71,8 @@ func Benchmark_Fluent_Forward_Go_SingleMessageAck(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		RequireAck:        true,
-		ConnectionTimeout: 3 * time.Second,
+		RequireAck:  true,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -100,7 +100,7 @@ func Benchmark_Fluent_Forward_Go_Bytes(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		ConnectionTimeout: 3 * time.Second,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -130,8 +130,8 @@ func Benchmark_Fluent_Forward_Go_BytesAck(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		RequireAck:        true,
-		ConnectionTimeout: 3 * time.Second,
+		RequireAck:  true,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -162,7 +162,7 @@ func Benchmark_Fluent_Forward_Go_RawMessage(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		ConnectionTimeout: 3 * time.Second,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -193,8 +193,8 @@ func Benchmark_Fluent_Forward_Go_RawMessageAck(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		RequireAck:        true,
-		ConnectionTimeout: 3 * time.Second,
+		RequireAck:  true,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -226,7 +226,7 @@ func Benchmark_Fluent_Forward_Go_CompressedMessage(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		ConnectionTimeout: 3 * time.Second,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
@@ -280,8 +280,8 @@ func Benchmark_Fluent_Forward_Go_CompressedMessageAck(b *testing.B) {
 	tagVar := "foo"
 
 	c := client.New(client.ConnectionOptions{
-		RequireAck:        true,
-		ConnectionTimeout: 3 * time.Second,
+		RequireAck:  true,
+		DialTimeout: 3 * time.Second,
 	})
 
 	err := c.Connect()
