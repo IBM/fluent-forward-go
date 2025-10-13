@@ -258,7 +258,7 @@ func (c *Client) checkAck(chunk string) error {
 	}
 
 	if ack.Ack != chunk {
-		return fmt.Errorf("Expected chunk %s, but got %s", chunk, ack.Ack)
+		return fmt.Errorf("expected chunk %s, but got %s", chunk, ack.Ack)
 	}
 
 	return nil

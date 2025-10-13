@@ -28,6 +28,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"math"
 	"reflect"
 	"sync"
 	"time"
@@ -105,8 +106,8 @@ func (et *EventTime) MarshalBinaryTo(b []byte) error {
 
 	// b[0] = 0xD7
 	// b[1] = 0x00
-	binary.BigEndian.PutUint32(b, uint32(utc.Unix()))
-	binary.BigEndian.PutUint32(b[4:], uint32(utc.Nanosecond()))
+	binary.BigEndian.PutUint32(b, uint32(utc.Unix()))           /* #nosec G115 */
+	binary.BigEndian.PutUint32(b[4:], uint32(utc.Nanosecond())) /* #nosec G115 */
 
 	return nil
 }
@@ -115,7 +116,7 @@ func (et *EventTime) MarshalBinaryTo(b []byte) error {
 // into an EventTime object.
 func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 	if len(timeBytes) != eventTimeLen {
-		return errors.New("Invalid length")
+		return errors.New("invalid length")
 	}
 
 	seconds := binary.BigEndian.Uint32(timeBytes)
@@ -230,7 +231,10 @@ func (z *EntryExt) DecodeMsg(r *msgp.Reader) error {
 		if err != nil {
 			return msgp.WrapError(err, "Timestamp uint")
 		}
-		z.Timestamp = EventTime{time.Unix(int64(usec), 0).UTC()}
+		if usec > math.MaxInt64 {
+			return msgp.WrapError(err, "timestamp overflow exceeds maximum int64 value")
+		}
+		z.Timestamp = EventTime{time.Unix(int64(usec), 0).UTC()} /* #nosec G115 */
 
 	default:
 		return msgp.WrapError(err, "unsupported timestamp type: expected int or array")
@@ -328,6 +332,9 @@ func (z *EntryExt) UnmarshalMsg(bts []byte) ([]byte, error) {
 		usec, bts, err = msgp.ReadUint64Bytes(bts)
 		if err != nil {
 			return bts, msgp.WrapError(err, "Timestamp uint")
+		}
+		if usec > math.MaxInt64 {
+			return bts, msgp.WrapError(err, "timestamp overflow, exceeds maximum int64 value")
 		}
 		z.Timestamp = EventTime{time.Unix(int64(usec), 0).UTC()}
 
