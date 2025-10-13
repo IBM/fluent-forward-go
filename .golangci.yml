@@ -11,7 +11,7 @@ linters:
     - exportloopref
     - gocognit
     - goconst
-    - gofmt
+    - gofumpt        # use gofumpt instead of gofmt
     - gosec
     - misspell
     - nakedret
