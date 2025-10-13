@@ -25,12 +25,15 @@ SOFTWARE.
 package protocol_test
 
 import (
+	"bytes"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/tinylib/msgp/msgp"
 
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
 )
@@ -45,6 +48,10 @@ var _ = Describe("Transport", func() {
 			ent = protocol.EntryExt{
 				Timestamp: protocol.EventTime{
 					Time: time.Unix(int64(1257894000), int64(12340000)),
+				},
+				Record: map[string]interface{}{
+					"message": "hello world",
+					"level":   "info",
 				},
 			}
 		})
@@ -70,6 +77,30 @@ var _ = Describe("Transport", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(unment.Timestamp.Time.Equal(ent.Timestamp.Time)).To(BeTrue())
+		})
+
+		It("Encodes and decodes correctly", func() {
+			// Encode
+			var buf bytes.Buffer
+			writer := msgp.NewWriter(&buf)
+			err := ent.EncodeMsg(writer)
+			Expect(err).NotTo(HaveOccurred())
+
+			writer.Flush()
+
+			Expect(
+				strings.Contains(fmt.Sprintf("%X", buf), "D7004AF9F07000BC4B20"),
+			).To(BeTrue())
+
+			// Decode
+			decoded := &protocol.EntryExt{}
+			reader := msgp.NewReader(&buf)
+			err = decoded.DecodeMsg(reader)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Verify
+			Expect(decoded.Timestamp.Equal(ent.Timestamp.Time)).To(BeTrue(), "Timestamp mismatch: got %v, want %v", decoded.Timestamp, ent.Timestamp)
+			Expect(reflect.DeepEqual(decoded.Record, ent.Record)).To(BeTrue(), "Record mismatch: got %v, want %v", decoded.Record, ent.Record)
 		})
 	})
 

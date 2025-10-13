@@ -130,6 +130,8 @@ func (et *EventTime) UnmarshalBinary(timeBytes []byte) error {
 // msgpack extension format for the timestamp.
 //
 //msgp:tuple EntryExt
+//msgp:decode ignore EntryExt
+//msgp:unmarshal ignore EntryExt
 type EntryExt struct {
 	// Timestamp can contain the timestamp in either seconds or nanoseconds
 	Timestamp EventTime `msg:"eventTime,extension"`
@@ -137,6 +139,209 @@ type EntryExt struct {
 	// struct. Objects that implement the msgp.Encodable interface will
 	// be the most performant.
 	Record interface{}
+}
+
+// This decodes msgpack data from a byte slice into EntryExt
+// - [timestamp, record]
+// - where timestamp can be an integer or [integer, {metadata}] (we ignore metadata)
+func (z *EntryExt) DecodeMsg(r *msgp.Reader) error {
+	// read the array header to get the number of elements
+	// expected 2 elements as per Forward Specification
+	arrayLen, err := r.ReadArrayHeader()
+	if err != nil {
+		return msgp.WrapError(err, "Array Header")
+	}
+
+	// validate Forward Protocol format: must have 2 elements
+	if arrayLen != 2 {
+		return msgp.ArrayError{Wanted: 2, Got: arrayLen}
+	}
+
+	// peek at the next msgpack type to determine timestamp format
+	nextType, err := r.NextType()
+	if err != nil {
+		return msgp.WrapError(err, "Timestamp peek")
+	}
+
+	switch nextType {
+	case msgp.ExtensionType:
+		// extension format
+		err = r.ReadExtension(&z.Timestamp)
+		if err != nil {
+			return msgp.WrapError(err, "Timestamp extension")
+		}
+	case msgp.ArrayType:
+		// timestamp with metadata format: [timestamp, metadata]
+		var arrSize uint32
+		arrSize, err = r.ReadArrayHeader()
+		if err != nil {
+			return msgp.WrapError(err, "Timestamp array header")
+		}
+
+		if arrSize < 1 || arrSize > 2 {
+			return msgp.WrapError(err, "Invalid timestamp array size")
+		}
+
+		nt, err := r.NextType()
+		if err != nil {
+			return msgp.WrapError(err, "Timestamp peek")
+		}
+
+		switch nt {
+		case msgp.ExtensionType:
+			err = r.ReadExtension(&z.Timestamp)
+			if err != nil {
+				return msgp.WrapError(err, "Timestamp extension from array")
+			}
+		case msgp.IntType:
+			// read the timestamp value
+			var seconds int64
+			seconds, err = r.ReadInt64()
+			if err != nil {
+				return msgp.WrapError(err, "Timestamp from array")
+			}
+
+			z.Timestamp = EventTime{time.Unix(seconds, 0).UTC()}
+		}
+
+		// Skip metadata elements (all elements after the first)
+		// We iterate starting from 1 because element 0 (timestamp) is already read
+		for i := uint32(1); i < arrSize; i++ {
+			// Skip() advances past one complete msgpack object in the byte slice
+			err = r.Skip()
+			if err != nil {
+				return msgp.WrapError(err, "Skip metadata element")
+			}
+		}
+
+	case msgp.IntType:
+		// this is simple timestamp format: unix seconds as integer
+		var sec int64
+		sec, err = r.ReadInt64()
+		if err != nil {
+			return msgp.WrapError(err, "Timestamp int")
+		}
+		z.Timestamp = EventTime{time.Unix(sec, 0).UTC()}
+
+	case msgp.UintType:
+		// unsigned integer timestamp
+		var usec uint64
+		usec, err = r.ReadUint64()
+		if err != nil {
+			return msgp.WrapError(err, "Timestamp uint")
+		}
+		z.Timestamp = EventTime{time.Unix(int64(usec), 0).UTC()}
+
+	default:
+		return msgp.WrapError(err, "unsupported timestamp type: expected int or array")
+	}
+
+	// rad the record (second element)
+	z.Record, err = r.ReadIntf()
+	if err != nil {
+		return msgp.WrapError(err, "Record")
+	}
+
+	return nil
+}
+
+// This decodes msgpack data from a byte slice into EntryExt
+// - [timestamp, record]
+// - where timestamp can be an integer or [integer, {metadata}] (we ignore metadata)
+func (z *EntryExt) UnmarshalMsg(bts []byte) ([]byte, error) {
+	// read array header to get number of elements
+	arrayLen, bts, err := msgp.ReadArrayHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err, "Array Header")
+		return bts, err
+	}
+
+	// validate Forward Protocol format: must have 2 elements
+	if arrayLen != 2 {
+		err = msgp.ArrayError{Wanted: 2, Got: arrayLen}
+		return bts, err
+	}
+
+	// peek at the next msgpack type to determine timestamp format
+	nextType := msgp.NextType(bts)
+
+	switch nextType {
+	case msgp.ExtensionType:
+		// extension format
+		bts, err = msgp.ReadExtensionBytes(bts, &z.Timestamp)
+		if err != nil {
+			return bts, msgp.WrapError(err, "Timestamp extension")
+		}
+
+	case msgp.ArrayType:
+		// timestamp with metadata format: [timestamp, metadata]
+		var arrSize uint32
+		arrSize, bts, err = msgp.ReadArrayHeaderBytes(bts)
+		if err != nil {
+			return bts, msgp.WrapError(err, "Timestamp array header")
+		}
+
+		if arrSize < 1 || arrSize > 2 {
+			return bts, msgp.WrapError(err, "Timestamp array size", arrSize)
+		}
+
+		nt := msgp.NextType(bts)
+		switch nt {
+		case msgp.ExtensionType:
+			bts, err = msgp.ReadExtensionBytes(bts, &z.Timestamp)
+			if err != nil {
+				return bts, msgp.WrapError(err, "Timestamp extension from array")
+			}
+		case msgp.IntType:
+			// read the timestamp value
+			var seconds int64
+			seconds, bts, err = msgp.ReadInt64Bytes(bts)
+			if err != nil {
+				return bts, msgp.WrapError(err, "Timstamp from array")
+			}
+
+			z.Timestamp = EventTime{time.Unix(seconds, 0).UTC()}
+		}
+
+		// Skip metadata elements (all elements after the first)
+		// We iterate starting from 1 because element 0 (timestamp) is already read
+		for i := uint32(1); i < arrSize; i++ {
+			// Skip() advances past one complete msgpack object in the byte slice
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return bts, msgp.WrapError(err, "Skip metadata element")
+			}
+		}
+
+	case msgp.IntType:
+		// this is simple timestamp format: unix seconds as integer
+		var sec int64
+		sec, bts, err = msgp.ReadInt64Bytes(bts)
+		if err != nil {
+			return bts, msgp.WrapError(err, "Timestamp int")
+		}
+		z.Timestamp = EventTime{time.Unix(sec, 0).UTC()}
+
+	case msgp.UintType:
+		// unsigned integer timestamp
+		var usec uint64
+		usec, bts, err = msgp.ReadUint64Bytes(bts)
+		if err != nil {
+			return bts, msgp.WrapError(err, "Timestamp uint")
+		}
+		z.Timestamp = EventTime{time.Unix(int64(usec), 0).UTC()}
+
+	default:
+		return bts, msgp.WrapError(err, "unsupported timestamp type: expected int or array")
+	}
+
+	// rad the record (second element)
+	z.Record, bts, err = msgp.ReadIntfBytes(bts)
+	if err != nil {
+		return bts, msgp.WrapError(err, "Record")
+	}
+
+	return bts, nil
 }
 
 type EntryList []EntryExt

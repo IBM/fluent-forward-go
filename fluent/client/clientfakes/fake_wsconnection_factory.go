@@ -157,10 +157,6 @@ func (fake *FakeWSConnectionFactory) NewSessionReturnsOnCall(i int, result1 *cli
 func (fake *FakeWSConnectionFactory) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.newMutex.RLock()
-	defer fake.newMutex.RUnlock()
-	fake.newSessionMutex.RLock()
-	defer fake.newSessionMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
