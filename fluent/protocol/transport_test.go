@@ -102,6 +102,105 @@ var _ = Describe("Transport", func() {
 			Expect(decoded.Timestamp.Equal(ent.Timestamp.Time)).To(BeTrue(), "Timestamp mismatch: got %v, want %v", decoded.Timestamp, ent.Timestamp)
 			Expect(reflect.DeepEqual(decoded.Record, ent.Record)).To(BeTrue(), "Record mismatch: got %v, want %v", decoded.Record, ent.Record)
 		})
+
+		Context("ArrayType timestamp format", func() {
+			It("Decodes timestamp with extension type in array format", func() {
+				// buffer with array format: [EventTime extension, metadata]
+				var buf bytes.Buffer
+				writer := msgp.NewWriter(&buf)
+
+				// write array header with 2 elements [timestamp, record]
+				err := writer.WriteArrayHeader(2)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write timestamp as array: [extension, metadata]
+				err = writer.WriteArrayHeader(2)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write EventTime extension
+				eventTime := protocol.EventTime{Time: time.Unix(1257894000, 12340000)}
+				err = writer.WriteExtension(&eventTime)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write metadata (just empty map)
+				err = writer.WriteMapHeader(0)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write record
+				err = writer.WriteMapStrStr(map[string]string{
+					"message": "test message",
+					"level":   "info",
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				writer.Flush()
+
+				// decode
+				decoded := &protocol.EntryExt{}
+				reader := msgp.NewReader(&buf)
+				err = decoded.DecodeMsg(reader)
+				Expect(err).NotTo(HaveOccurred())
+
+				// verify timestamp
+				Expect(decoded.Timestamp.Equal(eventTime.Time)).To(BeTrue(),
+					"Timestamp mismatch: got %v, want %v", decoded.Timestamp, eventTime.Time)
+
+				// verify record
+				recordMap, ok := decoded.Record.(map[string]interface{})
+				Expect(ok).To(BeTrue())
+				Expect(recordMap["message"]).To(Equal("test message"))
+				Expect(recordMap["level"]).To(Equal("info"))
+			})
+
+			It("Decodes timestamp with int type in array format", func() {
+				// buffer with array format: [unix timestamp int, metadata]
+				var buf bytes.Buffer
+				writer := msgp.NewWriter(&buf)
+
+				expectedTime := time.Unix(1257894000, 0).UTC()
+
+				// write array header with 2 elements [timestamp, record]
+				err := writer.WriteArrayHeader(2)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write timestamp as array: [int64, metadata]
+				err = writer.WriteArrayHeader(2)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write timestamp as int64
+				err = writer.WriteInt64(1257894000)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write metadata (just empty map)
+				err = writer.WriteMapHeader(0)
+				Expect(err).NotTo(HaveOccurred())
+
+				// write record
+				err = writer.WriteMapStrStr(map[string]string{
+					"message": "test message",
+					"level":   "warning",
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				writer.Flush()
+
+				// decode
+				decoded := &protocol.EntryExt{}
+				reader := msgp.NewReader(&buf)
+				err = decoded.DecodeMsg(reader)
+				Expect(err).NotTo(HaveOccurred())
+
+				// verify timestamp
+				Expect(decoded.Timestamp.Equal(expectedTime)).To(BeTrue(),
+					"Timestamp mismatch: got %v, want %v", decoded.Timestamp, expectedTime)
+
+				// verify record
+				recordMap, ok := decoded.Record.(map[string]interface{})
+				Expect(ok).To(BeTrue())
+				Expect(recordMap["message"]).To(Equal("test message"))
+				Expect(recordMap["level"]).To(Equal("warning"))
+			})
+		})
 	})
 
 	Describe("EntryList", func() {
