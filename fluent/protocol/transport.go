@@ -142,7 +142,7 @@ type EntryExt struct {
 	Record interface{}
 }
 
-// This decodes msgpack data from a byte slice into EntryExt
+// This decodes msgpack data from a a msgp.Reader into EntryExt
 // - [timestamp, record]
 // - where timestamp can be an integer or [integer, {metadata}] (we ignore metadata)
 func (z *EntryExt) DecodeMsg(r *msgp.Reader) error {
@@ -179,7 +179,7 @@ func (z *EntryExt) DecodeMsg(r *msgp.Reader) error {
 			return msgp.WrapError(err, "Timestamp array header")
 		}
 
-		if arrSize < 1 || arrSize > 2 {
+		if arrSize != 2 {
 			return msgp.WrapError(err, "Invalid timestamp array size")
 		}
 
@@ -285,7 +285,7 @@ func (z *EntryExt) UnmarshalMsg(bts []byte) ([]byte, error) {
 			return bts, msgp.WrapError(err, "Timestamp array header")
 		}
 
-		if arrSize < 1 || arrSize > 2 {
+		if arrSize != 2 {
 			return bts, msgp.WrapError(err, "Timestamp array size", arrSize)
 		}
 
