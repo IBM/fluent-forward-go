@@ -26,6 +26,7 @@ package protocol_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 	"strings"
@@ -199,6 +200,53 @@ var _ = Describe("Transport", func() {
 				Expect(ok).To(BeTrue())
 				Expect(recordMap["message"]).To(Equal("test message"))
 				Expect(recordMap["level"]).To(Equal("warning"))
+			})
+
+			It("Decodes from raw hexadecimal msgpack data", func() {
+				// example hexadecimal data layout of the msgpack message
+				// 00000000: dd00 0000 02dd 0000 0002 d700 64df 6aea  ............d.j.
+				// 00000010: 361f b69b 8081 a76d 6573 7361 6765 ac54  6......message.T
+				// 00000020: 4553 5420 4d45 5353 4147 45              EST MESSAGE
+				hexData := "dd00000002dd00000002d70064df6aea361fb69b8081a76d657373616765ac54455354204d455353414745"
+
+				// dd00000002           - array header (2 elements)
+				// dd00000002           - nested array header (2 elements) - this is the timestamp array
+				// d70064df6aea361fb69b - EventTime extension (fixext8)
+				// d7                 	- fixext8 type
+				// 00                 	- type 0
+				// 64df6aea           	- seconds (big endian)
+				// 361fb69b           	- nanoseconds (big endian)
+				// 80                   - map (empty metadata)
+				// 81a76d657373616765ac54455354204d455353414745 - record
+
+				// convert hex string to bytes
+				data, err := hex.DecodeString(hexData)
+				Expect(err).NotTo(HaveOccurred())
+
+				// buffer with the decoded bytes
+				buf := bytes.NewBuffer(data)
+
+				// decode
+				decoded := &protocol.EntryExt{}
+				reader := msgp.NewReader(buf)
+				err = decoded.DecodeMsg(reader)
+				Expect(err).NotTo(HaveOccurred())
+
+				// verify the decoded data
+
+				// expected timestamp from hex data:
+				// seconds: 0x64df6aea = 1692336874
+				// nanoseconds: 0x361fb69b = 908731035
+				expectedTime := time.Unix(0x64df6aea, 0x361fb69b)
+
+				// Verify timestamp
+				Expect(decoded.Timestamp.Equal(expectedTime)).To(BeTrue(),
+					"Timestamp mismatch: got %v, want %v", decoded.Timestamp.Time, expectedTime)
+
+				Expect(decoded.Record).NotTo(BeNil())
+				recordMap, ok := decoded.Record.(map[string]interface{})
+				Expect(ok).To(BeTrue())
+				Expect(recordMap["message"]).To(Equal("TEST MESSAGE"))
 			})
 		})
 	})

@@ -205,14 +205,10 @@ func (z *EntryExt) DecodeMsg(r *msgp.Reader) error {
 			z.Timestamp = EventTime{time.Unix(seconds, 0).UTC()}
 		}
 
-		// Skip metadata elements (all elements after the first)
-		// We iterate starting from 1 because element 0 (timestamp) is already read
-		for i := uint32(1); i < arrSize; i++ {
-			// Skip() advances past one complete msgpack object in the byte slice
-			err = r.Skip()
-			if err != nil {
-				return msgp.WrapError(err, "Skip metadata element")
-			}
+		// Skip metadata element
+		err = r.Skip()
+		if err != nil {
+			return msgp.WrapError(err, "Skip metadata element")
 		}
 
 	case msgp.IntType:
@@ -307,14 +303,10 @@ func (z *EntryExt) UnmarshalMsg(bts []byte) ([]byte, error) {
 			z.Timestamp = EventTime{time.Unix(seconds, 0).UTC()}
 		}
 
-		// Skip metadata elements (all elements after the first)
-		// We iterate starting from 1 because element 0 (timestamp) is already read
-		for i := uint32(1); i < arrSize; i++ {
-			// Skip() advances past one complete msgpack object in the byte slice
-			bts, err = msgp.Skip(bts)
-			if err != nil {
-				return bts, msgp.WrapError(err, "Skip metadata element")
-			}
+		// Skip metadata element
+		bts, err = msgp.Skip(bts)
+		if err != nil {
+			return bts, msgp.WrapError(err, "Skip metadata element")
 		}
 
 	case msgp.IntType:
