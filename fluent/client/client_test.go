@@ -238,7 +238,7 @@ var _ = Describe("Client", func() {
 					defer GinkgoRecover()
 					defer func() { done <- true }()
 					err := client.Send(&msg)
-					Expect(err.Error()).To(ContainSubstring("Expected chunk"))
+					Expect(err.Error()).To(ContainSubstring("expected chunk"))
 				}()
 
 				rcvd := &protocol.MessageExt{}

@@ -71,12 +71,12 @@ func NewForwardMessage(
 }
 
 func (fm *ForwardMessage) EncodeMsg(dc *msgp.Writer) error {
-	size := 2
+	size := uint32(2)
 	if fm.Options != nil {
 		size = 3
 	}
 
-	err := dc.WriteArrayHeader(uint32(size))
+	err := dc.WriteArrayHeader(size)
 	if err != nil {
 		return msgp.WrapError(err, "Array Header")
 	}
