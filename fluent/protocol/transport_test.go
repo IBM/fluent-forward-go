@@ -203,21 +203,9 @@ var _ = Describe("Transport", func() {
 			})
 
 			It("Decodes from raw hexadecimal msgpack data", func() {
-				// example hexadecimal data layout of the msgpack message
-				// 00000000: dd00 0000 02dd 0000 0002 d700 64df 6aea  ............d.j.
-				// 00000010: 361f b69b 8081 a76d 6573 7361 6765 ac54  6......message.T
-				// 00000020: 4553 5420 4d45 5353 4147 45              EST MESSAGE
+				// hexadecimal data layout of the msgpack message
+				// spec: https://github.com/msgpack/msgpack/blob/master/spec.md
 				hexData := "dd00000002dd00000002d70064df6aea361fb69b8081a76d657373616765ac54455354204d455353414745"
-
-				// dd00000002           - array header (2 elements)
-				// dd00000002           - nested array header (2 elements) - this is the timestamp array
-				// d70064df6aea361fb69b - EventTime extension (fixext8)
-				// d7                 	- fixext8 type
-				// 00                 	- type 0
-				// 64df6aea           	- seconds (big endian)
-				// 361fb69b           	- nanoseconds (big endian)
-				// 80                   - map (empty metadata)
-				// 81a76d657373616765ac54455354204d455353414745 - record
 
 				// convert hex string to bytes
 				data, err := hex.DecodeString(hexData)
