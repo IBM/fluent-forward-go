@@ -98,6 +98,7 @@ type AuthInfo struct {
 
 type Session struct {
 	Connection     net.Conn
+	Reader         *msgp.Reader
 	TransportPhase bool
 }
 
@@ -139,6 +140,7 @@ func (c *Client) connect() error {
 
 	c.session = &Session{
 		Connection: conn,
+		Reader:     msgp.NewReader(conn),
 	}
 
 	// If no shared key, handshake mode is not required
@@ -162,10 +164,17 @@ func (c *Client) Handshake() error {
 		return errors.New("not connected")
 	}
 
+	// Set deadline for the entire handshake
+	if c.Timeout != 0 {
+		if err := c.session.Connection.SetDeadline(time.Now().Add(c.Timeout)); err != nil {
+			return fmt.Errorf("failed to set handshake deadline: %w", err)
+		}
+		defer c.session.Connection.SetDeadline(time.Time{})
+	}
+
 	var helo protocol.Helo
 
-	r := msgp.NewReader(c.session.Connection)
-	err := helo.DecodeMsg(r)
+	err := helo.DecodeMsg(c.session.Reader)
 
 	if err != nil {
 		return err
@@ -178,7 +187,13 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
+	var ping *protocol.Ping
+	if c.AuthInfo.Username != "" || c.AuthInfo.Password != "" {
+		ping, err = protocol.NewPingWithAuth(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce, c.AuthInfo.Username, c.AuthInfo.Password)
+	} else {
+		ping, err = protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -190,9 +205,16 @@ func (c *Client) Handshake() error {
 
 	var pong protocol.Pong
 
-	err = pong.DecodeMsg(r)
+	err = pong.DecodeMsg(c.session.Reader)
 	if err != nil {
 		return err
+	}
+
+	if !pong.AuthResult {
+		if pong.Reason != "" {
+			return fmt.Errorf("authentication failed: %s", pong.Reason)
+		}
+		return errors.New("authentication failed: server rejected credentials")
 	}
 
 	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
@@ -253,7 +275,7 @@ func (c *Client) checkAck(chunk string) error {
 	}
 
 	var ack protocol.AckMessage
-	if err := msgp.Decode(c.session.Connection, &ack); err != nil {
+	if err := ack.DecodeMsg(c.session.Reader); err != nil {
 		return err
 	}
 
