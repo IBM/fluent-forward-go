@@ -26,9 +26,9 @@ package client
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -91,9 +91,10 @@ type ConnectionOptions struct {
 }
 
 type AuthInfo struct {
-	SharedKey []byte
-	Username  string
-	Password  string
+	ClientHostName string
+	SharedKey      []byte
+	Username       string
+	Password       string
 }
 
 type Session struct {
@@ -240,6 +241,10 @@ func (c *Client) Handshake() error {
 	}
 
 	r := msgp.NewReader(c.session.Connection)
+	// var helo protocol.Helo
+	// if err :=  msgp.Decode(r, &helo); err != nil {
+	// 	return err
+	// }
 
 	helo, err := readHELOManual(r)
 	if err != nil {
@@ -257,9 +262,13 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
+	saltHex := hex.EncodeToString(salt)
+
+	ping, err := protocol.NewPingWithAuth(
+		c.AuthInfo.ClientHostName, helo.Options.Auth, c.AuthInfo.SharedKey,
+		[]byte(saltHex), helo.Options.Nonce, c.AuthInfo.Username, c.AuthInfo.Password,
+	)
 	if err != nil {
-		log.Println("Error From Here")
 		return err
 	}
 
@@ -275,9 +284,11 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
-		helo.Options.Nonce, salt); err != nil {
-		return err
+	if err := protocol.ValidatePongDigest(
+		&pong, []byte(c.AuthInfo.SharedKey),
+		helo.Options.Nonce, []byte(saltHex),
+	); err != nil {
+		return fmt.Errorf("PONG validation failed: %w", err)
 	}
 
 	c.session.TransportPhase = true
