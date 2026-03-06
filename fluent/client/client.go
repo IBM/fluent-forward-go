@@ -25,12 +25,12 @@ SOFTWARE.
 package client
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
-	"sync"
-
-	"crypto/rand"
+	"log"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
@@ -154,6 +154,83 @@ func (c *Client) connect() error {
 // the server will reject any message events.  Successful completion of the
 // handshake puts the connection into message (or forward) mode, at which time
 // the client is free to send event messages.
+
+// Read HELO manually without msgp generated code
+
+func readFlexibleBytes(dc *msgp.Reader) ([]byte, error) {
+	bts, err := dc.ReadBytes(nil)
+	if err == nil {
+		return bts, nil // Successfully read as bin type
+	}
+
+	str, strErr := dc.ReadString()
+	if strErr != nil {
+		// Return original error if both fail
+		return nil, err
+	}
+
+	return []byte(str), nil
+}
+
+// Read HELO manually without msgp generated code
+func readHELOManual(r *msgp.Reader) (*protocol.Helo, error) {
+	// Read array header [2]
+	arrLen, err := r.ReadArrayHeader()
+	if err != nil {
+		return nil, err
+	}
+	if arrLen != 2 {
+		return nil, fmt.Errorf("expected array len 2, got %d", arrLen)
+	}
+
+	// Read tag "HELO"
+	tag, err := r.ReadString()
+	if err != nil {
+		return nil, err
+	}
+	if tag != "HELO" {
+		return nil, fmt.Errorf("expected HELO, got %q", tag)
+	}
+
+	// Read options map
+	mapLen, err := r.ReadMapHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	helo := &protocol.Helo{MessageType: "HELO", Options: &protocol.HeloOpts{}}
+	for range mapLen {
+		key, err := r.ReadString()
+		if err != nil {
+			return nil, err
+		}
+
+		switch key {
+		case "nonce", "auth":
+			val, err := readFlexibleBytes(r) // Pakai helper di atas
+			if err != nil {
+				return nil, err
+			}
+			if key == "nonce" {
+				helo.Options.Nonce = val
+			} else {
+				helo.Options.Auth = val
+			}
+		case "keepalive":
+			helo.Options.Keepalive, err = r.ReadBool()
+			if err != nil {
+				return nil, err
+			}
+		default:
+			if err := r.Skip(); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return helo, nil
+}
+
 func (c *Client) Handshake() error {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
@@ -162,13 +239,15 @@ func (c *Client) Handshake() error {
 		return errors.New("not connected")
 	}
 
-	var helo protocol.Helo
-
 	r := msgp.NewReader(c.session.Connection)
-	err := helo.DecodeMsg(r)
 
+	helo, err := readHELOManual(r)
 	if err != nil {
 		return err
+	}
+
+	if helo.MessageType != "HELO" {
+		return fmt.Errorf("expected HELO, got %q", helo.MessageType)
 	}
 
 	salt := make([]byte, 16)
@@ -180,6 +259,7 @@ func (c *Client) Handshake() error {
 
 	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
 	if err != nil {
+		log.Println("Error From Here")
 		return err
 	}
 
@@ -225,7 +305,7 @@ func (c *Client) disconnect() (err error) {
 
 	c.session = nil
 
-	return
+	return err
 }
 
 // Disconnect terminates a client connection
