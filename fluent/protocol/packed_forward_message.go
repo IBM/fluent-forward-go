@@ -249,7 +249,8 @@ func NewCompressedPackedForwardMessageFromBytes(
 		return nil, err
 	}
 
-	pfm := NewPackedForwardMessageFromBytes(tag, mc.Bytes())
+	// copy out of the pooled compressor's buffer, which is reused after Put
+	pfm := NewPackedForwardMessageFromBytes(tag, append([]byte(nil), mc.Bytes()...))
 	pfm.Options = &MessageOptions{Compressed: "gzip"}
 
 	return pfm, nil

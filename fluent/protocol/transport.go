@@ -57,6 +57,7 @@ var (
 	compressorPool  sync.Pool
 	chunkReaderPool sync.Pool
 	bufferPool      sync.Pool
+	writerPool      sync.Pool
 )
 
 func init() {
@@ -76,6 +77,10 @@ func init() {
 
 	bufferPool.New = func() interface{} {
 		return new(bytes.Buffer)
+	}
+
+	writerPool.New = func() interface{} {
+		return msgp.NewWriter(nil)
 	}
 }
 
@@ -364,21 +369,36 @@ func (el *EntryList) UnmarshalPacked(bits []byte) ([]byte, error) {
 	return bits, err
 }
 
+// MarshalPacked encodes the entries into a newly allocated byte slice. The
+// result is copied out of the pooled buffer so that it remains valid after the
+// buffer is returned to the pool and reused.
 func (el EntryList) MarshalPacked() ([]byte, error) {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()
 
+	w := writerPool.Get().(*msgp.Writer)
+	w.Reset(buf)
+
 	defer func() {
+		w.Reset(nil) // drop the reference to buf before pooling
+		writerPool.Put(w)
 		bufferPool.Put(buf)
 	}()
 
 	for _, e := range el {
-		if err := msgp.Encode(buf, e); err != nil {
+		if err := e.EncodeMsg(w); err != nil {
 			return nil, err
 		}
 	}
 
-	return buf.Bytes(), nil
+	if err := w.Flush(); err != nil {
+		return nil, err
+	}
+
+	out := make([]byte, buf.Len())
+	copy(out, buf.Bytes())
+
+	return out, nil
 }
 
 // Equal compares two EntryList objects and returns true if they have
