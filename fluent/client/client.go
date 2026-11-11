@@ -25,12 +25,12 @@ SOFTWARE.
 package client
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"sync"
-
-	"crypto/rand"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/IBM/fluent-forward-go/fluent/protocol"
@@ -91,9 +91,10 @@ type ConnectionOptions struct {
 }
 
 type AuthInfo struct {
-	SharedKey []byte
-	Username  string
-	Password  string
+	ClientHostName string
+	SharedKey      []byte
+	Username       string
+	Password       string
 }
 
 type Session struct {
@@ -154,6 +155,83 @@ func (c *Client) connect() error {
 // the server will reject any message events.  Successful completion of the
 // handshake puts the connection into message (or forward) mode, at which time
 // the client is free to send event messages.
+
+// Read HELO manually without msgp generated code
+
+func readFlexibleBytes(dc *msgp.Reader) ([]byte, error) {
+	bts, err := dc.ReadBytes(nil)
+	if err == nil {
+		return bts, nil // Successfully read as bin type
+	}
+
+	str, strErr := dc.ReadString()
+	if strErr != nil {
+		// Return original error if both fail
+		return nil, err
+	}
+
+	return []byte(str), nil
+}
+
+// Read HELO manually without msgp generated code
+func readHELOManual(r *msgp.Reader) (*protocol.Helo, error) {
+	// Read array header [2]
+	arrLen, err := r.ReadArrayHeader()
+	if err != nil {
+		return nil, err
+	}
+	if arrLen != 2 {
+		return nil, fmt.Errorf("expected array len 2, got %d", arrLen)
+	}
+
+	// Read tag "HELO"
+	tag, err := r.ReadString()
+	if err != nil {
+		return nil, err
+	}
+	if tag != "HELO" {
+		return nil, fmt.Errorf("expected HELO, got %q", tag)
+	}
+
+	// Read options map
+	mapLen, err := r.ReadMapHeader()
+	if err != nil {
+		return nil, err
+	}
+
+	helo := &protocol.Helo{MessageType: "HELO", Options: &protocol.HeloOpts{}}
+	for range mapLen {
+		key, err := r.ReadString()
+		if err != nil {
+			return nil, err
+		}
+
+		switch key {
+		case "nonce", "auth":
+			val, err := readFlexibleBytes(r) // Pakai helper di atas
+			if err != nil {
+				return nil, err
+			}
+			if key == "nonce" {
+				helo.Options.Nonce = val
+			} else {
+				helo.Options.Auth = val
+			}
+		case "keepalive":
+			helo.Options.Keepalive, err = r.ReadBool()
+			if err != nil {
+				return nil, err
+			}
+		default:
+			if err := r.Skip(); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return helo, nil
+}
+
 func (c *Client) Handshake() error {
 	c.sessionLock.RLock()
 	defer c.sessionLock.RUnlock()
@@ -162,13 +240,19 @@ func (c *Client) Handshake() error {
 		return errors.New("not connected")
 	}
 
-	var helo protocol.Helo
-
 	r := msgp.NewReader(c.session.Connection)
-	err := helo.DecodeMsg(r)
+	// var helo protocol.Helo
+	// if err :=  msgp.Decode(r, &helo); err != nil {
+	// 	return err
+	// }
 
+	helo, err := readHELOManual(r)
 	if err != nil {
 		return err
+	}
+
+	if helo.MessageType != "HELO" {
+		return fmt.Errorf("expected HELO, got %q", helo.MessageType)
 	}
 
 	salt := make([]byte, 16)
@@ -178,7 +262,12 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	ping, err := protocol.NewPing(c.Hostname, c.AuthInfo.SharedKey, salt, helo.Options.Nonce)
+	saltHex := hex.EncodeToString(salt)
+
+	ping, err := protocol.NewPingWithAuth(
+		c.AuthInfo.ClientHostName, helo.Options.Auth, c.AuthInfo.SharedKey,
+		[]byte(saltHex), helo.Options.Nonce, c.AuthInfo.Username, c.AuthInfo.Password,
+	)
 	if err != nil {
 		return err
 	}
@@ -195,9 +284,11 @@ func (c *Client) Handshake() error {
 		return err
 	}
 
-	if err := protocol.ValidatePongDigest(&pong, c.AuthInfo.SharedKey,
-		helo.Options.Nonce, salt); err != nil {
-		return err
+	if err := protocol.ValidatePongDigest(
+		&pong, []byte(c.AuthInfo.SharedKey),
+		helo.Options.Nonce, []byte(saltHex),
+	); err != nil {
+		return fmt.Errorf("PONG validation failed: %w", err)
 	}
 
 	c.session.TransportPhase = true
@@ -225,7 +316,7 @@ func (c *Client) disconnect() (err error) {
 
 	c.session = nil
 
-	return
+	return err
 }
 
 // Disconnect terminates a client connection

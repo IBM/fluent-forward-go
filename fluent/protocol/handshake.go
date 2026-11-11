@@ -81,30 +81,40 @@ type HeloOpts struct {
 
 // NewPing returns a PING message.  The digest is computed
 // from the hostname, key, salt, and nonce using SHA512.
-func NewPing(hostname string, sharedKey, salt, nonce []byte) (*Ping, error) {
-	return makePing(hostname, sharedKey, salt, nonce)
+func NewPing(
+	clientHostName string, sharedKey, salt, nonce []byte,
+) (*Ping, error) {
+	return makePing(clientHostName, nil, sharedKey, salt, nonce)
 }
 
 // NewPingWithAuth returns a PING message containing the username and password
 // to be used for authentication.  The digest is computed
 // from the hostname, key, salt, and nonce using SHA512.
-func NewPingWithAuth(hostname string, sharedKey, salt, nonce []byte, username, password string) (*Ping, error) {
-	return makePing(hostname, sharedKey, salt, nonce, username, password)
+func NewPingWithAuth(clientHostName string, auth, sharedKey, salt, nonce []byte, username, password string) (*Ping, error) {
+	return makePing(clientHostName, auth, sharedKey, salt, nonce, username, password)
 }
 
-func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (*Ping, error) {
-	hexDigest, err := computeHexDigest(salt, hostname, nonce, sharedKey)
+func computePasswordDigest(authSalt []byte, username, password string) string {
+	h := sha512.New()
+	h.Write(authSalt)
+	h.Write([]byte(username))
+	h.Write([]byte(password))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func makePing(clientHostName string, auth, sharedKey, salt, nonce []byte, creds ...string) (*Ping, error) {
+	hexDigest, err := computeHexDigest(salt, clientHostName, nonce, sharedKey)
 
 	p := Ping{
 		MessageType:        MsgTypePing,
-		ClientHostname:     hostname,
-		SharedKeySalt:      salt,
+		ClientHostname:     clientHostName,
+		SharedKeySalt:      string(salt),
 		SharedKeyHexDigest: hexDigest,
 	}
 
 	if len(creds) >= 2 {
 		p.Username = creds[0]
-		p.Password = creds[1]
+		p.Password = computePasswordDigest(auth, creds[0], creds[1])
 	}
 
 	return &p, err
@@ -117,7 +127,7 @@ func makePing(hostname string, sharedKey, salt, nonce []byte, creds ...string) (
 type Ping struct {
 	MessageType        string
 	ClientHostname     string
-	SharedKeySalt      []byte
+	SharedKeySalt      string
 	SharedKeyHexDigest string
 	Username           string
 	Password           string
@@ -132,7 +142,8 @@ type Ping struct {
 // Server implementations must use the nonce created for the initial Helo and
 // the salt sent by the client in the Ping.
 func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
-	helo *Helo, ping *Ping) (*Pong, error) {
+	helo *Helo, ping *Ping,
+) (*Pong, error) {
 	if helo == nil || ping == nil {
 		return nil, errors.New("either helo or ping is nil")
 	}
@@ -141,7 +152,7 @@ func NewPong(authResult bool, reason string, hostname string, sharedKey []byte,
 		return nil, errors.New("helo has a nil options field")
 	}
 
-	hexDigest, err := computeHexDigest(ping.SharedKeySalt, hostname, helo.Options.Nonce, sharedKey)
+	hexDigest, err := computeHexDigest([]byte(ping.SharedKeySalt), hostname, helo.Options.Nonce, sharedKey)
 
 	p := Pong{
 		MessageType:        MsgTypePong,
@@ -170,7 +181,7 @@ type Pong struct {
 // is valid for the client hostname (as contained in the PING).
 // Returns a non-nil error if validation fails, nil otherwise.
 func ValidatePingDigest(p *Ping, key, nonce []byte) error {
-	return validateDigest(p.SharedKeyHexDigest, key, nonce, p.SharedKeySalt, p.ClientHostname)
+	return validateDigest(p.SharedKeyHexDigest, key, nonce, []byte(p.SharedKeySalt), p.ClientHostname)
 }
 
 // ValidatePongDigest validates that the digest contained in the PONG message
@@ -193,21 +204,22 @@ func validateDigest(received string, key, nonce, salt []byte, hostname string) e
 	return nil
 }
 
-func computeHexDigest(salt []byte, hostname string, nonce, sharedKey []byte) (string, error) {
+func computeHexDigest(salt []byte, clientHostName string, nonce, sharedKey []byte) (string, error) {
 	h := sha512.New()
+
 	h.Write(salt)
 
-	_, err := io.WriteString(h, hostname)
-	if err != nil {
+	if _, err := io.WriteString(h, clientHostName); err != nil {
 		return "", err
 	}
 
 	h.Write(nonce)
 	h.Write(sharedKey)
+
 	sum := h.Sum(nil)
 	hexOut := make([]byte, hex.EncodedLen(len(sum)))
 	hex.Encode(hexOut, sum)
 	stringValue := string(hexOut[:])
 
-	return stringValue, err
+	return stringValue, nil
 }

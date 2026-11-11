@@ -416,7 +416,7 @@ func (z *Ping) DecodeMsg(dc *msgp.Reader) (err error) {
 		err = msgp.WrapError(err, "ClientHostname")
 		return
 	}
-	z.SharedKeySalt, err = dc.ReadBytes(z.SharedKeySalt)
+	z.SharedKeySalt, err = dc.ReadString()
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeySalt")
 		return
@@ -456,7 +456,7 @@ func (z *Ping) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "ClientHostname")
 		return
 	}
-	err = en.WriteBytes(z.SharedKeySalt)
+	err = en.WriteString(z.SharedKeySalt)
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeySalt")
 		return
@@ -486,7 +486,7 @@ func (z *Ping) MarshalMsg(b []byte) (o []byte, err error) {
 	o = append(o, 0x96)
 	o = msgp.AppendString(o, z.MessageType)
 	o = msgp.AppendString(o, z.ClientHostname)
-	o = msgp.AppendBytes(o, z.SharedKeySalt)
+	o = msgp.AppendString(o, z.SharedKeySalt)
 	o = msgp.AppendString(o, z.SharedKeyHexDigest)
 	o = msgp.AppendString(o, z.Username)
 	o = msgp.AppendString(o, z.Password)
@@ -515,7 +515,7 @@ func (z *Ping) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		err = msgp.WrapError(err, "ClientHostname")
 		return
 	}
-	z.SharedKeySalt, bts, err = msgp.ReadBytesBytes(bts, z.SharedKeySalt)
+	z.SharedKeySalt, bts, err = msgp.ReadStringBytes(bts)
 	if err != nil {
 		err = msgp.WrapError(err, "SharedKeySalt")
 		return
@@ -541,7 +541,7 @@ func (z *Ping) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Ping) Msgsize() (s int) {
-	s = 1 + msgp.StringPrefixSize + len(z.MessageType) + msgp.StringPrefixSize + len(z.ClientHostname) + msgp.BytesPrefixSize + len(z.SharedKeySalt) + msgp.StringPrefixSize + len(z.SharedKeyHexDigest) + msgp.StringPrefixSize + len(z.Username) + msgp.StringPrefixSize + len(z.Password)
+	s = 1 + msgp.StringPrefixSize + len(z.MessageType) + msgp.StringPrefixSize + len(z.ClientHostname) + msgp.StringPrefixSize + len(z.SharedKeySalt) + msgp.StringPrefixSize + len(z.SharedKeyHexDigest) + msgp.StringPrefixSize + len(z.Username) + msgp.StringPrefixSize + len(z.Password)
 	return
 }
 
